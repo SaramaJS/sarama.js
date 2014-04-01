@@ -3,7 +3,7 @@ require("./tests.js");
 
 var testsRun = 0, failed = 0;
 function report(state, code, message) {
-  if (state != "ok") {++failed; console.log(code, message);}
+  if (state != "ok") {++failed; console.log(state, message, code);}
   ++testsRun;
 }
 

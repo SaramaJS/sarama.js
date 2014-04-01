@@ -83,7 +83,7 @@
     // When the `locations` option is on, two more parameters are
     // passed, the full `{line, column}` locations of the start and
     // end of the comments. Note that you are not allowed to call the
-    // parser from the callbackâ€”that will corrupt its internal state.
+    // parser from the callback—that will corrupt its internal state.
     onComment: null,
     // Nodes have their start and end characters offsets recorded in
     // `start` and `end` properties (directly on the node, rather than
@@ -242,6 +242,11 @@
 
   var empty = [];
 
+  // Identation stack
+  // Used to start and end block statements
+
+  var indentHistory = [];
+
   // ## Token types
 
   // The assignment of fine-grained, information-carrying type objects
@@ -256,6 +261,7 @@
 
   var _num = {type: "num"}, _regexp = {type: "regexp"}, _string = {type: "string"};
   var _name = {type: "name"}, _eof = {type: "eof"};
+  var _indent = {type: "indent"}, _dedent = {type: "dedent"};
 
   // Keyword tokens. The `keyword` property (also used in keyword-like
   // operators) indicates that the token originated from an
@@ -278,6 +284,7 @@
   var _throw = {keyword: "throw", beforeExpr: true}, _try = {keyword: "try"}, _var = {keyword: "var"};
   var _while = {keyword: "while", isLoop: true}, _with = {keyword: "with"}, _new = {keyword: "new", beforeExpr: true};
   var _this = {keyword: "this"};
+  var _def = {keyword: "def"};
 
   // The keywords that denote values.
 
@@ -293,7 +300,7 @@
   // Map keyword names to token types.
 
   var keywordTypes = {"break": _break, "case": _case, "catch": _catch,
-                      "continue": _continue, "debugger": _debugger, "default": _default,
+                      "continue": _continue, "debugger": _debugger, "def": _def, "default": _default,
                       "do": _do, "else": _else, "finally": _finally, "for": _for,
                       "function": _function, "if": _if, "return": _return, "switch": _switch,
                       "throw": _throw, "try": _try, "var": _var, "while": _while, "with": _with,
@@ -346,7 +353,8 @@
   exports.tokTypes = {bracketL: _bracketL, bracketR: _bracketR, braceL: _braceL, braceR: _braceR,
                       parenL: _parenL, parenR: _parenR, comma: _comma, semi: _semi, colon: _colon,
                       dot: _dot, question: _question, slash: _slash, eq: _eq, name: _name, eof: _eof,
-                      num: _num, regexp: _regexp, string: _string};
+                      num: _num, regexp: _regexp, string: _string,
+                      indent: _indent, dedent: _dedent};
   for (var kw in keywordTypes) exports.tokTypes["_" + kw] = keywordTypes[kw];
 
   // This is a trick taken from Esprima. It turns out that, on
@@ -415,7 +423,7 @@
 
   // And the keywords.
 
-  var isKeyword = makePredicate("break case catch continue debugger default do else finally for function if return switch throw try var while with null true false instanceof typeof void delete new in this");
+  var isKeyword = makePredicate("break case catch continue debugger def default do else finally for function if return switch throw try var while with null true false instanceof typeof void delete new in this");
 
   // ## Character categories
 
@@ -477,7 +485,7 @@
     tokCurLine = 1;
     tokPos = tokLineStart = 0;
     tokRegexpAllowed = true;
-    skipSpace();
+    indentHistory = [];
   }
 
   // Called at the end of every token. Sets `tokEnd`, `tokVal`, and
@@ -514,13 +522,13 @@
   function skipLineComment() {
     var start = tokPos;
     var startLoc = options.onComment && options.locations && new Position;
-    var ch = input.charCodeAt(tokPos+=2);
+    var ch = input.charCodeAt(++tokPos);
     while (tokPos < inputLen && ch !== 10 && ch !== 13 && ch !== 8232 && ch !== 8233) {
       ++tokPos;
       ch = input.charCodeAt(tokPos);
     }
     if (options.onComment)
-      options.onComment(false, input.slice(start + 2, tokPos), start, tokPos,
+      options.onComment(false, input.slice(start + 1, tokPos), start, tokPos,
                         startLoc, options.locations && new Position);
   }
 
@@ -532,31 +540,10 @@
       var ch = input.charCodeAt(tokPos);
       if (ch === 32) { // ' '
         ++tokPos;
-      } else if (ch === 13) {
+      } else if (ch === 9 || ch === 11 || ch === 12) {
         ++tokPos;
-        var next = input.charCodeAt(tokPos);
-        if (next === 10) {
-          ++tokPos;
-        }
-        if (options.locations) {
-          ++tokCurLine;
-          tokLineStart = tokPos;
-        }
-      } else if (ch === 10 || ch === 8232 || ch === 8233) {
-        ++tokPos;
-        if (options.locations) {
-          ++tokCurLine;
-          tokLineStart = tokPos;
-        }
-      } else if (ch > 8 && ch < 14) {
-        ++tokPos;
-      } else if (ch === 47) { // '/'
-        var next = input.charCodeAt(tokPos + 1);
-        if (next === 42) { // '*'
-          skipBlockComment();
-        } else if (next === 47) { // '/'
-          skipLineComment();
-        } else break;
+      } else if (ch === 35) { // '#'
+        skipLineComment();
       } else if (ch === 160) { // '\xa0'
         ++tokPos;
       } else if (ch >= 5760 && nonASCIIwhitespace.test(String.fromCharCode(ch))) {
@@ -656,8 +643,88 @@
     return finishOp(code === 61 ? _eq : _prefix, 1);
   }
 
+  // Parse an indent
+  // Possible output tokens: _indent, _dedent, _eof
+  // TODO: assumes no \r\n for now, hence positions all moved by 1 spot
+  // TODO: skip all whitespace characters, not just ' ' and '\t'
+  // TODO: disallow unequal indents of same length (e.g. nested if/else block)
+  // TODO: some weird handling of tokPos because of finishOp size logic
+
+  function readToken_indent(code) {
+    if (options.locations) {
+      ++tokCurLine;
+      tokLineStart = tokPos + 1;
+    }
+
+    // Read indent, skip empty lines and comments
+    var indent = "";
+    var indentPos = tokPos + 1;
+    while (indentPos < inputLen) {
+      var ch = input.charCodeAt(indentPos);
+      if (ch === 32 || ch === 9) { // ' ' or '\t'
+        indent += String.fromCharCode(ch);
+        ++indentPos;
+      } else if (ch === 10) { // '\n'
+        indent = "";
+        tokPos = indentPos;
+        ++indentPos;
+        if (options.locations) {
+          tokLineStart = indentPos;
+          ++tokCurLine;
+        }
+      } else if (ch === 35) { // '#'
+        do {
+          var next = input.charCodeAt(++indentPos);
+        } while (indentPos < inputLen && next !== 10);
+      } else {
+        break;
+      }
+    }
+
+    // Determine token type based on indent found versus indentation history
+    var type;
+    if (indent.length > 0) {
+      if (indentHistory.length === 0 || indent.length > indentHistory[indentHistory.length - 1].length) {
+        type = _indent;
+        indentHistory.push(indent);
+      } else if (indent.length < indentHistory[indentHistory.length - 1].length) {
+        type = _dedent;
+        while (indentHistory.length > 0 && indent.length < indentHistory[indentHistory.length - 1].length) {
+          indentHistory.pop();
+        }
+      } else {
+        tokPos += indent.length;
+      }
+    } else if (indentPos >= inputLen) {
+      type = _eof;
+    } else if (indentHistory.length > 0) {
+      type = _dedent;
+      indentHistory = [];
+    }
+
+    switch (type) {
+      case _indent: case _dedent: return finishOp(type, indentPos - ++tokPos);
+      case _eof:
+        tokPos = inputLen;
+        if (options.locations) tokStartLoc = new Position;
+        return finishOp(type, 0);
+      default: // linebreak
+        ++tokPos;
+        if (options.locations) tokStartLoc = new Position;
+        return readToken();
+    }
+  }
+
   function getTokenFromCode(code) {
     switch(code) {
+
+    case 10: // '\n'
+      // TODO: other unicode newline characters
+      return readToken_indent(code);
+    case 35: // '#'
+      skipLineComment();
+      return readToken();
+
       // The interpretation of a dot depends on whether it is followed
       // by a digit.
     case 46: // '.'
@@ -956,7 +1023,7 @@
   // of constructs (for example, the fact that `!x[1]` means `!(x[1])`
   // instead of `(!x)[1]` is handled by the fact that the parser
   // function that parses unary prefix operators is called first, and
-  // in turn calls the function that parses `[]` subscripts â€” that
+  // in turn calls the function that parses `[]` subscripts — that
   // way, it'll receive the node for `x[1]` already parsed, and wraps
   // *that* in the unary operator node.
   //
@@ -1002,7 +1069,7 @@
     this.start = tokStart;
     this.end = null;
   }
-  
+
   exports.Node = Node;
 
   function SourceLocation() {
@@ -1072,7 +1139,7 @@
 
   function canInsertSemicolon() {
     return !options.strictSemicolons &&
-      (tokType === _eof || tokType === _braceR || newline.test(input.slice(lastEnd, tokStart)));
+      (tokType === _eof || tokType === _indent || tokType === _dedent || newline.test(input.slice(lastEnd, tokStart)));
   }
 
   // Consume a semicolon, or, failing that, see if we are allowed to
@@ -1096,7 +1163,7 @@
     raise(tokStart, "Unexpected token");
   }
 
-  // Verify that a node is an lval â€” something that can be assigned
+  // Verify that a node is an lval — something that can be assigned
   // to.
 
   function checkLVal(expr) {
@@ -1119,6 +1186,7 @@
     inFunction = strict = null;
     labels = [];
     readToken();
+    if (tokType === _indent) unexpected();
 
     var node = program || startNode(), first = true;
     if (!program) node.body = [];
@@ -1151,6 +1219,13 @@
     // complexity.
 
     switch (starttype) {
+    case _indent:
+      next();
+      return parseBlock();
+    case _dedent:
+      next();
+      return parseStatement();
+
     case _break: case _continue:
       next();
       var isBreak = starttype === _break;
@@ -1214,15 +1289,17 @@
       if (eat(_in)) {checkLVal(init); return parseForIn(node, init);}
       return parseFor(node, init);
 
-    case _function:
+    case _def:
       next();
-      return parseFunction(node, true);
+      return parseFunction(node);
 
     case _if:
       next();
-      node.test = parseParenExpression();
+      if (tokType === _parenL) node.test = parseParenExpression();
+      else node.test = parseExpression();
+      if (!eat(_colon)) unexpected();
       node.consequent = parseStatement();
-      node.alternate = eat(_else) ? parseStatement() : null;
+      node.alternate = eat(_else) && eat(_colon) ? parseStatement() : null;
       return finishNode(node, "IfStatement");
 
     case _return:
@@ -1323,9 +1400,6 @@
       node.body = parseStatement();
       return finishNode(node, "WithStatement");
 
-    case _braceL:
-      return parseBlock();
-
     case _semi:
       next();
       return finishNode(node, "EmptyStatement");
@@ -1365,24 +1439,16 @@
     return val;
   }
 
-  // Parse a semicolon-enclosed block of statements, handling `"use
-  // strict"` declarations when `allowStrict` is true (used for
-  // function bodies).
+  // Parse indent-enclosed block of statements
 
-  function parseBlock(allowStrict) {
-    var node = startNode(), first = true, strict = false, oldStrict;
+  function parseBlock() {
+    var node = startNode();
     node.body = [];
-    expect(_braceL);
-    while (!eat(_braceR)) {
+    while (tokType !== _dedent && tokType !== _eof) {
       var stmt = parseStatement();
       node.body.push(stmt);
-      if (first && allowStrict && isUseStrict(stmt)) {
-        oldStrict = strict;
-        setStrict(strict = true);
-      }
-      first = false;
     }
-    if (strict && !oldStrict) setStrict(false);
+    if (tokType === _dedent) next();
     return finishNode(node, "BlockStatement");
   }
 
@@ -1571,7 +1637,7 @@
     } else return base;
   }
 
-  // Parse an atomic expression â€” either a single token that is an
+  // Parse an atomic expression — either a single token that is an
   // expression, an expression started by a keyword like `function` or
   // `new`, or an expression wrapped in punctuation like `()`, `[]`,
   // or `{}`.
@@ -1619,14 +1685,6 @@
       node.elements = parseExprList(_bracketR, true, true);
       return finishNode(node, "ArrayExpression");
 
-    case _braceL:
-      return parseObj();
-
-    case _function:
-      var node = startNode();
-      next();
-      return parseFunction(node, false);
-
     case _new:
       return parseNew();
 
@@ -1636,7 +1694,7 @@
   }
 
   // New's precedence is slightly tricky. It must allow its argument
-  // to be a `[]` or dot subscript expression, but not a call â€” at
+  // to be a `[]` or dot subscript expression, but not a call — at
   // least, not without wrapping it in parentheses. Thus, it uses the
 
   function parseNew() {
@@ -1673,8 +1731,8 @@
         prop.value = parseFunction(startNode(), false);
       } else unexpected();
 
-      // getters and setters are not allowed to clash â€” either with
-      // each other or with an init property â€” and in strict mode,
+      // getters and setters are not allowed to clash — either with
+      // each other or with an init property — and in strict mode,
       // init properties are also not allowed to be repeated.
 
       if (prop.key.type === "Identifier" && (strict || sawGetSet)) {
@@ -1701,10 +1759,8 @@
   // Parse a function declaration or literal (depending on the
   // `isStatement` parameter).
 
-  function parseFunction(node, isStatement) {
-    if (tokType === _name) node.id = parseIdent();
-    else if (isStatement) unexpected();
-    else node.id = null;
+  function parseFunction(node) {
+    node.id = parseIdent();
     node.params = [];
     var first = true;
     expect(_parenL);
@@ -1712,28 +1768,38 @@
       if (!first) expect(_comma); else first = false;
       node.params.push(parseIdent());
     }
+    if (!eat(_colon)) unexpected();
 
     // Start a new scope with regard to labels and the `inFunction`
     // flag (restore them to their old value afterwards).
     var oldInFunc = inFunction, oldLabels = labels;
     inFunction = true; labels = [];
-    node.body = parseBlock(true);
-    inFunction = oldInFunc; labels = oldLabels;
 
-    // If this is a strict mode function, verify that argument names
-    // are not repeated, and it does not try to bind the words `eval`
-    // or `arguments`.
-    if (strict || node.body.body.length && isUseStrict(node.body.body[0])) {
-      for (var i = node.id ? -1 : 0; i < node.params.length; ++i) {
-        var id = i < 0 ? node.id : node.params[i];
-        if (isStrictReservedWord(id.name) || isStrictBadIdWord(id.name))
-          raise(id.start, "Defining '" + id.name + "' in strict mode");
-        if (i >= 0) for (var j = 0; j < i; ++j) if (id.name === node.params[j].name)
-          raise(id.start, "Argument name clash in strict mode");
-      }
+    if (tokType === _indent) {
+      next();
+      node.body = parseBlock();
+    } else {
+      var blockNode = startNode();
+      blockNode.body = [];
+      var stmt = parseStatement();
+      blockNode.body.push(stmt);
+      node.body = finishNode(blockNode, "BlockStatement");
     }
 
-    return finishNode(node, isStatement ? "FunctionDeclaration" : "FunctionExpression");
+    inFunction = oldInFunc; labels = oldLabels;
+
+    // Verify that argument names
+    // are not repeated, and it does not try to bind the words `eval`
+    // or `arguments`.
+    for (var i = node.id ? -1 : 0; i < node.params.length; ++i) {
+      var id = i < 0 ? node.id : node.params[i];
+      if (isStrictReservedWord(id.name) || isStrictBadIdWord(id.name))
+        raise(id.start, "Defining '" + id.name + "' in strict mode");
+      if (i >= 0) for (var j = 0; j < i; ++j) if (id.name === node.params[j].name)
+        raise(id.start, "Argument name clash in strict mode");
+    }
+
+    return finishNode(node, "FunctionDeclaration");
   }
 
   // Parses a comma-separated list of expressions, and returns them as
