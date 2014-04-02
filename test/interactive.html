@@ -1,0 +1,52 @@
+<html>
+<head>
+    <title>Filbert Interactive Testing</title>
+    <style>
+        body, textarea {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script type='text/javascript' src='../acorn.js'></script>
+    <script type='text/javascript' src='../builtin.js'></script>
+    <script src="escodegen.browser.js"></script>
+    <script>
+        // Intercept console.log
+        (function () {
+            var oldLog = console.log;
+            console.log = function (message) {
+                outputText.value += message + "\n";
+                oldLog.apply(console, arguments);
+            };
+        })();
+
+        var timerId = null;
+        function inputChange() {
+            clearTimeout(timerId);
+            timerId = setTimeout(compile, 1000);
+        }
+        function compile() {
+            try {
+                outputText.value = "";
+			    var code = pythonText.value;
+			    var ast = acorn.parse(code);
+			    astText.value = JSON.stringify(ast, null, 2);
+			    var js = escodegen.generate(ast);
+			    jsText.value = js;
+			    eval(js);
+		    }
+		    catch (e) {
+			    jsText.value = "";
+			    astText.value = "";
+			    outputText.value = e.toString();
+            }
+        }
+    </script>
+</head>
+<body>
+    <textarea id='pythonText' style='border: 1px solid black; width:49%; height:30%;' onkeyup="inputChange()">print('Type your Python code in the first box.')</textarea>
+    <textarea id='jsText' style='border: 1px solid blue; width: 49%; height: 30%; ' readonly='true'></textarea>
+    <textarea id='astText' style='border: 1px solid purple; width: 49%; height: 69%; ' readonly='true'></textarea>
+    <textarea id='outputText' style='border: 1px solid green; width: 49%; height: 69%; ' readonly='true'></textarea>
+</body>
+</html>

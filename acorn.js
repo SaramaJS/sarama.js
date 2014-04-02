@@ -1263,31 +1263,17 @@
       semicolon();
       return finishNode(node, "DoWhileStatement");
 
-      // Disambiguating between a `for` and a `for`/`in` loop is
-      // non-trivial. Basically, we have to parse the init `var`
-      // statement or expression, disallowing the `in` operator (see
-      // the second parameter to `parseExpression`), and then check
-      // whether the next token is `in`. When there is no init part
-      // (semicolon immediately after the opening parenthesis), it is
-      // a regular `for` loop.
-
     case _for:
       next();
-      labels.push(loopLabel);
-      expect(_parenL);
-      if (tokType === _semi) return parseFor(node, null);
-      if (tokType === _var) {
-        var init = startNode();
-        next();
-        parseVar(init, true);
-        finishNode(init, "VariableDeclaration");
-        if (init.declarations.length === 1 && eat(_in))
-          return parseForIn(node, init);
-        return parseFor(node, init);
-      }
       var init = parseExpression(false, true);
-      if (eat(_in)) {checkLVal(init); return parseForIn(node, init);}
-      return parseFor(node, init);
+      checkLVal(init);
+      node.left = init;
+      expect(_in);
+      node.right = parseExpression();
+      expect(_colon);
+      node.body = parseStatement();
+      return finishNode(node, "ForInStatement");
+
 
     case _def:
       next();
@@ -1297,7 +1283,7 @@
       next();
       if (tokType === _parenL) node.test = parseParenExpression();
       else node.test = parseExpression();
-      if (!eat(_colon)) unexpected();
+      expect(_colon);
       node.consequent = parseStatement();
       node.alternate = eat(_else) && eat(_colon) ? parseStatement() : null;
       return finishNode(node, "IfStatement");
@@ -1450,33 +1436,6 @@
     }
     if (tokType === _dedent) next();
     return finishNode(node, "BlockStatement");
-  }
-
-  // Parse a regular `for` loop. The disambiguation code in
-  // `parseStatement` will already have parsed the init statement or
-  // expression.
-
-  function parseFor(node, init) {
-    node.init = init;
-    expect(_semi);
-    node.test = tokType === _semi ? null : parseExpression();
-    expect(_semi);
-    node.update = tokType === _parenR ? null : parseExpression();
-    expect(_parenR);
-    node.body = parseStatement();
-    labels.pop();
-    return finishNode(node, "ForStatement");
-  }
-
-  // Parse a `for`/`in` loop.
-
-  function parseForIn(node, init) {
-    node.left = init;
-    node.right = parseExpression();
-    expect(_parenR);
-    node.body = parseStatement();
-    labels.pop();
-    return finishNode(node, "ForInStatement");
   }
 
   // Parse a list of variable declarations.

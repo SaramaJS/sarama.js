@@ -20047,118 +20047,118 @@ test("if x < y:\n  print(y)\n\n  x += y", {
 //  }
 //});
 
-//test("for(x in list) process(x);", {
-//  type: "Program",
-//  body: [
-//    {
-//      type: "ForInStatement",
-//      left: {
-//        type: "Identifier",
-//        name: "x",
-//        loc: {
-//          start: {
-//            line: 1,
-//            column: 4
-//          },
-//          end: {
-//            line: 1,
-//            column: 5
-//          }
-//        }
-//      },
-//      right: {
-//        type: "Identifier",
-//        name: "list",
-//        loc: {
-//          start: {
-//            line: 1,
-//            column: 9
-//          },
-//          end: {
-//            line: 1,
-//            column: 13
-//          }
-//        }
-//      },
-//      body: {
-//        type: "ExpressionStatement",
-//        expression: {
-//          type: "CallExpression",
-//          callee: {
-//            type: "Identifier",
-//            name: "process",
-//            loc: {
-//              start: {
-//                line: 1,
-//                column: 15
-//              },
-//              end: {
-//                line: 1,
-//                column: 22
-//              }
-//            }
-//          },
-//          arguments: [
-//            {
-//              type: "Identifier",
-//              name: "x",
-//              loc: {
-//                start: {
-//                  line: 1,
-//                  column: 23
-//                },
-//                end: {
-//                  line: 1,
-//                  column: 24
-//                }
-//              }
-//            }
-//          ],
-//          loc: {
-//            start: {
-//              line: 1,
-//              column: 15
-//            },
-//            end: {
-//              line: 1,
-//              column: 25
-//            }
-//          }
-//        },
-//        loc: {
-//          start: {
-//            line: 1,
-//            column: 15
-//          },
-//          end: {
-//            line: 1,
-//            column: 26
-//          }
-//        }
-//      },
-//      loc: {
-//        start: {
-//          line: 1,
-//          column: 0
-//        },
-//        end: {
-//          line: 1,
-//          column: 26
-//        }
-//      }
-//    }
-//  ],
-//  loc: {
-//    start: {
-//      line: 1,
-//      column: 0
-//    },
-//    end: {
-//      line: 1,
-//      column: 26
-//    }
-//  }
-//});
+test("for x in list: process(x);", {
+  type: "Program",
+  body: [
+    {
+      type: "ForInStatement",
+      left: {
+        type: "Identifier",
+        name: "x",
+        loc: {
+          start: {
+            line: 1,
+            column: 4
+          },
+          end: {
+            line: 1,
+            column: 5
+          }
+        }
+      },
+      right: {
+        type: "Identifier",
+        name: "list",
+        loc: {
+          start: {
+            line: 1,
+            column: 9
+          },
+          end: {
+            line: 1,
+            column: 13
+          }
+        }
+      },
+      body: {
+        type: "ExpressionStatement",
+        expression: {
+          type: "CallExpression",
+          callee: {
+            type: "Identifier",
+            name: "process",
+            loc: {
+              start: {
+                line: 1,
+                column: 15
+              },
+              end: {
+                line: 1,
+                column: 22
+              }
+            }
+          },
+          arguments: [
+            {
+              type: "Identifier",
+              name: "x",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 23
+                },
+                end: {
+                  line: 1,
+                  column: 24
+                }
+              }
+            }
+          ],
+          loc: {
+            start: {
+              line: 1,
+              column: 15
+            },
+            end: {
+              line: 1,
+              column: 25
+            }
+          }
+        },
+        loc: {
+          start: {
+            line: 1,
+            column: 15
+          },
+          end: {
+            line: 1,
+            column: 26
+          }
+        }
+      },
+      loc: {
+        start: {
+          line: 1,
+          column: 0
+        },
+        end: {
+          line: 1,
+          column: 26
+        }
+      }
+    }
+  ],
+  loc: {
+    start: {
+      line: 1,
+      column: 0
+    },
+    end: {
+      line: 1,
+      column: 26
+    }
+  }
+});
 
 //test("for (var x in list) process(x);", {
 //  type: "Program",
@@ -27607,7 +27607,7 @@ testFail("++1",
 testFail("--1",
          "Assigning to rvalue (1:2)");
 
-testFail("for((1 + 1) in list) process(x);",
+testFail("for (1 + 1) in list: process(x);",
          "Assigning to rvalue (1:4)");
 
 testFail("[",
@@ -27742,8 +27742,8 @@ testFail("throw",
 testFail("throw;",
          "Unexpected token (1:5)");
 
-testFail("for (var i, i2 in {});",
-         "Unexpected token (1:15)");
+testFail("for var i, i2 in {}: i;",
+         "Unexpected token (1:4)");
 
 //testFail("for ((i in {}));",
 //         "Unexpected token (1:14)");
