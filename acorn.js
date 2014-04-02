@@ -1373,10 +1373,10 @@
 
     case _while:
       next();
-      node.test = parseParenExpression();
-      labels.push(loopLabel);
+      if (tokType === _parenL) node.test = parseParenExpression();
+      else node.test = parseExpression();
+      expect(_colon);
       node.body = parseStatement();
-      labels.pop();
       return finishNode(node, "WhileStatement");
 
     case _with:

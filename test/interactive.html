@@ -33,7 +33,7 @@
 			    astText.value = JSON.stringify(ast, null, 2);
 			    var js = escodegen.generate(ast);
 			    jsText.value = js;
-			    eval(js);
+			    eval(js); // TODO: recover from infinite loops (e.g. compile before added loop increment)
 		    }
 		    catch (e) {
 			    jsText.value = "";

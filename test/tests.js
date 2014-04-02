@@ -18893,259 +18893,369 @@ test("if x < y:\n  print(y)\n\n  x += y", {
 //  }
 //});
 
-//test("while (true) doSomething()", {
-//  type: "Program",
-//  body: [
-//    {
-//      type: "WhileStatement",
-//      test: {
-//        type: "Literal",
-//        value: true,
-//        loc: {
-//          start: {
-//            line: 1,
-//            column: 7
-//          },
-//          end: {
-//            line: 1,
-//            column: 11
-//          }
-//        }
-//      },
-//      body: {
-//        type: "ExpressionStatement",
-//        expression: {
-//          type: "CallExpression",
-//          callee: {
-//            type: "Identifier",
-//            name: "doSomething",
-//            loc: {
-//              start: {
-//                line: 1,
-//                column: 13
-//              },
-//              end: {
-//                line: 1,
-//                column: 24
-//              }
-//            }
-//          },
-//          arguments: [],
-//          loc: {
-//            start: {
-//              line: 1,
-//              column: 13
-//            },
-//            end: {
-//              line: 1,
-//              column: 26
-//            }
-//          }
-//        },
-//        loc: {
-//          start: {
-//            line: 1,
-//            column: 13
-//          },
-//          end: {
-//            line: 1,
-//            column: 26
-//          }
-//        }
-//      },
-//      loc: {
-//        start: {
-//          line: 1,
-//          column: 0
-//        },
-//        end: {
-//          line: 1,
-//          column: 26
-//        }
-//      }
-//    }
-//  ],
-//  loc: {
-//    start: {
-//      line: 1,
-//      column: 0
-//    },
-//    end: {
-//      line: 1,
-//      column: 26
-//    }
-//  }
-//});
+test("while true: doSomething()", {
+  type: "Program",
+  body: [
+    {
+      type: "WhileStatement",
+      test: {
+        type: "Literal",
+        value: true,
+        loc: {
+          start: {
+            line: 1,
+            column: 6
+          },
+          end: {
+            line: 1,
+            column: 10
+          }
+        }
+      },
+      body: {
+        type: "ExpressionStatement",
+        expression: {
+          type: "CallExpression",
+          callee: {
+            type: "Identifier",
+            name: "doSomething",
+            loc: {
+              start: {
+                line: 1,
+                column: 12
+              },
+              end: {
+                line: 1,
+                column: 23
+              }
+            }
+          },
+          arguments: [],
+          loc: {
+            start: {
+              line: 1,
+              column: 12
+            },
+            end: {
+              line: 1,
+              column: 25
+            }
+          }
+        },
+        loc: {
+          start: {
+            line: 1,
+            column: 12
+          },
+          end: {
+            line: 1,
+            column: 25
+          }
+        }
+      },
+      loc: {
+        start: {
+          line: 1,
+          column: 0
+        },
+        end: {
+          line: 1,
+          column: 25
+        }
+      }
+    }
+  ],
+  loc: {
+    start: {
+      line: 1,
+      column: 0
+    },
+    end: {
+      line: 1,
+      column: 25
+    }
+  }
+});
 
-//test("while (x < 10) { x++; y--; }", {
-//  type: "Program",
-//  body: [
-//    {
-//      type: "WhileStatement",
-//      test: {
-//        type: "BinaryExpression",
-//        left: {
-//          type: "Identifier",
-//          name: "x",
-//          loc: {
-//            start: {
-//              line: 1,
-//              column: 7
-//            },
-//            end: {
-//              line: 1,
-//              column: 8
-//            }
-//          }
-//        },
-//        operator: "<",
-//        right: {
-//          type: "Literal",
-//          value: 10,
-//          loc: {
-//            start: {
-//              line: 1,
-//              column: 11
-//            },
-//            end: {
-//              line: 1,
-//              column: 13
-//            }
-//          }
-//        },
-//        loc: {
-//          start: {
-//            line: 1,
-//            column: 7
-//          },
-//          end: {
-//            line: 1,
-//            column: 13
-//          }
-//        }
-//      },
-//      body: {
-//        type: "BlockStatement",
-//        body: [
-//          {
-//            type: "ExpressionStatement",
-//            expression: {
-//              type: "UpdateExpression",
-//              operator: "++",
-//              prefix: false,
-//              argument: {
-//                type: "Identifier",
-//                name: "x",
-//                loc: {
-//                  start: {
-//                    line: 1,
-//                    column: 17
-//                  },
-//                  end: {
-//                    line: 1,
-//                    column: 18
-//                  }
-//                }
-//              },
-//              loc: {
-//                start: {
-//                  line: 1,
-//                  column: 17
-//                },
-//                end: {
-//                  line: 1,
-//                  column: 20
-//                }
-//              }
-//            },
-//            loc: {
-//              start: {
-//                line: 1,
-//                column: 17
-//              },
-//              end: {
-//                line: 1,
-//                column: 21
-//              }
-//            }
-//          },
-//          {
-//            type: "ExpressionStatement",
-//            expression: {
-//              type: "UpdateExpression",
-//              operator: "--",
-//              prefix: false,
-//              argument: {
-//                type: "Identifier",
-//                name: "y",
-//                loc: {
-//                  start: {
-//                    line: 1,
-//                    column: 22
-//                  },
-//                  end: {
-//                    line: 1,
-//                    column: 23
-//                  }
-//                }
-//              },
-//              loc: {
-//                start: {
-//                  line: 1,
-//                  column: 22
-//                },
-//                end: {
-//                  line: 1,
-//                  column: 25
-//                }
-//              }
-//            },
-//            loc: {
-//              start: {
-//                line: 1,
-//                column: 22
-//              },
-//              end: {
-//                line: 1,
-//                column: 26
-//              }
-//            }
-//          }
-//        ],
-//        loc: {
-//          start: {
-//            line: 1,
-//            column: 15
-//          },
-//          end: {
-//            line: 1,
-//            column: 28
-//          }
-//        }
-//      },
-//      loc: {
-//        start: {
-//          line: 1,
-//          column: 0
-//        },
-//        end: {
-//          line: 1,
-//          column: 28
-//        }
-//      }
-//    }
-//  ],
-//  loc: {
-//    start: {
-//      line: 1,
-//      column: 0
-//    },
-//    end: {
-//      line: 1,
-//      column: 28
-//    }
-//  }
-//});
+test("while (true): doSomething()", {
+  type: "Program",
+  body: [
+    {
+      type: "WhileStatement",
+      test: {
+        type: "Literal",
+        value: true,
+        loc: {
+          start: {
+            line: 1,
+            column: 7
+          },
+          end: {
+            line: 1,
+            column: 11
+          }
+        }
+      },
+      body: {
+        type: "ExpressionStatement",
+        expression: {
+          type: "CallExpression",
+          callee: {
+            type: "Identifier",
+            name: "doSomething",
+            loc: {
+              start: {
+                line: 1,
+                column: 14
+              },
+              end: {
+                line: 1,
+                column: 25
+              }
+            }
+          },
+          arguments: [],
+          loc: {
+            start: {
+              line: 1,
+              column: 14
+            },
+            end: {
+              line: 1,
+              column: 27
+            }
+          }
+        },
+        loc: {
+          start: {
+            line: 1,
+            column: 14
+          },
+          end: {
+            line: 1,
+            column: 27
+          }
+        }
+      },
+      loc: {
+        start: {
+          line: 1,
+          column: 0
+        },
+        end: {
+          line: 1,
+          column: 27
+        }
+      }
+    }
+  ],
+  loc: {
+    start: {
+      line: 1,
+      column: 0
+    },
+    end: {
+      line: 1,
+      column: 27
+    }
+  }
+});
+
+test("while x < 10:\n  x += 1;\n  y -= 1;", {
+  type: "Program",
+  body: [
+    {
+      type: "WhileStatement",
+      test: {
+        type: "BinaryExpression",
+        left: {
+          type: "Identifier",
+          name: "x",
+          loc: {
+            start: {
+              line: 1,
+              column: 6
+            },
+            end: {
+              line: 1,
+              column: 7
+            }
+          }
+        },
+        operator: "<",
+        right: {
+          type: "Literal",
+          value: 10,
+          loc: {
+            start: {
+              line: 1,
+              column: 10
+            },
+            end: {
+              line: 1,
+              column: 12
+            }
+          }
+        },
+        loc: {
+          start: {
+            line: 1,
+            column: 6
+          },
+          end: {
+            line: 1,
+            column: 12
+          }
+        }
+      },
+      body: {
+        type: "BlockStatement",
+        body: [
+          {
+            type: "ExpressionStatement",
+            expression: {
+              type: "AssignmentExpression",
+              operator: "+=",
+              left: {
+                type: "Identifier",
+                name: "x",
+                loc: {
+                  start: {
+                    line: 2,
+                    column: 2
+                  },
+                  end: {
+                    line: 2,
+                    column: 3
+                  }
+                }
+              },
+              right: {
+                type: "Literal",
+                value: 1,
+                loc: {
+                  start: {
+                    line: 2,
+                    column: 7
+                  },
+                  end: {
+                    line: 2,
+                    column: 8
+                  }
+                }
+              },
+              loc: {
+                start: {
+                  line: 2,
+                  column: 2
+                },
+                end: {
+                  line: 2,
+                  column: 8
+                }
+              }
+            },
+            loc: {
+              start: {
+                line: 2,
+                column: 2
+              },
+              end: {
+                line: 2,
+                column: 9
+              }
+            }
+          },
+          {
+            type: "ExpressionStatement",
+            expression: {
+              type: "AssignmentExpression",
+              operator: "-=",
+              left: {
+                type: "Identifier",
+                name: "y",
+                loc: {
+                  start: {
+                    line: 3,
+                    column: 2
+                  },
+                  end: {
+                    line: 3,
+                    column: 3
+                  }
+                }
+              },
+              right: {
+                type: "Literal",
+                value: 1,
+                loc: {
+                  start: {
+                    line: 3,
+                    column: 7
+                  },
+                  end: {
+                    line: 3,
+                    column: 8
+                  }
+                }
+              },
+              loc: {
+                start: {
+                  line: 3,
+                  column: 2
+                },
+                end: {
+                  line: 3,
+                  column: 8
+                }
+              }
+            },
+            loc: {
+              start: {
+                line: 3,
+                column: 2
+              },
+              end: {
+                line: 3,
+                column: 9
+              }
+            }
+          }
+        ],
+        loc: {
+          start: {
+            line: 2,
+            column: 2
+          },
+          end: {
+            line: 3,
+            column: 9
+          }
+        }
+      },
+      loc: {
+        start: {
+          line: 1,
+          column: 0
+        },
+        end: {
+          line: 3,
+          column: 9
+        }
+      }
+    }
+  ],
+  loc: {
+    start: {
+      line: 1,
+      column: 0
+    },
+    end: {
+      line: 3,
+      column: 9
+    }
+  }
+});
 
 //test("for(;;);", {
 //  type: "Program",
