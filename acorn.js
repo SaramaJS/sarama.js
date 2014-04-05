@@ -242,10 +242,14 @@
 
   var empty = [];
 
-  // Identation stack
-  // Used to start and end block statements
+  // Current indentation stack
 
-  var indentHistory = [];
+  var tokCurIndent = [];
+  
+  // Number of dedent tokens left (i.e. if tokType == _dedent, tokCurDedent > 0)
+  // Multiple dedent tokens are read in at once, but processed individually in next()
+
+  var tokCurDedent;
 
   // ## Token types
 
@@ -279,17 +283,19 @@
   var _break = {keyword: "break"}, _case = {keyword: "case", beforeExpr: true}, _catch = {keyword: "catch"};
   var _continue = {keyword: "continue"}, _debugger = {keyword: "debugger"}, _default = {keyword: "default"};
   var _do = {keyword: "do", isLoop: true}, _else = {keyword: "else", beforeExpr: true};
-  var _finally = {keyword: "finally"}, _for = {keyword: "for", isLoop: true}, _function = {keyword: "function"};
+  var _finally = {keyword: "finally"}, _for = {keyword: "for", isLoop: true};
   var _if = {keyword: "if"}, _return = {keyword: "return", beforeExpr: true}, _switch = {keyword: "switch"};
   var _throw = {keyword: "throw", beforeExpr: true}, _try = {keyword: "try"}, _var = {keyword: "var"};
   var _while = {keyword: "while", isLoop: true}, _with = {keyword: "with"}, _new = {keyword: "new", beforeExpr: true};
   var _this = {keyword: "this"};
-  var _def = {keyword: "def"};
+  var _def = { keyword: "def" };
+  var _import = { keyword: "import" }, _from = { keyword: "from" };
+  var _not = { keyword: "not", prefix: true, beforeExpr: true };
 
   // The keywords that denote values.
 
-  var _null = {keyword: "null", atomValue: null}, _true = {keyword: "true", atomValue: true};
-  var _false = {keyword: "false", atomValue: false};
+  var _null = {keyword: "null", atomValue: null}, _true = {keyword: "True", atomValue: true};
+  var _false = {keyword: "False", atomValue: false};
 
   // Some keywords are treated as regular operators. `in` sometimes
   // (when parsing `for`) needs to be tested against specifically, so
@@ -302,13 +308,14 @@
   var keywordTypes = {"break": _break, "case": _case, "catch": _catch,
                       "continue": _continue, "debugger": _debugger, "def": _def, "default": _default,
                       "do": _do, "else": _else, "finally": _finally, "for": _for,
-                      "function": _function, "if": _if, "return": _return, "switch": _switch,
+                      "if": _if, "return": _return, "switch": _switch,
                       "throw": _throw, "try": _try, "var": _var, "while": _while, "with": _with,
-                      "null": _null, "true": _true, "false": _false, "new": _new, "in": _in,
+                      "null": _null, "True": _true, "False": _false, "new": _new, "in": _in,
                       "instanceof": {keyword: "instanceof", binop: 7, beforeExpr: true}, "this": _this,
                       "typeof": {keyword: "typeof", prefix: true, beforeExpr: true},
                       "void": {keyword: "void", prefix: true, beforeExpr: true},
-                      "delete": {keyword: "delete", prefix: true, beforeExpr: true}};
+                      "delete": { keyword: "delete", prefix: true, beforeExpr: true },
+                      "import": _import, "from": _from, "not": _not};
 
   // Punctuation token types. Again, the `type` property is purely for debugging.
 
@@ -353,8 +360,7 @@
   exports.tokTypes = {bracketL: _bracketL, bracketR: _bracketR, braceL: _braceL, braceR: _braceR,
                       parenL: _parenL, parenR: _parenR, comma: _comma, semi: _semi, colon: _colon,
                       dot: _dot, question: _question, slash: _slash, eq: _eq, name: _name, eof: _eof,
-                      num: _num, regexp: _regexp, string: _string,
-                      indent: _indent, dedent: _dedent};
+                      num: _num, regexp: _regexp, string: _string};
   for (var kw in keywordTypes) exports.tokTypes["_" + kw] = keywordTypes[kw];
 
   // This is a trick taken from Esprima. It turns out that, on
@@ -423,7 +429,7 @@
 
   // And the keywords.
 
-  var isKeyword = makePredicate("break case catch continue debugger def default do else finally for function if return switch throw try var while with null true false instanceof typeof void delete new in this");
+  var isKeyword = makePredicate("break case catch continue debugger def default do else finally for from function if import not return switch throw try var while with null True False instanceof typeof void delete new in this");
 
   // ## Character categories
 
@@ -485,7 +491,7 @@
     tokCurLine = 1;
     tokPos = tokLineStart = 0;
     tokRegexpAllowed = true;
-    indentHistory = [];
+    tokCurIndent = [];
   }
 
   // Called at the end of every token. Sets `tokEnd`, `tokVal`, and
@@ -519,14 +525,18 @@
                         startLoc, options.locations && new Position);
   }
 
-  function skipLineComment() {
-    var start = tokPos;
-    var startLoc = options.onComment && options.locations && new Position;
+  function skipLine() {
     var ch = input.charCodeAt(++tokPos);
     while (tokPos < inputLen && ch !== 10 && ch !== 13 && ch !== 8232 && ch !== 8233) {
       ++tokPos;
       ch = input.charCodeAt(tokPos);
     }
+  }
+
+  function skipLineComment() {
+    var start = tokPos;
+    var startLoc = options.onComment && options.locations && new Position;
+    skipLine();
     if (options.onComment)
       options.onComment(false, input.slice(start + 1, tokPos), start, tokPos,
                         startLoc, options.locations && new Position);
@@ -684,22 +694,22 @@
     // Determine token type based on indent found versus indentation history
     var type;
     if (indent.length > 0) {
-      if (indentHistory.length === 0 || indent.length > indentHistory[indentHistory.length - 1].length) {
+      if (tokCurIndent.length === 0 || indent.length > tokCurIndent[tokCurIndent.length - 1].length) {
         type = _indent;
-        indentHistory.push(indent);
-      } else if (indent.length < indentHistory[indentHistory.length - 1].length) {
+        tokCurIndent.push(indent);
+      } else if (tokCurIndent.length > 0 && indent.length < tokCurIndent[tokCurIndent.length - 1].length) {
         type = _dedent;
-        while (indentHistory.length > 0 && indent.length < indentHistory[indentHistory.length - 1].length) {
-          indentHistory.pop();
-        }
+        tokCurDedent = 0;
+        for (var i = tokCurIndent.length - 1; i >= 0 && indent.length < tokCurIndent[i].length; --i)
+            ++tokCurDedent;
       } else {
         tokPos += indent.length;
       }
     } else if (indentPos >= inputLen) {
       type = _eof;
-    } else if (indentHistory.length > 0) {
+    } else if (tokCurIndent.length > 0) {
       type = _dedent;
-      indentHistory = [];
+      tokCurDedent = tokCurIndent.length;
     }
 
     switch (type) {
@@ -1040,6 +1050,12 @@
   // Continue to the next token.
 
   function next() {
+    if (tokType === _dedent) {
+      if (tokCurDedent < 1 || tokCurIndent.length < 1) unexpected();
+      --tokCurDedent;
+      tokCurIndent.pop();
+      if (tokCurDedent > 0) return;
+    }
     lastStart = tokStart;
     lastEnd = tokEnd;
     lastEndLoc = tokEndLoc;
@@ -1219,12 +1235,6 @@
     // complexity.
 
     switch (starttype) {
-    case _indent:
-      next();
-      return parseBlock();
-    case _dedent:
-      next();
-      return parseStatement();
 
     case _break: case _continue:
       next();
@@ -1253,6 +1263,10 @@
       semicolon();
       return finishNode(node, "DebuggerStatement");
 
+    case _dedent:
+      next();
+      return parseStatement();
+
     case _do:
       next();
       labels.push(loopLabel);
@@ -1274,10 +1288,14 @@
       node.body = parseStatement();
       return finishNode(node, "ForInStatement");
 
-
     case _def:
       next();
       return parseFunction(node);
+
+    case _from: // Skipping from and import statements for now
+      skipLine();
+      next();
+      return parseStatement();
 
     case _if:
       next();
@@ -1287,6 +1305,15 @@
       node.consequent = parseStatement();
       node.alternate = eat(_else) && eat(_colon) ? parseStatement() : null;
       return finishNode(node, "IfStatement");
+
+    case _import: // Skipping from and import statements for now
+      skipLine();
+      next();
+      return parseStatement();
+
+    case _indent:
+      next();
+      return parseBlock();
 
     case _return:
       if (!inFunction && !options.allowReturnOutsideFunction)
@@ -1544,7 +1571,7 @@
   function parseMaybeUnary() {
     if (tokType.prefix) {
       var node = startNode(), update = tokType.isUpdate;
-      node.operator = tokVal;
+      node.operator = tokType === _not ? "!" : tokVal;
       node.prefix = true;
       tokRegexpAllowed = true;
       next();

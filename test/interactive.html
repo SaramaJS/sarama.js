@@ -9,6 +9,7 @@
     </style>
     <script type='text/javascript' src='../acorn.js'></script>
     <script type='text/javascript' src='../builtin.js'></script>
+    <script type='text/javascript' src='../common_imports.js'></script>
     <script src="escodegen.browser.js"></script>
     <script>
         // Intercept console.log
@@ -31,13 +32,18 @@
 			    var code = pythonText.value;
 			    var ast = acorn.parse(code);
 			    astText.value = JSON.stringify(ast, null, 2);
+            }
+            catch (e) {
+                jsText.value = "";
+                astText.value = e.toString();
+                outputText.value = "";
+            }
+            try {
 			    var js = escodegen.generate(ast);
 			    jsText.value = js;
 			    eval(js); // TODO: recover from infinite loops (e.g. compile before added loop increment)
 		    }
 		    catch (e) {
-			    jsText.value = "";
-			    astText.value = "";
 			    outputText.value = e.toString();
             }
         }

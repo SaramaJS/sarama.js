@@ -2,6 +2,10 @@
 
 // Python built-in functions
 
+function int(s) {
+  return parseInt(s);
+}
+
 function print() {
   var s = "";
   for (var i = 0; i < arguments.length; i++)
