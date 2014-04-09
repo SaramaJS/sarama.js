@@ -251,6 +251,10 @@
 
   var tokCurDedent;
 
+  // Used for name collision avoidance for extra AST identifiers in for loops
+
+  var forLoopCount = 0;
+
   // ## Token types
 
   // The assignment of fine-grained, information-carrying type objects
@@ -492,6 +496,7 @@
     tokPos = tokLineStart = 0;
     tokRegexpAllowed = true;
     tokCurIndent = [];
+    forLoopCount = 0;
   }
 
   // Called at the end of every token. Sets `tokEnd`, `tokVal`, and
@@ -1134,6 +1139,15 @@
     return node;
   }
 
+  function createNode(type, props) {
+    var node = startNode();
+    for (var prop in props) {
+      node[prop] = props[prop];
+    }
+    node = finishNode(node, type);
+    return node;
+  }
+
   // Test whether a statement node is the string literal `"use strict"`.
 
   function isUseStrict(stmt) {
@@ -1267,6 +1281,10 @@
       next();
       return parseStatement();
 
+    case _def:
+      next();
+      return parseFunction(node);
+
     case _do:
       next();
       labels.push(loopLabel);
@@ -1279,18 +1297,7 @@
 
     case _for:
       next();
-      var init = parseExpression(false, true);
-      checkLVal(init);
-      node.left = init;
-      expect(_in);
-      node.right = parseExpression();
-      expect(_colon);
-      node.body = parseStatement();
-      return finishNode(node, "ForInStatement");
-
-    case _def:
-      next();
-      return parseFunction(node);
+      return parseFor(node);
 
     case _from: // Skipping from and import statements for now
       skipLine();
@@ -1462,6 +1469,72 @@
       node.body.push(stmt);
     }
     if (tokType === _dedent) next();
+    return finishNode(node, "BlockStatement");
+  }
+
+  // Parse for/in loop
+  // Problem:
+  // 1. JavaScript for/in loop iterates on properties, which are the indexes for an Array
+  //    Python iterates on the list items themselves, not indexes
+  // 2. JavaScript for/in does not necessarily iterate in order
+  // Solution:
+  // Generate extra AST to do the right thing
+  // If iterating through an Array, build a for(;;) with i = array[index] injected as 1st line of body
+  // Return something like: { var __right = right; if (__right instanceof Array) { 
+  //    for(var __iter=0;;){i = __right[__iter]; ...} } else { for(i in __right){...} } }
+
+  // TODO: Extra AST nodes have program end for their start and end.  What should they be?
+
+  function parseFor(node) {
+    var originalInit = parseExpression(false, true);
+    checkLVal(originalInit);
+    expect(_in);
+    var originalRight = parseExpression();
+    expect(_colon);
+    var originalBodyForArray = parseStatement();
+    var originalBodyForIn = JSON.parse(JSON.stringify(originalBodyForArray));
+    if (originalBodyForArray.type !== "BlockStatement")
+      originalBodyForArray = createNode("BlockStatement", { body: [originalBodyForArray] });
+
+    var arrayId = createNode("Identifier", { name: "Array" });
+    var lengthId = createNode("Identifier", { name: "length" });
+    var zeroLit = createNode("Literal", { value: 0 });
+
+    // var __rightN = right
+
+    var rightId = createNode("Identifier", { name: "__right" + forLoopCount });
+    var rightDecl = createNode("VariableDeclarator", { id: rightId, init: originalRight });
+    var rightAssign = createNode("VariableDeclaration", { kind: "var", declarations: [rightDecl] });
+
+    // for (var __indexN; __indexN < __rightN.length; ++__indexN)
+
+    var forArrayIndexId = createNode("Identifier", { name: "__index" + forLoopCount });
+    var forArrayIndexDeclr = createNode("VariableDeclarator", { id: forArrayIndexId, init: zeroLit });
+    var forArrayIndexDecln = createNode("VariableDeclaration", { declarations: [forArrayIndexDeclr], kind: "var" });
+    var forArrayTestMember = createNode("MemberExpression", { object: rightId, property: lengthId, computer: false });
+    var forArrayTestBinop = createNode("BinaryExpression", { left: forArrayIndexId, operator: "<", right: forArrayTestMember });
+    var forArrayUpdate = createNode("UpdateExpression", { operator: "++", prefix: true, argument: forArrayIndexId });
+    var forArrayMember = createNode("MemberExpression", { object: rightId, property: forArrayIndexId, computed: true });
+    var forArrayAssign = createNode("AssignmentExpression", { operator: "=", left: originalInit, right: forArrayMember });
+    var forArrayExprStmt = createNode("ExpressionStatement", { expression: forArrayAssign });
+    originalBodyForArray.body.unshift(forArrayExprStmt);
+    var forArray = createNode("ForStatement", { init: forArrayIndexDecln, test: forArrayTestBinop, update: forArrayUpdate, body: originalBodyForArray });
+    var forArrayBlock = createNode("BlockStatement", { body: [forArray] });
+
+    // for (init in __rightN)
+
+    var forIn = createNode("ForInStatement", { left: originalInit, right: rightId, body: originalBodyForIn });
+    var forInBlock = createNode("BlockStatement", { body: [forIn] });
+
+    // if Array then forArray else forIn
+
+    var ifTest = createNode("BinaryExpression", { left: rightId, operator: "instanceof", right: arrayId });
+    var ifStmt = createNode("IfStatement", { test: ifTest, consequent: forArrayBlock, alternate: forInBlock });
+
+    node.body = [rightAssign, ifStmt];
+
+    forLoopCount++;
+
     return finishNode(node, "BlockStatement");
   }
 
@@ -1668,8 +1741,9 @@
     case _bracketL:
       var node = startNode();
       next();
-      node.elements = parseExprList(_bracketR, true, true);
-      return finishNode(node, "ArrayExpression");
+      node.arguments = parseExprList(_bracketR, true, false);
+      node.callee = createNode("Identifier", { name: "__pyListShim" });
+      return finishNode(node, "NewExpression");
 
     case _new:
       return parseNew();
