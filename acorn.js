@@ -1745,6 +1745,9 @@
       node.callee = createNode("Identifier", { name: "__pyListShim" });
       return finishNode(node, "NewExpression");
 
+    case _braceL:
+	    return parseObj();
+
     case _new:
       return parseNew();
 
