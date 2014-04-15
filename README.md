@@ -1,10 +1,16 @@
-# Acorn
+# Filbert
 
-A tiny, fast JavaScript parser, written completely in JavaScript.
+A Python parser, written in JavaScript, that outputs an abstract syntax tree as specified by the
+[Mozilla Parser API][mozapi].
+
+NOTE: This parser is a work in progress, adapted from the JavaScript parser [`Acorn`][acorn].
+
+[acorn]: https://github.com/marijnh/acorn
 
 ## Installation
 
-The easiest way to install acorn is with [`npm`][npm].
+
+(TODO) The easiest way to install acorn is with [`npm`][npm].
 
 [npm]: http://npmjs.org
 
@@ -15,7 +21,7 @@ npm install acorn
 Alternately, download the source.
 
 ```sh
-git clone https://github.com/marijnh/acorn.git
+git clone https://github.com/differentmatt/filbert.git
 ```
 
 ## Components
@@ -26,10 +32,10 @@ When loaded in the browser without any kind of module management, a
 single global object `acorn` will be defined, and all the exported
 properties will be added to that.
 
-### acorn.js
+### filbert.js
 
 This file contains the actual parser (and is what you get when you
-`require("acorn")` in node.js).
+`require("filbert")` in node.js).
 
 **parse**`(input, options)` is used to parse a JavaScript program.
 The `input` parameter is a string, `options` can be undefined or an

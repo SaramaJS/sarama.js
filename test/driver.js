@@ -1,6 +1,6 @@
 (function(exports) {
   var tests = [];
-  var acorn = typeof require == "undefined" ? window.acorn : require("../acorn.js");
+  var acorn = typeof require == "undefined" ? window.acorn : require("../filbert.js");
 
   exports.test = function(code, ast, options) {
     tests.push({code: code, ast: ast, options: options});
