@@ -8,7 +8,6 @@
         }
     </style>
     <script type='text/javascript' src='../acorn.js'></script>
-    <script type='text/javascript' src='../filbert_shim.js'></script>
     <script src="escodegen.browser.js"></script>
     <script>
         // Intercept console.log
@@ -39,6 +38,7 @@
             }
             try {
 			    var js = escodegen.generate(ast);
+			    js = "(function(" + acorn.defaultOptions.runtimeParamName + "){" + js + "})(acorn.pythonRuntime);";
 			    jsText.value = js;
 			    eval(js); // TODO: recover from infinite loops (e.g. compile before added loop increment)
 		    }

@@ -105,7 +105,9 @@
     sourceFile: null,
     // This value, if given, is stored in every node, whether
     // `locations` is on or off.
-    directSourceFile: null
+    directSourceFile: null,
+    // Python runtime library object name
+    runtimeParamName: "__pythonRuntime"
   };
 
   function setOptions(opts) {
@@ -1677,8 +1679,18 @@
   function parseSubscripts(base, noCalls) {
     if (eat(_dot)) {
       var node = startNodeFrom(base);
-      node.object = base;
-      node.property = parseIdent(true);
+      var id = parseIdent(true);
+      if (pythonRuntime.imports[base.name] && pythonRuntime.imports[base.name][id.name]) {
+
+        // Calling a Python import function
+        // TODO: only use user-defined imports, rather everything available
+
+        var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
+        var importsId = createNode("Identifier", { name: "imports" });
+        var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: importsId, computed: false });
+        node.object = createNode("MemberExpression", { object: runtimeMember, property: base, computed: false });
+      } else node.object = base;
+      node.property = id;
       node.computed = false;
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (eat(_bracketL)) {
@@ -1690,7 +1702,17 @@
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (!noCalls && eat(_parenL)) {
       var node = startNodeFrom(base);
-      node.callee = base;
+      if (pythonRuntime.functions[base.name]) {
+
+        // Calling a Python built-in function
+        // TODO: don't replace user-defined override (e.g. user defines len())
+
+        if (base.type !== "Identifier") unexpected();
+        var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
+        var functionsId = createNode("Identifier", { name: "functions" });
+        var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: functionsId, computed: false });
+        node.callee = createNode("MemberExpression", { object: runtimeMember, property: base, computed: false });
+      } else node.callee = base;
       node.arguments = parseExprList(_parenR, false);
       return parseSubscripts(finishNode(node, "CallExpression"), noCalls);
     } else return base;
@@ -1738,11 +1760,18 @@
       expect(_parenR);
       return val;
 
+    // Custom list object is used to simulate native Python list
+    // E.g. Python '[]' becomes JavaScript 'new __pythonRuntime.objects.list();'
+
     case _bracketL:
       var node = startNode();
       next();
+      var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
+      var objectsId = createNode("Identifier", { name: "objects" });
+      var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: objectsId, computed: false });
+      var listId = createNode("Identifier", { name: "list" });
+      node.callee = createNode("MemberExpression", { object: runtimeMember, property: listId, computed: false });
       node.arguments = parseExprList(_bracketR, true, false);
-      node.callee = createNode("Identifier", { name: "__pyListShim" });
       return finishNode(node, "NewExpression");
 
     case _braceL:
@@ -1910,4 +1939,120 @@
     return finishNode(node, "Identifier");
   }
 
+
+  // Python runtime library
+
+  var pythonRuntime = exports.pythonRuntime = {
+
+    // Shim JavaScript objects that impersonate Python equivalents
+
+    objects: {
+      list: function () {
+        var arr = [];
+        arr.push.apply(arr, arguments);
+        Object.defineProperty(arr, "append",
+        {
+          value: function (x) {
+            this.push(x);
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "extend",
+        {
+          value: function (L) {
+            for (var i = 0; i < L.length; i++) this.push(L[i]);
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "insert",
+        {
+          value: function (i, x) {
+            this.splice(i, 0, x);
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "remove",
+        {
+          value: function (x) {
+            this.splice(this.indexOf(x), 1);
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "pop",
+        {
+          value: function (i) {
+            if (!i)
+              i = this.length - 1;
+            var item = this[i];
+            this.splice(i, 1);
+            return item;
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "clear",
+        {
+          value: function () {
+            this.splice(0, this.length);
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "index",
+        {
+          value: function (x) {
+            return this.indexOf(x);
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "count",
+        {
+          value: function (x) {
+            var c = 0;
+            for (var i = 0; i < this.length; i++)
+              if (this[i] === x) c++;
+            return c;
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "copy",
+        {
+          value: function () {
+            return this.slice(0);
+          },
+          enumerable: false
+        });
+        return arr;
+      }
+    },
+
+    // Python built-in functions
+
+    functions: {
+      int: function (s) {
+        return parseInt(s);
+      },
+      len: function (o) {
+        return o.length;
+      },
+      print: function () {
+        var s = "";
+        for (var i = 0; i < arguments.length; i++)
+          s += i === 0 ? arguments[i] : " " + arguments[i];
+        console.log(s);
+      },
+      range: function (n) {
+        var r = new exports.pythonRuntime.objects.list();
+        for (var i = 0; i < n; i++) r.append(i);
+        return r;
+      }
+    },
+
+    // Python imports
+    // TODO: from x import y, z
+
+    imports: {
+      random: {
+        random: function () { return Math.random(); }
+      }
+    }
+  }
 });

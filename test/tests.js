@@ -261,18 +261,74 @@ test("x = []", {
           type: "NewExpression",
           arguments: [],
           callee: {
-            type: "Identifier",
+            type: "MemberExpression",
+            object: {
+              type: "MemberExpression",
+              object: {
+                type: "Identifier",
+                name: "__pythonRuntime",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 5
+                  },
+                  end: {
+                    line: 1,
+                    column: 5
+                  }
+                }
+              },
+              property: {
+                type: "Identifier",
+                name: "objects",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 5
+                  },
+                  end: {
+                    line: 1,
+                    column: 5
+                  }
+                }
+              },
+              computed: false,
+              loc: {
+                start: {
+                  line: 1,
+                  column: 5
+                },
+                end: {
+                  line: 1,
+                  column: 5
+                }
+              }
+            },
+            property: {
+              type: "Identifier",
+              name: "list",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 5
+                },
+                end: {
+                  line: 1,
+                  column: 5
+                }
+              }
+            },
+            computed: false,
             loc: {
               start: {
                 line: 1,
-                column: 6
+                column: 5
               },
               end: {
                 line: 1,
-                column: 6
+                column: 5
               }
-            },
-            name: "__pyListShim"
+            }
           },
           loc: {
             start: {
@@ -346,18 +402,84 @@ test("x = [ ]", {
           type: "NewExpression",
           arguments: [],
           callee: {
-            type: "Identifier",
+            type: "MemberExpression",
+            object: {
+              type: "MemberExpression",
+              object: {
+                type: "Identifier",
+                name: "__pythonRuntime",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 5
+                  }
+                }
+              },
+              property: {
+                type: "Identifier",
+                name: "objects",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 5
+                  }
+                }
+              },
+              computed: false,
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 5
+                }
+              }
+            },
+            property: {
+              type: "Identifier",
+              name: "list",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 5
+                }
+              }
+            },
+            computed: false,
             loc: {
               start: {
                 line: 1,
-                column: 7
+                column: 6
               },
               end: {
                 line: 1,
-                column: 7
+                column: 5
               }
+            }
+          },
+          loc: {
+            start: {
+              line: 1,
+              column: 4
             },
-            name: "__pyListShim"
+            end: {
+              line: 1,
+              column: 7
+            }
           }
         },
         loc: {
@@ -419,20 +541,6 @@ test("x = [ 42 ]", {
         },
         right: {
           type: "NewExpression",
-          callee: {
-            type: "Identifier",
-            loc: {
-              start: {
-                line: 1,
-                column: 10
-              },
-              end: {
-                line: 1,
-                column: 10
-              }
-            },
-            name: "__pyListShim"
-          },
           arguments: [
             {
               type: "Literal",
@@ -449,6 +557,76 @@ test("x = [ 42 ]", {
               }
             }
           ],
+          callee: {
+            type: "MemberExpression",
+            object: {
+              type: "MemberExpression",
+              object: {
+                type: "Identifier",
+                name: "__pythonRuntime",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 5
+                  }
+                }
+              },
+              property: {
+                type: "Identifier",
+                name: "objects",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 5
+                  }
+                }
+              },
+              computed: false,
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 5
+                }
+              }
+            },
+            property: {
+              type: "Identifier",
+              name: "list",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 5
+                }
+              }
+            },
+            computed: false,
+            loc: {
+              start: {
+                line: 1,
+                column: 6
+              },
+              end: {
+                line: 1,
+                column: 5
+              }
+            }
+          },
           loc: {
             start: {
               line: 1,
@@ -519,20 +697,6 @@ test("x = [ 42, ]", {
         },
         right: {
           type: "NewExpression",
-          callee: {
-            type: "Identifier",
-            loc: {
-              start: {
-                line: 1,
-                column: 10
-              },
-              end: {
-                line: 1,
-                column: 10
-              }
-            },
-            name: "__pyListShim"
-          },
           arguments: [
             {
               type: "Literal",
@@ -549,25 +713,39 @@ test("x = [ 42, ]", {
               }
             }
           ],
-          type: "NewExpression",
           callee: {
-            type: "Identifier",
-            loc: {
-              start: {
-                line: 1,
-                column: 11
+            type: "MemberExpression",
+            object: {
+              type: "MemberExpression",
+              object: {
+                type: "Identifier",
+                name: "__pythonRuntime",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 5
+                  }
+                }
               },
-              end: {
-                line: 1,
-                column: 11
-              }
-            },
-            name: "__pyListShim"
-          },
-          arguments: [
-            {
-              type: "Literal",
-              value: 42,
+              property: {
+                type: "Identifier",
+                name: "objects",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 5
+                  }
+                }
+              },
+              computed: false,
               loc: {
                 start: {
                   line: 1,
@@ -575,11 +753,36 @@ test("x = [ 42, ]", {
                 },
                 end: {
                   line: 1,
-                  column: 8
+                  column: 5
                 }
               }
+            },
+            property: {
+              type: "Identifier",
+              name: "list",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 5
+                }
+              }
+            },
+            computed: false,
+            loc: {
+              start: {
+                line: 1,
+                column: 6
+              },
+              end: {
+                line: 1,
+                column: 5
+              }
             }
-          ],
+          },
           loc: {
             start: {
               line: 1,
@@ -752,20 +955,6 @@ test("x = [ 1, 2, 3, ]", {
         },
         right: {
           type: "NewExpression",
-          callee: {
-            type: "Identifier",
-            loc: {
-              start: {
-                line: 1,
-                column: 16
-              },
-              end: {
-                line: 1,
-                column: 16
-              }
-            },
-            name: "__pyListShim"
-          },
           arguments: [
             {
               type: "Literal",
@@ -810,6 +999,76 @@ test("x = [ 1, 2, 3, ]", {
               }
             }
           ],
+          callee: {
+            type: "MemberExpression",
+            object: {
+              type: "MemberExpression",
+              object: {
+                type: "Identifier",
+                name: "__pythonRuntime",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 5
+                  }
+                }
+              },
+              property: {
+                type: "Identifier",
+                name: "objects",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 5
+                  }
+                }
+              },
+              computed: false,
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 5
+                }
+              }
+            },
+            property: {
+              type: "Identifier",
+              name: "list",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 5
+                }
+              }
+            },
+            computed: false,
+            loc: {
+              start: {
+                line: 1,
+                column: 6
+              },
+              end: {
+                line: 1,
+                column: 5
+              }
+            }
+          },
           loc: {
             start: {
               line: 1,
@@ -1009,21 +1268,77 @@ test("日本語 = []", {
         },
         right: {
           type: "NewExpression",
+          arguments: [],
           callee: {
-            type: "Identifier",
+            type: "MemberExpression",
+            object: {
+              type: "MemberExpression",
+              object: {
+                type: "Identifier",
+                name: "__pythonRuntime",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 7
+                  },
+                  end: {
+                    line: 1,
+                    column: 7
+                  }
+                }
+              },
+              property: {
+                type: "Identifier",
+                name: "objects",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 7
+                  },
+                  end: {
+                    line: 1,
+                    column: 7
+                  }
+                }
+              },
+              computed: false,
+              loc: {
+                start: {
+                  line: 1,
+                  column: 7
+                },
+                end: {
+                  line: 1,
+                  column: 7
+                }
+              }
+            },
+            property: {
+              type: "Identifier",
+              name: "list",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 7
+                },
+                end: {
+                  line: 1,
+                  column: 7
+                }
+              }
+            },
+            computed: false,
             loc: {
               start: {
                 line: 1,
-                column: 8
+                column: 7
               },
               end: {
                 line: 1,
-                column: 8
+                column: 7
               }
-            },
-            name: "__pyListShim"
+            }
           },
-          arguments: [],
           loc: {
             start: {
               line: 1,
@@ -1094,21 +1409,77 @@ test("T‿ = []", {
         },
         right: {
           type: "NewExpression",
+          arguments: [],
           callee: {
-            type: "Identifier",
+            type: "MemberExpression",
+            object: {
+              type: "MemberExpression",
+              object: {
+                type: "Identifier",
+                name: "__pythonRuntime",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 6
+                  }
+                }
+              },
+              property: {
+                type: "Identifier",
+                name: "objects",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 6
+                  }
+                }
+              },
+              computed: false,
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 6
+                }
+              }
+            },
+            property: {
+              type: "Identifier",
+              name: "list",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 6
+                }
+              }
+            },
+            computed: false,
             loc: {
               start: {
                 line: 1,
-                column: 7
+                column: 6
               },
               end: {
                 line: 1,
-                column: 7
+                column: 6
               }
-            },
-            name: "__pyListShim"
+            }
           },
-          arguments: [],
           loc: {
             start: {
               line: 1,
@@ -1179,21 +1550,77 @@ test("T‌ = []", {
         },
         right: {
           type: "NewExpression",
+          arguments: [],
           callee: {
-            type: "Identifier",
+            type: "MemberExpression",
+            object: {
+              type: "MemberExpression",
+              object: {
+                type: "Identifier",
+                name: "__pythonRuntime",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 6
+                  }
+                }
+              },
+              property: {
+                type: "Identifier",
+                name: "objects",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 6
+                  }
+                }
+              },
+              computed: false,
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 6
+                }
+              }
+            },
+            property: {
+              type: "Identifier",
+              name: "list",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 6
+                }
+              }
+            },
+            computed: false,
             loc: {
               start: {
                 line: 1,
-                column: 7
+                column: 6
               },
               end: {
                 line: 1,
-                column: 7
+                column: 6
               }
-            },
-            name: "__pyListShim"
+            }
           },
-          arguments: [],
           loc: {
             start: {
               line: 1,
@@ -1264,21 +1691,77 @@ test("T‍ = []", {
         },
         right: {
           type: "NewExpression",
+          arguments: [],
           callee: {
-            type: "Identifier",
+            type: "MemberExpression",
+            object: {
+              type: "MemberExpression",
+              object: {
+                type: "Identifier",
+                name: "__pythonRuntime",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 6
+                  }
+                }
+              },
+              property: {
+                type: "Identifier",
+                name: "objects",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 6
+                  }
+                }
+              },
+              computed: false,
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 6
+                }
+              }
+            },
+            property: {
+              type: "Identifier",
+              name: "list",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 6
+                }
+              }
+            },
+            computed: false,
             loc: {
               start: {
                 line: 1,
-                column: 7
+                column: 6
               },
               end: {
                 line: 1,
-                column: 7
+                column: 6
               }
-            },
-            name: "__pyListShim"
+            }
           },
-          arguments: [],
           loc: {
             start: {
               line: 1,
@@ -1349,21 +1832,77 @@ test("ⅣⅡ = []", {
         },
         right: {
           type: "NewExpression",
+          arguments: [],
           callee: {
-            type: "Identifier",
+            type: "MemberExpression",
+            object: {
+              type: "MemberExpression",
+              object: {
+                type: "Identifier",
+                name: "__pythonRuntime",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 6
+                  }
+                }
+              },
+              property: {
+                type: "Identifier",
+                name: "objects",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 6
+                  }
+                }
+              },
+              computed: false,
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 6
+                }
+              }
+            },
+            property: {
+              type: "Identifier",
+              name: "list",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 6
+                }
+              }
+            },
+            computed: false,
             loc: {
               start: {
                 line: 1,
-                column: 7
+                column: 6
               },
               end: {
                 line: 1,
-                column: 7
+                column: 6
               }
-            },
-            name: "__pyListShim"
+            }
           },
-          arguments: [],
           loc: {
             start: {
               line: 1,
@@ -1434,21 +1973,77 @@ test("ⅣⅡ = []", {
         },
         right: {
           type: "NewExpression",
+          arguments: [],
           callee: {
-            type: "Identifier",
+            type: "MemberExpression",
+            object: {
+              type: "MemberExpression",
+              object: {
+                type: "Identifier",
+                name: "__pythonRuntime",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 6
+                  }
+                }
+              },
+              property: {
+                type: "Identifier",
+                name: "objects",
+                loc: {
+                  start: {
+                    line: 1,
+                    column: 6
+                  },
+                  end: {
+                    line: 1,
+                    column: 6
+                  }
+                }
+              },
+              computed: false,
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 6
+                }
+              }
+            },
+            property: {
+              type: "Identifier",
+              name: "list",
+              loc: {
+                start: {
+                  line: 1,
+                  column: 6
+                },
+                end: {
+                  line: 1,
+                  column: 6
+                }
+              }
+            },
+            computed: false,
             loc: {
               start: {
                 line: 1,
-                column: 7
+                column: 6
               },
               end: {
                 line: 1,
-                column: 7
+                column: 6
               }
-            },
-            name: "__pyListShim"
+            }
           },
-          arguments: [],
           loc: {
             start: {
               line: 1,
@@ -17877,20 +18472,76 @@ test("if a > b:\n  print(b)\n  x = a", {
                 }
               },
               callee: {
-                type: "Identifier",
-                start: 12,
-                end: 17,
+                type: "MemberExpression",
+                object: {
+                  type: "MemberExpression",
+                  object: {
+                    type: "Identifier",
+                    name: "__pythonRuntime",
+                    loc: {
+                      start: {
+                        line: 2,
+                        column: 8
+                      },
+                      end: {
+                        line: 2,
+                        column: 8
+                      }
+                    }
+                  },
+                  property: {
+                    type: "Identifier",
+                    name: "functions",
+                    loc: {
+                      start: {
+                        line: 2,
+                        column: 8
+                      },
+                      end: {
+                        line: 2,
+                        column: 8
+                      }
+                    }
+                  },
+                  computed: false,
+                  loc: {
+                    start: {
+                      line: 2,
+                      column: 8
+                    },
+                    end: {
+                      line: 2,
+                      column: 8
+                    }
+                  }
+                },
+                property: {
+                  type: "Identifier",
+                  start: 12,
+                  end: 17,
+                  loc: {
+                    start: {
+                      line: 2,
+                      column: 2
+                    },
+                    end: {
+                      line: 2,
+                      column: 7
+                    }
+                  },
+                  name: "print"
+                },
+                computed: false,
                 loc: {
                   start: {
                     line: 2,
-                    column: 2
+                    column: 8
                   },
                   end: {
                     line: 2,
-                    column: 7
+                    column: 8
                   }
-                },
-                name: "print"
+                }
               },
               arguments: [
                 {
@@ -18180,20 +18831,76 @@ test("if a > b:\n  if b > c:\n    print(c)\n  else:\n    x = c\n  y = 7\nz = 4",
                       }
                     },
                     callee: {
-                      type: "Identifier",
-                      start: 26,
-                      end: 31,
+                      type: "MemberExpression",
+                      object: {
+                        type: "MemberExpression",
+                        object: {
+                          type: "Identifier",
+                          name: "__pythonRuntime",
+                          loc: {
+                            start: {
+                              line: 3,
+                              column: 10
+                            },
+                            end: {
+                              line: 3,
+                              column: 10
+                            }
+                          }
+                        },
+                        property: {
+                          type: "Identifier",
+                          name: "functions",
+                          loc: {
+                            start: {
+                              line: 3,
+                              column: 10
+                            },
+                            end: {
+                              line: 3,
+                              column: 10
+                            }
+                          }
+                        },
+                        computed: false,
+                        loc: {
+                          start: {
+                            line: 3,
+                            column: 10
+                          },
+                          end: {
+                            line: 3,
+                            column: 10
+                          }
+                        }
+                      },
+                      property: {
+                        type: "Identifier",
+                        start: 26,
+                        end: 31,
+                        loc: {
+                          start: {
+                            line: 3,
+                            column: 4
+                          },
+                          end: {
+                            line: 3,
+                            column: 9
+                          }
+                        },
+                        name: "print"
+                      },
+                      computed: false,
                       loc: {
                         start: {
                           line: 3,
-                          column: 4
+                          column: 10
                         },
                         end: {
                           line: 3,
-                          column: 9
+                          column: 10
                         }
-                      },
-                      name: "print"
+                      }
                     },
                     arguments: [
                       {
@@ -18554,20 +19261,76 @@ test("if x < y:\n  print(y)\n\n  x += y", {
                 }
               },
               callee: {
-                type: "Identifier",
-                start: 12,
-                end: 17,
+                type: "MemberExpression",
+                object: {
+                  type: "MemberExpression",
+                  object: {
+                    type: "Identifier",
+                    name: "__pythonRuntime",
+                    loc: {
+                      start: {
+                        line: 2,
+                        column: 8
+                      },
+                      end: {
+                        line: 2,
+                        column: 8
+                      }
+                    }
+                  },
+                  property: {
+                    type: "Identifier",
+                    name: "functions",
+                    loc: {
+                      start: {
+                        line: 2,
+                        column: 8
+                      },
+                      end: {
+                        line: 2,
+                        column: 8
+                      }
+                    }
+                  },
+                  computed: false,
+                  loc: {
+                    start: {
+                      line: 2,
+                      column: 8
+                    },
+                    end: {
+                      line: 2,
+                      column: 8
+                    }
+                  }
+                },
+                property: {
+                  type: "Identifier",
+                  start: 12,
+                  end: 17,
+                  loc: {
+                    start: {
+                      line: 2,
+                      column: 2
+                    },
+                    end: {
+                      line: 2,
+                      column: 7
+                    }
+                  },
+                  name: "print"
+                },
+                computed: false,
                 loc: {
                   start: {
                     line: 2,
-                    column: 2
+                    column: 8
                   },
                   end: {
                     line: 2,
-                    column: 7
+                    column: 8
                   }
-                },
-                name: "print"
+                }
               },
               arguments: [
                 {
@@ -28521,20 +29284,76 @@ if a > b:\n\
                 }
               },
               callee: {
-                type: "Identifier",
-                start: 12,
-                end: 17,
+                type: "MemberExpression",
+                object: {
+                  type: "MemberExpression",
+                  object: {
+                    type: "Identifier",
+                    name: "__pythonRuntime",
+                    loc: {
+                      start: {
+                        line: 2,
+                        column: 8
+                      },
+                      end: {
+                        line: 2,
+                        column: 8
+                      }
+                    }
+                  },
+                  property: {
+                    type: "Identifier",
+                    name: "functions",
+                    loc: {
+                      start: {
+                        line: 2,
+                        column: 8
+                      },
+                      end: {
+                        line: 2,
+                        column: 8
+                      }
+                    }
+                  },
+                  computed: false,
+                  loc: {
+                    start: {
+                      line: 2,
+                      column: 8
+                    },
+                    end: {
+                      line: 2,
+                      column: 8
+                    }
+                  }
+                },
+                property: {
+                  type: "Identifier",
+                  start: 12,
+                  end: 17,
+                  loc: {
+                    start: {
+                      line: 2,
+                      column: 2
+                    },
+                    end: {
+                      line: 2,
+                      column: 7
+                    }
+                  },
+                  name: "print"
+                },
+                computed: false,
                 loc: {
                   start: {
                     line: 2,
-                    column: 2
+                    column: 8
                   },
                   end: {
                     line: 2,
-                    column: 7
+                    column: 8
                   }
-                },
-                name: "print"
+                }
               },
               arguments: [
                 {
@@ -28769,20 +29588,76 @@ z = 4',
                       }
                     },
                     callee: {
-                      type: "Identifier",
-                      start: 26,
-                      end: 31,
+                      type: "MemberExpression",
+                      object: {
+                        type: "MemberExpression",
+                        object: {
+                          type: "Identifier",
+                          name: "__pythonRuntime",
+                          loc: {
+                            start: {
+                              line: 3,
+                              column: 10
+                            },
+                            end: {
+                              line: 3,
+                              column: 10
+                            }
+                          }
+                        },
+                        property: {
+                          type: "Identifier",
+                          name: "functions",
+                          loc: {
+                            start: {
+                              line: 3,
+                              column: 10
+                            },
+                            end: {
+                              line: 3,
+                              column: 10
+                            }
+                          }
+                        },
+                        computed: false,
+                        loc: {
+                          start: {
+                            line: 3,
+                            column: 10
+                          },
+                          end: {
+                            line: 3,
+                            column: 10
+                          }
+                        }
+                      },
+                      property: {
+                        type: "Identifier",
+                        start: 26,
+                        end: 31,
+                        loc: {
+                          start: {
+                            line: 3,
+                            column: 4
+                          },
+                          end: {
+                            line: 3,
+                            column: 9
+                          }
+                        },
+                        name: "print"
+                      },
+                      computed: false,
                       loc: {
                         start: {
                           line: 3,
-                          column: 4
+                          column: 10
                         },
                         end: {
                           line: 3,
-                          column: 9
+                          column: 10
                         }
-                      },
-                      name: "print"
+                      }
                     },
                     arguments: [
                       {
@@ -29118,20 +29993,84 @@ data = 10',
                   }
                 },
                 "callee": {
-                  "type": "Identifier",
-                  "start": 9,
-                  "end": 14,
+                  "type": "MemberExpression",
+                  "start": 15,
+                  "end": 15,
                   "loc": {
                     "start": {
                       "line": 1,
-                      "column": 9
+                      "column": 15
                     },
                     "end": {
                       "line": 1,
-                      "column": 14
+                      "column": 15
                     }
                   },
-                  "name": "range"
+                  "object": {
+                    "type": "MemberExpression",
+                    "start": 15,
+                    "end": 15,
+                    "loc": {
+                      "start": {
+                        "line": 1,
+                        "column": 15
+                      },
+                      "end": {
+                        "line": 1,
+                        "column": 15
+                      }
+                    },
+                    "object": {
+                      "type": "Identifier",
+                      "start": 15,
+                      "end": 15,
+                      "loc": {
+                        "start": {
+                          "line": 1,
+                          "column": 15
+                        },
+                        "end": {
+                          "line": 1,
+                          "column": 15
+                        }
+                      },
+                      "name": "__pythonRuntime"
+                    },
+                    "property": {
+                      "type": "Identifier",
+                      "start": 15,
+                      "end": 15,
+                      "loc": {
+                        "start": {
+                          "line": 1,
+                          "column": 15
+                        },
+                        "end": {
+                          "line": 1,
+                          "column": 15
+                        }
+                      },
+                      "name": "functions"
+                    },
+                    "computed": false
+                  },
+                  "property": {
+                    "type": "Identifier",
+                    "start": 9,
+                    "end": 14,
+                    "loc": {
+                      "start": {
+                        "line": 1,
+                        "column": 9
+                      },
+                      "end": {
+                        "line": 1,
+                        "column": 14
+                      }
+                    },
+                    "name": "range"
+                  },
+                  "computed": false
                 },
                 "arguments": [
                   {
@@ -29163,20 +30102,84 @@ data = 10',
                         }
                       },
                       "callee": {
-                        "type": "Identifier",
-                        "start": 15,
-                        "end": 18,
+                        "type": "MemberExpression",
+                        "start": 19,
+                        "end": 19,
                         "loc": {
                           "start": {
                             "line": 1,
-                            "column": 15
+                            "column": 19
                           },
                           "end": {
                             "line": 1,
-                            "column": 18
+                            "column": 19
                           }
                         },
-                        "name": "len"
+                        "object": {
+                          "type": "MemberExpression",
+                          "start": 19,
+                          "end": 19,
+                          "loc": {
+                            "start": {
+                              "line": 1,
+                              "column": 19
+                            },
+                            "end": {
+                              "line": 1,
+                              "column": 19
+                            }
+                          },
+                          "object": {
+                            "type": "Identifier",
+                            "start": 19,
+                            "end": 19,
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 19
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 19
+                              }
+                            },
+                            "name": "__pythonRuntime"
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "start": 19,
+                            "end": 19,
+                            "loc": {
+                              "start": {
+                                "line": 1,
+                                "column": 19
+                              },
+                              "end": {
+                                "line": 1,
+                                "column": 19
+                              }
+                            },
+                            "name": "functions"
+                          },
+                          "computed": false
+                        },
+                        "property": {
+                          "type": "Identifier",
+                          "start": 15,
+                          "end": 18,
+                          "loc": {
+                            "start": {
+                              "line": 1,
+                              "column": 15
+                            },
+                            "end": {
+                              "line": 1,
+                              "column": 18
+                            }
+                          },
+                          "name": "len"
+                        },
+                        "computed": false
                       },
                       "arguments": [
                         {
@@ -30465,20 +31468,84 @@ data = createShuffled(10)',
                               }
                             },
                             "callee": {
-                              "type": "Identifier",
-                              "start": 55,
-                              "end": 60,
+                              "type": "MemberExpression",
+                              "start": 61,
+                              "end": 61,
                               "loc": {
                                 "start": {
                                   "line": 3,
-                                  "column": 13
+                                  "column": 19
                                 },
                                 "end": {
                                   "line": 3,
-                                  "column": 18
+                                  "column": 19
                                 }
                               },
-                              "name": "range"
+                              "object": {
+                                "type": "MemberExpression",
+                                "start": 61,
+                                "end": 61,
+                                "loc": {
+                                  "start": {
+                                    "line": 3,
+                                    "column": 19
+                                  },
+                                  "end": {
+                                    "line": 3,
+                                    "column": 19
+                                  }
+                                },
+                                "object": {
+                                  "type": "Identifier",
+                                  "start": 61,
+                                  "end": 61,
+                                  "loc": {
+                                    "start": {
+                                      "line": 3,
+                                      "column": 19
+                                    },
+                                    "end": {
+                                      "line": 3,
+                                      "column": 19
+                                    }
+                                  },
+                                  "name": "__pythonRuntime"
+                                },
+                                "property": {
+                                  "type": "Identifier",
+                                  "start": 61,
+                                  "end": 61,
+                                  "loc": {
+                                    "start": {
+                                      "line": 3,
+                                      "column": 19
+                                    },
+                                    "end": {
+                                      "line": 3,
+                                      "column": 19
+                                    }
+                                  },
+                                  "name": "functions"
+                                },
+                                "computed": false
+                              },
+                              "property": {
+                                "type": "Identifier",
+                                "start": 55,
+                                "end": 60,
+                                "loc": {
+                                  "start": {
+                                    "line": 3,
+                                    "column": 13
+                                  },
+                                  "end": {
+                                    "line": 3,
+                                    "column": 18
+                                  }
+                                },
+                                "name": "range"
+                              },
+                              "computed": false
                             },
                             "arguments": [
                               {
@@ -30510,20 +31577,84 @@ data = createShuffled(10)',
                                     }
                                   },
                                   "callee": {
-                                    "type": "Identifier",
-                                    "start": 61,
-                                    "end": 64,
+                                    "type": "MemberExpression",
+                                    "start": 65,
+                                    "end": 65,
                                     "loc": {
                                       "start": {
                                         "line": 3,
-                                        "column": 19
+                                        "column": 23
                                       },
                                       "end": {
                                         "line": 3,
-                                        "column": 22
+                                        "column": 23
                                       }
                                     },
-                                    "name": "len"
+                                    "object": {
+                                      "type": "MemberExpression",
+                                      "start": 65,
+                                      "end": 65,
+                                      "loc": {
+                                        "start": {
+                                          "line": 3,
+                                          "column": 23
+                                        },
+                                        "end": {
+                                          "line": 3,
+                                          "column": 23
+                                        }
+                                      },
+                                      "object": {
+                                        "type": "Identifier",
+                                        "start": 65,
+                                        "end": 65,
+                                        "loc": {
+                                          "start": {
+                                            "line": 3,
+                                            "column": 23
+                                          },
+                                          "end": {
+                                            "line": 3,
+                                            "column": 23
+                                          }
+                                        },
+                                        "name": "__pythonRuntime"
+                                      },
+                                      "property": {
+                                        "type": "Identifier",
+                                        "start": 65,
+                                        "end": 65,
+                                        "loc": {
+                                          "start": {
+                                            "line": 3,
+                                            "column": 23
+                                          },
+                                          "end": {
+                                            "line": 3,
+                                            "column": 23
+                                          }
+                                        },
+                                        "name": "functions"
+                                      },
+                                      "computed": false
+                                    },
+                                    "property": {
+                                      "type": "Identifier",
+                                      "start": 61,
+                                      "end": 64,
+                                      "loc": {
+                                        "start": {
+                                          "line": 3,
+                                          "column": 19
+                                        },
+                                        "end": {
+                                          "line": 3,
+                                          "column": 22
+                                        }
+                                      },
+                                      "name": "len"
+                                    },
+                                    "computed": false
                                   },
                                   "arguments": [
                                     {
@@ -31660,7 +32791,7 @@ data = createShuffled(10)',
 // Failure tests
 
 testFail("{",
-         "Unexpected token (1:0)");
+         "Unexpected token (1:1)");
 
 testFail("}",
          "Unexpected token (1:0)");
@@ -31762,13 +32893,13 @@ testFail("x = [ 1, 2,, 3, ]",
          "Unexpected token (1:11)");
 
 testFail("1 + {",
-         "Unexpected token (1:4)");
+         "Unexpected token (1:5)");
 
 testFail("1 + { t:t ",
-         "Unexpected token (1:4)");
+         "Unexpected token (1:10)");
 
 testFail("1 + { t:t,",
-         "Unexpected token (1:4)");
+         "Unexpected token (1:10)");
 
 testFail("var x = /\n/",
          "Unterminated regular expression (1:9)");
@@ -31789,7 +32920,7 @@ testFail("1 + (",
          "Unexpected token (1:5)");
 
 testFail("\n\n\n{",
-         "Unexpected token (4:0)");
+         "Unexpected token (4:1)");
 
 //testFail("\n/* Some multiline\ncomment */\n)",
 //         "Unexpected token (4:0)");
