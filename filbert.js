@@ -17,7 +17,7 @@
 // with a [error-tolerant parser][dammit] and an
 // [abstract syntax tree walker][walk], defined in other files.
 //
-// [dammit]: acorn_loose.js
+// [dammit]: filbert_loose.js
 // [walk]: util/walk.js
 
 (function(root, mod) {

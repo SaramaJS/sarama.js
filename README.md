@@ -132,7 +132,7 @@ can't count on it staying stable.
 **tokTypes** holds an object mapping names to the token type objects
 that end up in the `type` properties of tokens.
 
-### acorn_loose.js ###
+### filbert_loose.js ###
 
 This file implements an error-tolerant parser. It exposes a single
 function.
