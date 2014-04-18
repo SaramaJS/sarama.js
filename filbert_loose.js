@@ -30,13 +30,13 @@
 // tangle.
 
 (function(root, mod) {
-  if (typeof exports == "object" && typeof module == "object") return mod(exports, require("./acorn")); // CommonJS
-  if (typeof define == "function" && define.amd) return define(["exports", "./acorn"], mod); // AMD
-  mod(root.acorn || (root.acorn = {}), root.acorn); // Plain browser env
-})(this, function(exports, acorn) {
+  if (typeof exports == "object" && typeof module == "object") return mod(exports, require("./filbert")); // CommonJS
+  if (typeof define == "function" && define.amd) return define(["exports", "./filbert"], mod); // AMD
+  mod(root.filbert || (root.filbert = {}), root.filbert); // Plain browser env
+})(this, function(exports, filbert) {
   "use strict";
 
-  var tt = acorn.tokTypes;
+  var tt = filbert.tokTypes;
 
   var options, input, fetchToken, context;
 
@@ -45,7 +45,7 @@
     input = String(inpt);
     options = opts;
     if (!opts.tabSize) opts.tabSize = 4;
-    fetchToken = acorn.tokenize(inpt, opts);
+    fetchToken = filbert.tokenize(inpt, opts);
     sourceFile = options.sourceFile || null;
     context = [];
     nextLineStart = 0;
@@ -115,8 +115,8 @@
         if (replace === true) replace = {start: pos, end: pos, type: tt.name, value: "✖"};
         if (replace) {
           if (options.locations) {
-            replace.startLoc = acorn.getLineInfo(input, replace.start);
-            replace.endLoc = acorn.getLineInfo(input, replace.end);
+            replace.startLoc = filbert.getLineInfo(input, replace.start);
+            replace.endLoc = filbert.getLineInfo(input, replace.end);
           }
           return replace;
         }
@@ -200,7 +200,7 @@
     this.start = start;
     this.end = null;
   }
-  Node.prototype = acorn.Node.prototype;
+  Node.prototype = filbert.Node.prototype;
 
   function SourceLocation(start) {
     this.start = start || token.startLoc || {line: 1, column: 0};
