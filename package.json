@@ -1,17 +1,14 @@
 {
-    "name": "acorn",
-    "description": "ECMAScript parser",
-    "homepage": "http://marijnhaverbeke.nl/acorn/",
-    "main": "acorn.js",
-    "version": "0.5.1",
-    "engines": {"node": ">=0.4.0"},
-    "maintainers": [{"name": "Marijn Haverbeke",
-                     "email": "marijnh@gmail.com",
-                     "web": "http://marijnhaverbeke.nl"}],
-    "repository": {"type": "git",
-                   "url": "http://marijnhaverbeke.nl/git/acorn"},
-    "licenses": [{"type": "MIT",
-                  "url": "http://marijnhaverbeke.nl/acorn/LICENSE"}],
-    "scripts": {"test": "node test/run.js"},
-    "bin": {"acorn": "./bin/acorn"}
+  "name": "filbert",
+  "description": "Python parser, Mozilla AST output",
+  "main": "filbert.js",
+  "version": "0.1.0",
+  "devDependencies": {
+    "grunt": "^0.4.4",
+    "grunt-contrib-jshint": "~0.6.3",
+    "grunt-contrib-nodeunit": "~0.2.0",
+    "grunt-contrib-uglify": "~0.2.2",
+    "grunt-jasmine-node": "^0.2.1",
+    "escodegen": "^1.3.2"
+  }
 }

@@ -28,7 +28,7 @@
             try {
                 outputText.value = "";
 			    var code = pythonText.value;
-			    var ast = acorn.parse(code);
+			    var ast = filbert.parse(code);
 			    astText.value = JSON.stringify(ast, null, 2);
             }
             catch (e) {
@@ -38,7 +38,7 @@
             }
             try {
 			    var js = escodegen.generate(ast);
-			    js = "(function(" + acorn.defaultOptions.runtimeParamName + "){" + js + "})(acorn.pythonRuntime);";
+			    js = "(function(" + filbert.defaultOptions.runtimeParamName + "){" + js + "})(filbert.pythonRuntime);";
 			    jsText.value = js;
 			    eval(js); // TODO: recover from infinite loops (e.g. compile before added loop increment)
 		    }

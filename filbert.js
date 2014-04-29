@@ -23,7 +23,7 @@
 (function(root, mod) {
   if (typeof exports == "object" && typeof module == "object") return mod(exports); // CommonJS
   if (typeof define == "function" && define.amd) return define(["exports"], mod); // AMD
-  mod(root.acorn || (root.acorn = {})); // Plain browser env
+  mod(root.filbert || (root.filbert = {})); // Plain browser env
 })(this, function(exports) {
   "use strict";
 
@@ -1138,6 +1138,11 @@
       node.loc.end = lastEndLoc;
     if (options.ranges)
       node.range[1] = lastEnd;
+
+    // Exclude start/end from final node.  locations and ranges options cover this.
+    delete node.start;
+    delete node.end;
+
     return node;
   }
 
@@ -2039,9 +2044,21 @@
           s += i === 0 ? arguments[i] : " " + arguments[i];
         console.log(s);
       },
-      range: function (n) {
-        var r = new exports.pythonRuntime.objects.list();
-        for (var i = 0; i < n; i++) r.append(i);
+      range: function (start, stop, step) {
+        if (stop === undefined) {
+          stop = start;
+          start = 0
+          step = 1
+        }
+        else if (step === undefined) step = 1;
+        var r = new pythonRuntime.objects.list();
+        if (start < stop && step > 0 || start > stop && step < 0) {
+          var i = start;
+          while (i !== stop) {
+            r.append(i);
+            i += step;
+          }
+        }
         return r;
       }
     },
