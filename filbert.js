@@ -294,7 +294,7 @@
   var _throw = {keyword: "throw", beforeExpr: true}, _try = {keyword: "try"}, _var = {keyword: "var"};
   var _while = {keyword: "while", isLoop: true}, _with = {keyword: "with"}, _new = {keyword: "new", beforeExpr: true};
   var _this = {keyword: "this"};
-  var _def = { keyword: "def" };
+  var _def = { keyword: "def" }, _dict = { keyword: "dict" };
   var _import = { keyword: "import" }, _from = { keyword: "from" };
 
   // The keywords that denote values.
@@ -315,7 +315,7 @@
 
   var keywordTypes = {"break": _break, "case": _case, "catch": _catch,
                       "continue": _continue, "debugger": _debugger, "def": _def, "default": _default,
-                      "do": _do, "else": _else, "finally": _finally, "for": _for,
+                      "dict": _dict, "do": _do, "else": _else, "finally": _finally, "for": _for,
                       "if": _if, "return": _return, "switch": _switch,
                       "throw": _throw, "try": _try, "var": _var, "while": _while, "with": _with,
                       "null": _null, "True": _true, "False": _false, "new": _new, "in": _in,
@@ -332,8 +332,8 @@
   var _bracketL = {type: "[", beforeExpr: true}, _bracketR = {type: "]"}, _braceL = {type: "{", beforeExpr: true};
   var _braceR = {type: "}"}, _parenL = {type: "(", beforeExpr: true}, _parenR = {type: ")"};
   var _comma = {type: ",", beforeExpr: true}, _semi = {type: ";", beforeExpr: true};
-  var _colon = {type: ":", beforeExpr: true}, _dot = {type: "."}, _question = {type: "?", beforeExpr: true};
-
+  var _colon = { type: ":", beforeExpr: true }, _dot = { type: "." }, _question = { type: "?", beforeExpr: true };
+  
   // Operators. These carry several kinds of properties to help the
   // parser use them properly (the presence of these properties is
   // what categorizes them as operators).
@@ -436,7 +436,7 @@
 
   // And the keywords.
 
-  var isKeyword = makePredicate("and break case catch continue debugger def default do else finally for from function if import not or return switch throw try var while with null True False instanceof typeof void delete new in this");
+  var isKeyword = makePredicate("and break case catch continue debugger def default dict do else finally for from function if import not or return switch throw try var while with null True False instanceof typeof void delete new in this");
 
   // ## Character categories
 
@@ -1726,6 +1726,10 @@
 
   function parseExprAtom() {
     switch (tokType) {
+    case _dict:
+      next();
+      return parseDict(_parenR);
+
     case _this:
       var node = startNode();
       next();
@@ -1776,7 +1780,7 @@
       return finishNode(node, "NewExpression");
 
     case _braceL:
-	    return parseObj();
+	    return parseDict(_braceR);
 
     case _new:
       return parseNew();
@@ -1784,6 +1788,41 @@
     default:
       unexpected();
     }
+  }
+
+  // Parse dictionary
+  // Custom dict object used to simulate native Python dict
+  // E.g. "{'k1':'v1', 'k2':'v2'}" becomes "new __pythonRuntime.objects.dict(['k1', 'v1'], ['k2', 'v2']);"
+
+  function parseDict(tokClose) {
+    var node = startNode(), first = true, key, value;
+    node.arguments = [];
+    next();
+    var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
+    var objectsId = createNode("Identifier", { name: "objects" });
+    var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: objectsId, computed: false });
+    var listId = createNode("Identifier", { name: "dict" });
+    node.callee = createNode("MemberExpression", { object: runtimeMember, property: listId, computed: false });
+    while (!eat(tokClose)) {
+      if (!first) {
+        expect(_comma);
+      } else first = false;
+
+      if (tokClose === _braceR) {
+        key = parsePropertyName();
+        expect(_colon);
+        value = parseExpression(true);
+      } else if (tokClose === _parenR) {
+        var keyId = parseIdent(true);
+        key = startNodeFrom(keyId);
+        key.value = keyId.name;
+        key = finishNode(key, "Literal");
+        expect(_eq);
+        value = parseExpression(true);
+      } else unexpected();
+      node.arguments.push(createNode("ArrayExpression", { elements: [key, value] }));
+    }
+    return finishNode(node, "NewExpression");
   }
 
   // New's precedence is slightly tricky. It must allow its argument
@@ -1797,51 +1836,6 @@
     if (eat(_parenL)) node.arguments = parseExprList(_parenR, false);
     else node.arguments = empty;
     return finishNode(node, "NewExpression");
-  }
-
-  // Parse an object literal.
-
-  function parseObj() {
-    var node = startNode(), first = true, sawGetSet = false;
-    node.properties = [];
-    next();
-    while (!eat(_braceR)) {
-      if (!first) {
-        expect(_comma);
-        if (options.allowTrailingCommas && eat(_braceR)) break;
-      } else first = false;
-
-      var prop = {key: parsePropertyName()}, isGetSet = false, kind;
-      if (eat(_colon)) {
-        prop.value = parseExpression(true);
-        kind = prop.kind = "init";
-      } else if (options.ecmaVersion >= 5 && prop.key.type === "Identifier" &&
-                 (prop.key.name === "get" || prop.key.name === "set")) {
-        isGetSet = sawGetSet = true;
-        kind = prop.kind = prop.key.name;
-        prop.key = parsePropertyName();
-        if (tokType !== _parenL) unexpected();
-        prop.value = parseFunction(startNode(), false);
-      } else unexpected();
-
-      // getters and setters are not allowed to clash — either with
-      // each other or with an init property — and in strict mode,
-      // init properties are also not allowed to be repeated.
-
-      if (prop.key.type === "Identifier" && (strict || sawGetSet)) {
-        for (var i = 0; i < node.properties.length; ++i) {
-          var other = node.properties[i];
-          if (other.key.name === prop.key.name) {
-            var conflict = kind == other.kind || isGetSet && other.kind === "init" ||
-              kind === "init" && (other.kind === "get" || other.kind === "set");
-            if (conflict && !strict && kind === "init" && other.kind === "init") conflict = false;
-            if (conflict) raise(prop.key.start, "Redefinition of property");
-          }
-        }
-      }
-      node.properties.push(prop);
-    }
-    return finishNode(node, "ObjectExpression");
   }
 
   function parsePropertyName() {
@@ -1948,6 +1942,63 @@
     // Shim JavaScript objects that impersonate Python equivalents
 
     objects: {
+      dict: function () {
+        var obj = {};
+        for (var i in arguments) obj[arguments[i][0]] = arguments[i][1];
+        Object.defineProperty(obj, "length",
+        {
+          get: function () {
+            return Object.keys(this).length;
+          },
+          enumerable: false
+        });
+        Object.defineProperty(obj, "clear",
+        {
+          value: function () {
+            for (var i in this) delete this[i];
+          },
+          enumerable: false
+        });
+        Object.defineProperty(obj, "get",
+        {
+          value: function (key, def) {
+            if (key in this) return this[key];
+            else if (def !== undefined) return def;
+            return null;
+          },
+          enumerable: false
+        });
+        Object.defineProperty(obj, "keys",
+        {
+          value: function () {
+            return Object.keys(this);
+          },
+          enumerable: false
+        });
+        Object.defineProperty(obj, "pop",
+        {
+          value: function (key, def) {
+            var value;
+            if (key in this) {
+              value = this[key];
+              delete this[key];
+            } else if (def !== undefined) value = def;
+            else return new Error("KeyError");
+            return value;
+          },
+          enumerable: false
+        });
+        Object.defineProperty(obj, "values",
+        {
+          value: function () {
+            var values = [];
+            for (var key in this) values.push(this[key]);
+            return values;
+          },
+          enumerable: false
+        });
+        return obj;
+      },
       list: function () {
         var arr = [];
         arr.push.apply(arr, arguments);
@@ -2067,5 +2118,5 @@
         random: function () { return Math.random(); }
       }
     }
-  }
+  };
 });
