@@ -296,7 +296,6 @@
   var _this = {keyword: "this"};
   var _def = { keyword: "def" };
   var _import = { keyword: "import" }, _from = { keyword: "from" };
-  var _not = { keyword: "not", prefix: true, beforeExpr: true };
 
   // The keywords that denote values.
 
@@ -307,7 +306,10 @@
   // (when parsing `for`) needs to be tested against specifically, so
   // we assign a variable name to it for quick comparing.
 
-  var _in = {keyword: "in", binop: 7, beforeExpr: true};
+  var _logicalOR = { keyword: "or", prec: 1, beforeExpr: true, rep: "||" }
+  var _logicalAND = { keyword: "and", prec: 2, beforeExpr: true, rep: "&&" }
+  var _logicalNOT = { keyword: "not", prec: 3, prefix: true, beforeExpr: true, rep: "!" };
+  var _in = { keyword: "in", prec: 4, beforeExpr: true };
 
   // Map keyword names to token types.
 
@@ -321,7 +323,9 @@
                       "typeof": {keyword: "typeof", prefix: true, beforeExpr: true},
                       "void": {keyword: "void", prefix: true, beforeExpr: true},
                       "delete": { keyword: "delete", prefix: true, beforeExpr: true },
-                      "import": _import, "from": _from, "not": _not};
+                      "import": _import, "from": _from,
+                      "or": _logicalOR, "and": _logicalAND, "not": _logicalNOT
+  };
 
   // Punctuation token types. Again, the `type` property is purely for debugging.
 
@@ -334,31 +338,28 @@
   // parser use them properly (the presence of these properties is
   // what categorizes them as operators).
   //
-  // `binop`, when present, specifies that this operator is a binary
-  // operator, and will refer to its precedence.
+  // `prec` specifies the precedence of this operator.
   //
-  // `prefix` and `postfix` mark the operator as a prefix or postfix
-  // unary operator. `isUpdate` specifies that the node produced by
-  // the operator should be of type UpdateExpression rather than
-  // simply UnaryExpression (`++` and `--`).
+  // `prefix` marks the operator as a prefix unary operator. 
   //
   // `isAssign` marks all of `=`, `+=`, `-=` etcetera, which act as
   // binary operators with a very low precedence, that should result
   // in AssignmentExpression nodes.
 
-  var _slash = {binop: 10, beforeExpr: true}, _eq = {isAssign: true, beforeExpr: true};
+  var _slash = { prec: 10, beforeExpr: true }, _eq = { isAssign: true, beforeExpr: true };
   var _assign = {isAssign: true, beforeExpr: true};
-  var _incDec = {postfix: true, prefix: true, isUpdate: true}, _prefix = {prefix: true, beforeExpr: true};
-  var _logicalOR = {binop: 1, beforeExpr: true};
-  var _logicalAND = {binop: 2, beforeExpr: true};
-  var _bitwiseOR = {binop: 3, beforeExpr: true};
-  var _bitwiseXOR = {binop: 4, beforeExpr: true};
-  var _bitwiseAND = {binop: 5, beforeExpr: true};
-  var _equality = {binop: 6, beforeExpr: true};
-  var _relational = {binop: 7, beforeExpr: true};
-  var _bitShift = {binop: 8, beforeExpr: true};
-  var _plusMin = {binop: 9, prefix: true, beforeExpr: true};
-  var _multiplyModulo = {binop: 10, beforeExpr: true};
+  var _equality = { prec: 4, beforeExpr: true };
+  var _relational = {prec: 4, beforeExpr: true };
+  var _bitwiseOR = { prec: 5, beforeExpr: true };
+  var _bitwiseXOR = { prec: 6, beforeExpr: true };
+  var _bitwiseAND = { prec: 7, beforeExpr: true };
+  var _bitShift = { prec: 8, beforeExpr: true };
+  var _plusMin = { prec: 9, beforeExpr: true };
+  var _multiplyModulo = { prec: 10, beforeExpr: true };
+  var _floorDiv = { prec: 10, beforeExpr: true };
+  var _posNegNot = { prec: 11, prefix: true, beforeExpr: true };
+  var _bitwiseNOT = { prec: 11, prefix: true, beforeExpr: true };
+  var _exponentiation = { prec: 12, beforeExpr: true };
 
   // Provide access to the token types for external users of the
   // tokenizer.
@@ -435,7 +436,7 @@
 
   // And the keywords.
 
-  var isKeyword = makePredicate("break case catch continue debugger def default do else finally for from function if import not return switch throw try var while with null True False instanceof typeof void delete new in this");
+  var isKeyword = makePredicate("and break case catch continue debugger def default do else finally for from function if import not or return switch throw try var while with null True False instanceof typeof void delete new in this");
 
   // ## Character categories
 
@@ -591,21 +592,22 @@
   }
 
   function readToken_slash() { // '/'
+    if (tokRegexpAllowed) { ++tokPos; return readRegexp(); }
     var next = input.charCodeAt(tokPos + 1);
-    if (tokRegexpAllowed) {++tokPos; return readRegexp();}
+    if (next === 47) return finishOp(_floorDiv, 2);
     if (next === 61) return finishOp(_assign, 2);
     return finishOp(_slash, 1);
   }
 
-  function readToken_mult_modulo() { // '%*'
+  function readToken_mult_modulo(code) { // '*%'
     var next = input.charCodeAt(tokPos + 1);
+    if (next === 42 && next === code) return finishOp(_exponentiation, 2);
     if (next === 61) return finishOp(_assign, 2);
     return finishOp(_multiplyModulo, 1);
   }
-
+  
   function readToken_pipe_amp(code) { // '|&'
     var next = input.charCodeAt(tokPos + 1);
-    if (next === code) return finishOp(code === 124 ? _logicalOR : _logicalAND, 2);
     if (next === 61) return finishOp(_assign, 2);
     return finishOp(code === 124 ? _bitwiseOR : _bitwiseAND, 1);
   }
@@ -618,17 +620,6 @@
 
   function readToken_plus_min(code) { // '+-'
     var next = input.charCodeAt(tokPos + 1);
-    if (next === code) {
-      if (next == 45 && input.charCodeAt(tokPos + 2) == 62 &&
-          newline.test(input.slice(lastEnd, tokPos))) {
-        // A `-->` line comment
-        tokPos += 3;
-        skipLineComment();
-        skipSpace();
-        return readToken();
-      }
-      return finishOp(_incDec, 2);
-    }
     if (next === 61) return finishOp(_assign, 2);
     return finishOp(_plusMin, 1);
   }
@@ -637,27 +628,18 @@
     var next = input.charCodeAt(tokPos + 1);
     var size = 1;
     if (next === code) {
-      size = code === 62 && input.charCodeAt(tokPos + 2) === 62 ? 3 : 2;
+      size = 2;
       if (input.charCodeAt(tokPos + size) === 61) return finishOp(_assign, size + 1);
       return finishOp(_bitShift, size);
     }
-    if (next == 33 && code == 60 && input.charCodeAt(tokPos + 2) == 45 &&
-        input.charCodeAt(tokPos + 3) == 45) {
-      // `<!--`, an XML-style comment that should be interpreted as a line comment
-      tokPos += 4;
-      skipLineComment();
-      skipSpace();
-      return readToken();
-    }
-    if (next === 61)
-      size = input.charCodeAt(tokPos + 2) === 61 ? 3 : 2;
+    if (next === 61) size = 2;
     return finishOp(_relational, size);
   }
 
   function readToken_eq_excl(code) { // '=!'
     var next = input.charCodeAt(tokPos + 1);
-    if (next === 61) return finishOp(_equality, input.charCodeAt(tokPos + 2) === 61 ? 3 : 2);
-    return finishOp(code === 61 ? _eq : _prefix, 1);
+    if (next === 61) return finishOp(_equality, 2);
+    return finishOp(_eq, 1);
   }
 
   // Parse an indent
@@ -780,8 +762,8 @@
     case 47: // '/'
       return readToken_slash(code);
 
-    case 37: case 42: // '%*'
-      return readToken_mult_modulo();
+    case 42: case 37: // '*%'
+      return readToken_mult_modulo(code);
 
     case 124: case 38: // '|&'
       return readToken_pipe_amp(code);
@@ -799,7 +781,7 @@
       return readToken_eq_excl(code);
 
     case 126: // '~'
-      return finishOp(_prefix, 1);
+      return finishOp(_bitwiseNOT, 1);
     }
 
     return false;
@@ -1155,6 +1137,15 @@
     return node;
   }
 
+  function createNodeMemberCall(node, object, property, args) {
+    var objId = createNode("Identifier", { name: object });
+    var propId = createNode("Identifier", { name: property });
+    var member = createNode("MemberExpression", { object: objId, property: propId, computed: false });
+    node.callee = member
+    node.arguments = args;
+    return finishNode(node, "CallExpression");
+  }
+
   // Test whether a statement node is the string literal `"use strict"`.
 
   function isUseStrict(stmt) {
@@ -1491,6 +1482,7 @@
   //    for(var __iter=0;;){i = __right[__iter]; ...} } else { for(i in __right){...} } }
 
   // TODO: Extra AST nodes have program end for their start and end.  What should they be?
+  // TODO: for/in on a string should go through items, not indexes.  Add '|| __right instanceof String'
 
   function parseFor(node) {
     var originalInit = parseExpression(false, true);
@@ -1620,7 +1612,7 @@
   // Start the precedence parser.
 
   function parseExprOps(noIn) {
-    return parseExprOp(parseMaybeUnary(), -1, noIn);
+    return parseExprOp(parseMaybeUnary(noIn), -1, noIn);
   }
 
   // Parse binary operators with the operator precedence parsing
@@ -1628,50 +1620,54 @@
   // `minPrec` provides context that allows the function to stop and
   // defer further parser to one of its callers when it encounters an
   // operator that has a lower precedence than the set it is parsing.
+  // Exponentiation is evaluated right-to-left, so 'prec >= minPrec'
+  // Exponentiation operator 'x**y' is replaced with 'Math.pow(x, y)'
+  // Floor division operator 'x//y' is replaced with 'Math.floor(x/y)'
 
   function parseExprOp(left, minPrec, noIn) {
-    var prec = tokType.binop;
-    if (prec != null && (!noIn || tokType !== _in)) {
+    var node, exprNode, right, op = tokType, prec = op.prec;
+    if (op === _exponentiation && prec >= minPrec) {
+      node = startNodeFrom(left);
+      next();
+      right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
+      exprNode = createNodeMemberCall(node, "Math", "pow", [left, right]);
+      return parseExprOp(exprNode, minPrec, noIn);
+    } else if (prec != null && (!noIn || op !== _in)) {
       if (prec > minPrec) {
-        var node = startNodeFrom(left);
-        node.left = left;
-        node.operator = tokVal;
-        var op = tokType;
-        next();
-        node.right = parseExprOp(parseMaybeUnary(), prec, noIn);
-        var exprNode = finishNode(node, (op === _logicalOR || op === _logicalAND) ? "LogicalExpression" : "BinaryExpression");
+        node = startNodeFrom(left);
+        if (op === _floorDiv) {
+          next();
+          right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
+          var binExpr = createNode("BinaryExpression", { left: left, operator: '/', right: right });
+          exprNode = createNodeMemberCall(node, "Math", "floor", [binExpr]);
+        } else {
+          node.left = left;
+          node.operator = op.rep != null ? op.rep : tokVal;
+          next();
+          node.right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
+          exprNode = finishNode(node, (op === _logicalOR || op === _logicalAND) ? "LogicalExpression" : "BinaryExpression");
+        }
         return parseExprOp(exprNode, minPrec, noIn);
       }
     }
     return left;
   }
 
-  // Parse unary operators, both prefix and postfix.
+  // Parse unary operators.
+  // '-+' are prefixes here, with different precedence.
 
-  function parseMaybeUnary() {
-    if (tokType.prefix) {
-      var node = startNode(), update = tokType.isUpdate;
-      node.operator = tokType === _not ? "!" : tokVal;
+  function parseMaybeUnary(noIn) {
+    if (tokType.prefix || tokType === _plusMin) {
+      var prec = tokType === _plusMin ? _posNegNot.prec : tokType.prec;
+      var node = startNode();
+      node.operator = tokType.rep != null ? tokType.rep : tokVal;
       node.prefix = true;
       tokRegexpAllowed = true;
       next();
-      node.argument = parseMaybeUnary();
-      if (update) checkLVal(node.argument);
-      else if (strict && node.operator === "delete" &&
-               node.argument.type === "Identifier")
-        raise(node.start, "Deleting local variable in strict mode");
-      return finishNode(node, update ? "UpdateExpression" : "UnaryExpression");
+      node.argument = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
+      return finishNode(node, "UnaryExpression");
     }
     var expr = parseExprSubscripts();
-    while (tokType.postfix && !canInsertSemicolon()) {
-      var node = startNodeFrom(expr);
-      node.operator = tokVal;
-      node.prefix = false;
-      node.argument = expr;
-      checkLVal(expr);
-      next();
-      expr = finishNode(node, "UpdateExpression");
-    }
     return expr;
   }
 
