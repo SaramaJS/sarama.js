@@ -257,6 +257,49 @@
 
   var forLoopCount = 0;
 
+  // ## Scope
+
+  // Collection of namespaces saved as a stack
+  // Namespace is a mapping of identifiers to 3 types: variables, functions, classes
+  // Namespace also knows whether it is for global, class, or function
+  // New namespace pushed at function and class start, and popped at their end
+  // Starts with a global namespace on the stack
+  // E.g. scope.namespaces ~ [{type: 'g', map:{x: 'v', MyClass: 'c'} }, ...]
+
+  // TODO: Not tracking built-in namespace
+  
+  var scope = {
+    namespaces: [],
+    init: function () { this.namespaces = [{ type: 'g', map: {} }]; },
+    current: function(offset) { 
+      offset = offset || 0;
+      return this.namespaces[this.namespaces.length - offset - 1];
+    },
+    startClass: function (id) {
+      this.current().map[id] = 'c';
+      this.namespaces.push({ type: 'c', map: {}, className: id });
+    },
+    startFn: function (id) {
+      this.current().map[id] = 'f';
+      this.namespaces.push({ type: 'f', map: {}, fnName: id });
+    },
+    end: function () { this.namespaces.pop(); },
+    addVar: function (id) { this.current().map[id] = 'v'; },
+    exists: function (id) { return this.current().map.hasOwnProperty(id); },
+    isClass: function () { return this.current().type === 'c'; },
+    isParentClass: function() { return this.current(1).type === 'c'; },
+    isNewObj: function (id) {
+      for (var i = this.namespaces.length - 1; i >= 0; i--)
+        if (this.namespaces[i].map[id] === 'c') return true;
+        else if (this.namespaces[i].map[id] === 'f') break;
+      return false;
+    },
+    getParentClassName: function () { return this.current(1).className; },
+    getThisReplace: function () { return this.current().thisReplace; },
+    setThisReplace: function (s) { this.current().thisReplace = s; }
+  };
+  
+
   // ## Token types
 
   // The assignment of fine-grained, information-carrying type objects
@@ -287,11 +330,13 @@
   // continue jumps to that label.
 
   var _break = {keyword: "break"}, _case = {keyword: "case", beforeExpr: true}, _catch = {keyword: "catch"};
-  var _continue = {keyword: "continue"}, _debugger = {keyword: "debugger"}, _default = {keyword: "default"};
+  var _class = { keyword: "class" };
+  var _continue = { keyword: "continue" }, _debugger = { keyword: "debugger" }, _default = { keyword: "default" };
   var _do = {keyword: "do", isLoop: true}, _else = {keyword: "else", beforeExpr: true};
   var _finally = {keyword: "finally"}, _for = {keyword: "for", isLoop: true};
-  var _if = {keyword: "if"}, _return = {keyword: "return", beforeExpr: true}, _switch = {keyword: "switch"};
-  var _throw = {keyword: "throw", beforeExpr: true}, _try = {keyword: "try"}, _var = {keyword: "var"};
+  var _if = { keyword: "if" }, _pass = { keyword: "pass" };
+  var _return = { keyword: "return", beforeExpr: true }, _switch = { keyword: "switch" };
+  var _throw = { keyword: "throw", beforeExpr: true }, _try = { keyword: "try" }, _var = { keyword: "var" };
   var _while = {keyword: "while", isLoop: true}, _with = {keyword: "with"}, _new = {keyword: "new", beforeExpr: true};
   var _this = {keyword: "this"};
   var _def = { keyword: "def" }, _dict = { keyword: "dict" };
@@ -313,10 +358,10 @@
 
   // Map keyword names to token types.
 
-  var keywordTypes = {"break": _break, "case": _case, "catch": _catch,
+  var keywordTypes = {"break": _break, "case": _case, "catch": _catch, "class": _class,
                       "continue": _continue, "debugger": _debugger, "def": _def, "default": _default,
                       "dict": _dict, "do": _do, "else": _else, "finally": _finally, "for": _for,
-                      "if": _if, "return": _return, "switch": _switch,
+                      "if": _if, "pass": _pass, "return": _return, "switch": _switch,
                       "throw": _throw, "try": _try, "var": _var, "while": _while, "with": _with,
                       "null": _null, "True": _true, "False": _false, "new": _new, "in": _in,
                       "instanceof": {keyword: "instanceof", binop: 7, beforeExpr: true}, "this": _this,
@@ -436,7 +481,7 @@
 
   // And the keywords.
 
-  var isKeyword = makePredicate("and break case catch continue debugger def default dict do else finally for from function if import not or return switch throw try var while with null True False instanceof typeof void delete new in this");
+  var isKeyword = makePredicate("and break case catch class continue debugger def default dict do else finally for from function if import not or pass return switch throw try var while with null True False instanceof typeof void delete new in this");
 
   // ## Character categories
 
@@ -500,6 +545,7 @@
     tokRegexpAllowed = true;
     tokCurIndent = [];
     forLoopCount = 0;
+    scope.init();
   }
 
   // Called at the end of every token. Sets `tokEnd`, `tokVal`, and
@@ -1137,6 +1183,15 @@
     return node;
   }
 
+  function createNodeFrom(other, type, props) {
+    var node = startNodeFrom(other);
+    for (var prop in props) {
+      node[prop] = props[prop];
+    }
+    node = finishNode(node, type);
+    return node;
+  }
+
   function createNodeMemberCall(node, object, property, args) {
     var objId = createNode("Identifier", { name: object });
     var propId = createNode("Identifier", { name: property });
@@ -1270,6 +1325,10 @@
       if (i === labels.length) raise(node.start, "Unsyntactic " + starttype.keyword);
       return finishNode(node, isBreak ? "BreakStatement" : "ContinueStatement");
 
+    case _class:
+      next();
+      return parseClass(node);
+
     case _debugger:
       next();
       semicolon();
@@ -1319,6 +1378,10 @@
     case _indent:
       next();
       return parseBlock();
+
+    case _pass:
+      next();
+      return finishNode(node, "EmptyStatement");
 
     case _return:
       if (!inFunction && !options.allowReturnOutsideFunction)
@@ -1427,6 +1490,8 @@
       // simply start parsing an expression, and afterwards, if the
       // next token is a colon and the expression was a simple
       // Identifier node, we switch to interpreting it as a label.
+      // If an assign has been converted to a variable declaration,
+      // we pass it up as is.
 
     default:
       var maybeName = tokVal, expr = parseExpression();
@@ -1439,6 +1504,8 @@
         labels.pop();
         node.label = expr;
         return finishNode(node, "LabeledStatement");
+      } else if (expr.type === "VariableDeclaration") {
+        return expr;
       } else {
         node.expression = expr;
         semicolon();
@@ -1510,7 +1577,7 @@
     var forArrayIndexId = createNode("Identifier", { name: "__index" + forLoopCount });
     var forArrayIndexDeclr = createNode("VariableDeclarator", { id: forArrayIndexId, init: zeroLit });
     var forArrayIndexDecln = createNode("VariableDeclaration", { declarations: [forArrayIndexDeclr], kind: "var" });
-    var forArrayTestMember = createNode("MemberExpression", { object: rightId, property: lengthId, computer: false });
+    var forArrayTestMember = createNode("MemberExpression", { object: rightId, property: lengthId, computed: false });
     var forArrayTestBinop = createNode("BinaryExpression", { left: forArrayIndexId, operator: "<", right: forArrayTestMember });
     var forArrayUpdate = createNode("UpdateExpression", { operator: "++", prefix: true, argument: forArrayIndexId });
     var forArrayMember = createNode("MemberExpression", { object: rightId, property: forArrayIndexId, computed: true });
@@ -1579,16 +1646,34 @@
 
   // Parse an assignment expression. This includes applications of
   // operators like `+=`.
+  // Add 'this.' to assignments in a class constructor.
+  // Convert identifier assignment to variable declaration if the
+  // identifier doesn't exist in this namespace yet.
 
   function parseMaybeAssign(noIn) {
     var left = parseMaybeConditional(noIn);
     if (tokType.isAssign) {
+      if (scope.isClass()) {
+        var thisExpr = createNodeFrom(left, "ThisExpression");
+        left = createNodeFrom(left, "MemberExpression", { object: thisExpr, property: left });
+      }
       var node = startNodeFrom(left);
       node.operator = tokVal;
       node.left = left;
       next();
       node.right = parseMaybeAssign(noIn);
       checkLVal(left);
+      if (left.type === "Identifier" && !scope.exists(left.name)) {
+        scope.addVar(left.name);
+        var decl = startNodeFrom(node);
+        decl.id = node.left;
+        decl.init = node.right
+        decl = finishNode(decl, "VariableDeclarator");
+        var varDecls = startNodeFrom(node);
+        varDecls.kind = "var";
+        varDecls.declarations = [decl];
+        return finishNode(varDecls, "VariableDeclaration");
+      }
       return finishNode(node, "AssignmentExpression");
     }
     return left;
@@ -1690,6 +1775,8 @@
         var importsId = createNode("Identifier", { name: "imports" });
         var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: importsId, computed: false });
         node.object = createNode("MemberExpression", { object: runtimeMember, property: base, computed: false });
+      } else if (base.name && base.name === scope.getThisReplace()) {
+        node.object = createNodeFrom(base, "ThisExpression");
       } else node.object = base;
       node.property = id;
       node.computed = false;
@@ -1715,6 +1802,8 @@
         node.callee = createNode("MemberExpression", { object: runtimeMember, property: base, computed: false });
       } else node.callee = base;
       node.arguments = parseExprList(_parenR, false);
+      if (scope.isNewObj(base.name))
+        return parseSubscripts(finishNode(node, "NewExpression"), noCalls);
       return parseSubscripts(finishNode(node, "CallExpression"), noCalls);
     } else return base;
   }
@@ -1790,6 +1879,114 @@
     }
   }
 
+  // Parse class
+
+  function parseClass(ctorNode) {
+    ctorNode.id = parseIdent();
+    ctorNode.params = [];
+    var classParams = [];
+    if (eat(_parenL)) {
+      var first = true;
+      while (!eat(_parenR)) {
+        if (!first) expect(_comma); else first = false;
+        classParams.push(parseIdent());
+      }
+    }
+    if (classParams.length > 1) raise(tokPos, "Multiple inheritance not supported");
+    expect(_colon); expect(_indent);
+
+    // Start new namespace for class body
+
+    scope.startClass(ctorNode.id.name);
+
+    // Container for class constructor and prototype functions
+
+    var container = startNode();
+    container.body = [];
+
+    // Parse class body
+
+    var classBlock = parseBlock();
+
+    // Helper to identify class methods which were parsed onto the class prototype
+
+    function getPrototype(stmt) {
+      if (stmt.expression && stmt.expression.left && stmt.expression.left.object &&
+        stmt.expression.left.object.property && stmt.expression.left.object.property.name === "prototype")
+        return stmt.expression.left.property.name;
+      return null;
+    }
+
+    // Start building class constructor
+
+    var ctorBlock = startNodeFrom(container);
+    ctorBlock.body = [];
+
+    // Add parent class constructor call
+
+    for (var i in classParams) {
+      var objId = createNode("Identifier", { name: classParams[0].name });
+      var propertyId = createNode("Identifier", { name: "call" });
+      var calleeMember = createNode("MemberExpression", { object: objId, property: propertyId, computed: false });
+      var thisExpr = createNode("ThisExpression");
+      var callExpr = createNode("CallExpression", { callee: calleeMember, arguments: [thisExpr] });
+      var superExpr = createNode("ExpressionStatement", { expression: callExpr });
+      ctorBlock.body.push(superExpr);
+    }
+
+    // Add non-function statements and contents of special '__init__' method
+
+    for (var i in classBlock.body) {
+      var stmt = classBlock.body[i];
+      var prototype = getPrototype(stmt);
+      if (!prototype) {
+        ctorBlock.body.push(stmt);
+      }
+      else if (prototype === "__init__") {
+        for (var j in stmt.expression.right.body.body)
+          ctorBlock.body.push(stmt.expression.right.body.body[j]);
+        ctorNode.params = stmt.expression.right.params;
+      }
+    }
+
+    // Finish class constructor
+
+    ctorNode.body = finishNode(ctorBlock, "BlockStatement");
+    ctorNode = finishNode(ctorNode, "FunctionDeclaration");
+    container.body.push(ctorNode);
+
+    // Add inheritance via 'MyClass.prototype = Object.create(ParentClass.prototype)'
+
+    if (classParams.length === 1) {
+      var childClassId = createNode("Identifier", { name: ctorNode.id.name });
+      var childPrototypeId = createNode("Identifier", { name: "prototype" });
+      var childPrototypeMember = createNode("MemberExpression", { object: childClassId, property: childPrototypeId, computed: false });
+      var parentClassId = createNode("Identifier", { name: classParams[0].name });
+      var parentPrototypeId = createNode("Identifier", { name: "prototype" });
+      var parentPrototypeMember = createNode("MemberExpression", { object: parentClassId, property: parentPrototypeId, computed: false });
+      var objClassId = createNode("Identifier", { name: "Object" });
+      var objCreateId = createNode("Identifier", { name: "create" });
+      var objPropertyMember = createNode("MemberExpression", { object: objClassId, property: objCreateId, computed: false });
+      var callExpr = createNode("CallExpression", { callee: objPropertyMember, arguments: [parentPrototypeMember] });
+      var assignExpr = createNode("AssignmentExpression", { left: childPrototypeMember, operator: "=", right: callExpr });
+      var inheritanceExpr = createNode("ExpressionStatement", { expression: assignExpr });
+      container.body.push(inheritanceExpr);
+    }
+
+    // Add class methods, which are already prototype assignments
+
+    for (var i in classBlock.body) {
+      var stmt = classBlock.body[i];
+      var prototype = getPrototype(stmt);
+      if (prototype && prototype !== "__init__")
+        container.body.push(stmt);
+    }
+
+    scope.end();
+
+    return finishNode(container, "BlockStatement");
+  }
+
   // Parse dictionary
   // Custom dict object used to simulate native Python dict
   // E.g. "{'k1':'v1', 'k2':'v2'}" becomes "new __pythonRuntime.objects.dict(['k1', 'v1'], ['k2', 'v2']);"
@@ -1843,9 +2040,6 @@
     return parseIdent(true);
   }
 
-  // Parse a function declaration or literal (depending on the
-  // `isStatement` parameter).
-
   function parseFunction(node) {
     node.id = parseIdent();
     node.params = [];
@@ -1855,12 +2049,20 @@
       if (!first) expect(_comma); else first = false;
       node.params.push(parseIdent());
     }
-    if (!eat(_colon)) unexpected();
+    expect(_colon);
 
     // Start a new scope with regard to labels and the `inFunction`
     // flag (restore them to their old value afterwards).
     var oldInFunc = inFunction, oldLabels = labels;
     inFunction = true; labels = [];
+
+    scope.startFn(node.id.name);
+
+    // If class method, remove class instance var from params and save for 'this' replacement
+    if (scope.isParentClass()) {
+      var selfId = node.params.shift();
+      scope.setThisReplace(selfId.name);
+    }
 
     if (tokType === _indent) {
       next();
@@ -1883,10 +2085,25 @@
       if (isStrictReservedWord(id.name) || isStrictBadIdWord(id.name))
         raise(id.start, "Defining '" + id.name + "' in strict mode");
       if (i >= 0) for (var j = 0; j < i; ++j) if (id.name === node.params[j].name)
-        raise(id.start, "Argument name clash in strict mode");
+        raise(id.start, "Argument name clash");
     }
 
-    return finishNode(node, "FunctionDeclaration");
+    // If class method, replace with prototype function literals
+    var retNode;
+    if (scope.isParentClass()) {
+      var classId = createNode("Identifier", { name: scope.getParentClassName() });
+      var prototypeId = createNode("Identifier", { name: "prototype" });
+      var functionId = node.id;
+      var prototypeMember = createNode("MemberExpression", { object: classId, property: prototypeId, computed: false });
+      var functionMember = createNode("MemberExpression", { object: prototypeMember, property: functionId, computed: false });
+      var functionExpr = createNode("FunctionExpression", { body: node.body, params: node.params });
+      var assignExpr = createNode("AssignmentExpression", { left: functionMember, operator: "=", right: functionExpr });
+      retNode = createNode("ExpressionStatement", { expression: assignExpr });
+    } else retNode = finishNode(node, "FunctionDeclaration");
+
+    scope.end();
+
+    return retNode;
   }
 
   // Parses a comma-separated list of expressions, and returns them as

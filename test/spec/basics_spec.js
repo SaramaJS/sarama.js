@@ -1,26 +1,9 @@
-var filbert = require('../../filbert.js');
-var escodegen = require('escodegen');
-
-function run(code) {
-  try {
-    var lines = code.split("\n");
-    for (var i in lines) lines[i] = "  " + lines[i];
-    var indentedCode = lines.join("\n");
-    var wrappedCode = "def foo(__pythonRuntime):\n" + indentedCode + "\n";
-    var ast = filbert.parse(wrappedCode);
-    var js = escodegen.generate(ast);
-    js = "(function(__global){__global['foo'] = " + js + "})(this);this.foo(filbert.pythonRuntime);";
-    return eval(js);
-  }
-  catch (e) {
-    return e;
-  }
-}
+var util = require('./util.js');
 
 describe("Basics", function () {
   it("return 1000", function () {
     var code = "return 1000";
-    expect(run(code)).toBe(1000);
+    expect(util.run(code)).toBe(1000);
   });
 
   it("simple if", function () {
@@ -28,14 +11,14 @@ describe("Basics", function () {
     if False: return 2000\n\
     return 1000\n\
     ";
-    expect(run(code)).toBe(1000);
+    expect(util.run(code)).toBe(1000);
   });
 
   it("mathmetics order", function () {
     var code = "\
     return (2*2 + 2/2 - 2*2/2)\n\
     ";
-    expect(run(code)).toBe(3);
+    expect(util.run(code)).toBe(3);
   });
 
   it("fibonacci function", function () {
@@ -46,7 +29,7 @@ describe("Basics", function () {
     chupacabra = fib(6)\n\
     return chupacabra\n\
     ";
-    expect(run(code)).toBe(8);
+    expect(util.run(code)).toBe(8);
   });
 
   it("for loop", function () {
@@ -57,7 +40,7 @@ describe("Basics", function () {
       total += d\n\
     return total\n\
     ";
-    expect(run(code)).toBe(78);
+    expect(util.run(code)).toBe(78);
   });
 
   it("bubble sort", function () {
@@ -93,7 +76,7 @@ describe("Basics", function () {
     bubbleSort(data)\n\
     return isSorted(data)\n\
     ";
-    expect(run(code)).toBe(true);
+    expect(util.run(code)).toBe(true);
   });
 
 });

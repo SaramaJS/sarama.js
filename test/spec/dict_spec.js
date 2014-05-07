@@ -1,21 +1,4 @@
-var filbert = require('../../filbert.js');
-var escodegen = require('escodegen');
-
-function run(code) {
-  try {
-    var lines = code.split("\n");
-    for (var i in lines) lines[i] = "  " + lines[i];
-    var indentedCode = lines.join("\n");
-    var wrappedCode = "def foo(__pythonRuntime):\n" + indentedCode + "\n";
-    var ast = filbert.parse(wrappedCode);
-    var js = escodegen.generate(ast);
-    js = "(function(__global){__global['foo'] = " + js + "})(this);this.foo(filbert.pythonRuntime);";
-    return eval(js);
-  }
-  catch (e) {
-    return e;
-  }
-}
+var util = require('./util.js');
 
 describe("Dictionary", function () {
   it("dict(one=1, two=2)", function () {
@@ -23,7 +6,7 @@ describe("Dictionary", function () {
     d = dict(one=1, two=2)\n\
     return d['two']\n\
     ";
-    expect(run(code)).toBe(2);
+    expect(util.run(code)).toBe(2);
   });
 
   it("{'p1': 'prop1'}", function () {
@@ -31,7 +14,7 @@ describe("Dictionary", function () {
     d = {'p1': 'prop1'}\n\
     return d['p1']\n\
     ";
-    expect(run(code)).toBe('prop1');
+    expect(util.run(code)).toBe('prop1');
   });
 
   it("{4: 'prop1'}", function () {
@@ -39,7 +22,7 @@ describe("Dictionary", function () {
     d = {4: 'prop1'}\n\
     return d[4]\n\
     ";
-    expect(run(code)).toBe('prop1');
+    expect(util.run(code)).toBe('prop1');
   });
 
   it("{p: 'prop1'}", function () {
@@ -48,7 +31,7 @@ describe("Dictionary", function () {
     d = {p: 'prop1'}\n\
     return d['p1']\n\
     ";
-    expect(run(code)).toBe('prop1');
+    expect(util.run(code)).toBe('prop1');
   });
 
   it("dict(one=1, two=2)", function () {
@@ -59,7 +42,7 @@ describe("Dictionary", function () {
       total += d[key]\n\
     return total\n\
     ";
-    expect(run(code)).toBe(3);
+    expect(util.run(code)).toBe(3);
   });
 
   it("len(d)", function () {
@@ -67,7 +50,7 @@ describe("Dictionary", function () {
     d = dict(one=1, two=2)\n\
     return len(d)\n\
     ";
-    expect(run(code)).toBe(2);
+    expect(util.run(code)).toBe(2);
   });
 
   it("clear()", function () {
@@ -77,7 +60,7 @@ describe("Dictionary", function () {
     d['foo'] = 'bar'\n\
     return len(d)\n\
     ";
-    expect(run(code)).toBe(1);
+    expect(util.run(code)).toBe(1);
   });
 
   it("get(key)", function () {
@@ -85,7 +68,7 @@ describe("Dictionary", function () {
     d = dict(one=1, two=2)\n\
     return d.get('one')\n\
     ";
-    expect(run(code)).toBe(1);
+    expect(util.run(code)).toBe(1);
   });
 
   it("get(key, 'bar')", function () {
@@ -93,7 +76,7 @@ describe("Dictionary", function () {
     d = dict(one=1, two=2)\n\
     return d.get('foo', 'bar')\n\
     ";
-    expect(run(code)).toBe('bar');
+    expect(util.run(code)).toBe('bar');
   });
 
   it("keys()", function () {
@@ -101,7 +84,7 @@ describe("Dictionary", function () {
     d = dict(one=1, two=2)\n\
     return d.keys()\n\
     ";
-    expect(run(code)).toEqual(['one', 'two']);
+    expect(util.run(code)).toEqual(['one', 'two']);
   });
 
   it("pop(key)", function () {
@@ -112,7 +95,7 @@ describe("Dictionary", function () {
       return True\n\
     return False\n\
     ";
-    expect(run(code)).toBe(true);
+    expect(util.run(code)).toBe(true);
   });
 
   it("pop(key, 'bar')", function () {
@@ -123,7 +106,7 @@ describe("Dictionary", function () {
       return True\n\
     return False\n\
     ";
-    expect(run(code)).toBe(true);
+    expect(util.run(code)).toBe(true);
   });
 
   it("values()", function () {
@@ -131,6 +114,6 @@ describe("Dictionary", function () {
     d = dict(one=1, two=2)\n\
     return d.values()\n\
     ";
-    expect(run(code)).toEqual([1, 2]);
+    expect(util.run(code)).toEqual([1, 2]);
   });
 });
