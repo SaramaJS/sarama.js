@@ -332,7 +332,7 @@
   var _break = {keyword: "break"}, _case = {keyword: "case", beforeExpr: true}, _catch = {keyword: "catch"};
   var _class = { keyword: "class" };
   var _continue = { keyword: "continue" }, _debugger = { keyword: "debugger" }, _default = { keyword: "default" };
-  var _do = {keyword: "do", isLoop: true}, _else = {keyword: "else", beforeExpr: true};
+  var _do = {keyword: "do", isLoop: true}, _elif = {keyword: "elif", beforeExpr: true}, _else = {keyword: "else", beforeExpr: true};
   var _finally = {keyword: "finally"}, _for = {keyword: "for", isLoop: true};
   var _if = { keyword: "if" }, _pass = { keyword: "pass" };
   var _return = { keyword: "return", beforeExpr: true }, _switch = { keyword: "switch" };
@@ -360,7 +360,7 @@
 
   var keywordTypes = {"break": _break, "case": _case, "catch": _catch, "class": _class,
                       "continue": _continue, "debugger": _debugger, "def": _def, "default": _default,
-                      "dict": _dict, "do": _do, "else": _else, "finally": _finally, "for": _for,
+                      "dict": _dict, "do": _do, "elif": _elif, "else": _else, "finally": _finally, "for": _for,
                       "if": _if, "pass": _pass, "return": _return, "switch": _switch,
                       "throw": _throw, "try": _try, "var": _var, "while": _while, "with": _with,
                       "null": _null, "True": _true, "False": _false, "new": _new, "in": _in,
@@ -481,7 +481,7 @@
 
   // And the keywords.
 
-  var isKeyword = makePredicate("and break case catch class continue debugger def default dict do else finally for from function if import not or pass return switch throw try var while with null True False instanceof typeof void delete new in this");
+  var isKeyword = makePredicate("and break case catch class continue debugger def default dict do elif else finally for from function if import not or pass return switch throw try var while with null True False instanceof typeof void delete new in this");
 
   // ## Character categories
 
@@ -1361,13 +1361,16 @@
       next();
       return parseStatement();
 
-    case _if:
+    case _if: case _elif:
       next();
       if (tokType === _parenL) node.test = parseParenExpression();
       else node.test = parseExpression();
       expect(_colon);
       node.consequent = parseStatement();
-      node.alternate = eat(_else) && eat(_colon) ? parseStatement() : null;
+      if (tokType === _elif)
+        node.alternate = parseStatement();
+      else
+        node.alternate = eat(_else) && eat(_colon) ? parseStatement() : null;
       return finishNode(node, "IfStatement");
 
     case _import: // Skipping from and import statements for now

@@ -14,6 +14,91 @@ describe("Basics", function () {
     expect(util.run(code)).toBe(1000);
   });
 
+  it("no indent, if elif else, if", function () {
+    var code = "\
+    x = 2\n\
+    if x == 2: return '2'\n\
+    elif x == 4: return '4'\n\
+    else: return 'else'\n\
+    ";
+    expect(util.run(code)).toBe('2');
+  });
+
+  it("no indent, if elif else, elif", function () {
+    var code = "\
+    x = 4\n\
+    if x == 2: return '2'\n\
+    elif x == 4: return '4'\n\
+    else: return 'else'\n\
+    ";
+    expect(util.run(code)).toBe('4');
+  });
+
+  it("no indent, if elif else, else", function () {
+    var code = "\
+    x = -0\n\
+    if x == 2: return '2'\n\
+    elif x == 4: return '4'\n\
+    else: return 'else'\n\
+    ";
+    expect(util.run(code)).toBe('else');
+  });
+
+  it("with indent, if elif else, else", function () {
+    var code = "\
+    x = -0\n\
+    if x == 2:\n\
+      return '2'\n\
+    elif x == 4:\n\
+      return '4'\n\
+    else:\n\
+      return 'else'\n\
+    ";
+    expect(util.run(code)).toBe('else');
+  });
+
+  it("with indent, if elif else, if", function () {
+    var code = "\
+    x = 2\n\
+    if x == 2:\n\
+      return '2'\n\
+    elif x == 4:\n\
+      return '4'\n\
+    else:\n\
+      return 'else'\n\
+    ";
+    expect(util.run(code)).toBe('2');
+  });
+
+  it("with indent, if elif else, elif", function () {
+    var code = "\
+    x = 4\n\
+    if x == 2:\n\
+      return '2'\n\
+    elif x == 4:\n\
+      return '4'\n\
+    else:\n\
+      return 'else'\n\
+    ";
+    expect(util.run(code)).toBe('4');
+  });
+
+  it("multiple elif", function () {
+    var code = "\
+    x = 4\n\
+    if x == 2:\n\
+      x += 1\n\
+      return '2'\n\
+    elif x == 44564:\n\
+      x += 1\n\
+      return '44564'\n\
+    elif x == 4:\n\
+      x += 1\n\
+      return '4'\n\
+    ";
+    expect(util.run(code)).toBe('4');
+  });
+
   it("mathmetics order", function () {
     var code = "\
     return (2*2 + 2/2 - 2*2/2)\n\
