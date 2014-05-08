@@ -355,6 +355,7 @@
   var _logicalAND = { keyword: "and", prec: 2, beforeExpr: true, rep: "&&" }
   var _logicalNOT = { keyword: "not", prec: 3, prefix: true, beforeExpr: true, rep: "!" };
   var _in = { keyword: "in", prec: 4, beforeExpr: true };
+  var _is = { keyword: "is", prec: 4, beforeExpr: true };
 
   // Map keyword names to token types.
 
@@ -363,7 +364,7 @@
                       "dict": _dict, "do": _do, "elif": _elif, "else": _else, "finally": _finally, "for": _for,
                       "if": _if, "pass": _pass, "return": _return, "switch": _switch,
                       "throw": _throw, "try": _try, "var": _var, "while": _while, "with": _with,
-                      "null": _null, "True": _true, "False": _false, "new": _new, "in": _in,
+                      "null": _null, "True": _true, "False": _false, "new": _new, "in": _in, "is": _is,
                       "instanceof": {keyword: "instanceof", binop: 7, beforeExpr: true}, "this": _this,
                       "typeof": {keyword: "typeof", prefix: true, beforeExpr: true},
                       "void": {keyword: "void", prefix: true, beforeExpr: true},
@@ -481,7 +482,7 @@
 
   // And the keywords.
 
-  var isKeyword = makePredicate("and break case catch class continue debugger def default dict do elif else finally for from function if import not or pass return switch throw try var while with null True False instanceof typeof void delete new in this");
+  var isKeyword = makePredicate("and break case catch class continue debugger def default dict do elif else finally for from function if import in is not or pass return switch throw try var while with null True False instanceof typeof void delete new this");
 
   // ## Character categories
 
@@ -1711,9 +1712,11 @@
   // Exponentiation is evaluated right-to-left, so 'prec >= minPrec'
   // Exponentiation operator 'x**y' is replaced with 'Math.pow(x, y)'
   // Floor division operator 'x//y' is replaced with 'Math.floor(x/y)'
+  // 'in' and 'not in' implemented via indexOf()
 
   function parseExprOp(left, minPrec, noIn) {
-    var node, exprNode, right, op = tokType, prec = op.prec;
+    var node, exprNode, right, op = tokType, val = tokVal;
+    var prec = op === _logicalNOT ? _in.prec : op.prec;
     if (op === _exponentiation && prec >= minPrec) {
       node = startNodeFrom(left);
       next();
@@ -1722,16 +1725,27 @@
       return parseExprOp(exprNode, minPrec, noIn);
     } else if (prec != null && (!noIn || op !== _in)) {
       if (prec > minPrec) {
+        next();
         node = startNodeFrom(left);
         if (op === _floorDiv) {
-          next();
           right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
           var binExpr = createNode("BinaryExpression", { left: left, operator: '/', right: right });
           exprNode = createNodeMemberCall(node, "Math", "floor", [binExpr]);
+        } else if (op === _in || op === _logicalNOT) {
+          if (op === _in || eat(_in)) {
+            right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
+            var zeroLit = createNode("Literal", { value: 0 });
+            var indexOfLit = createNode("Literal", { name: "indexOf" });
+            var memberExpr = createNode("MemberExpression", { object: right, property: indexOfLit, computed: false });
+            var callExpr = createNode("CallExpression", { callee: memberExpr, arguments: [left] });
+            exprNode = createNode("BinaryExpression", { left: callExpr, operator: op === _in ? ">=" : "<", right: zeroLit });
+          } else raise(tokPos, "Expected 'not in' comparison operator");
         } else {
+          if (op === _is) {
+            if (eat(_logicalNOT)) node.operator = "!==";
+            else node.operator = "===";
+          } else node.operator = op.rep != null ? op.rep : val;
           node.left = left;
-          node.operator = op.rep != null ? op.rep : tokVal;
-          next();
           node.right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
           exprNode = finishNode(node, (op === _logicalOR || op === _logicalAND) ? "LogicalExpression" : "BinaryExpression");
         }
@@ -2229,6 +2243,47 @@
           },
           enumerable: false
         });
+        Object.defineProperty(arr, "clear",
+        {
+          value: function () {
+            this.splice(0, this.length);
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "copy",
+        {
+          value: function () {
+            return this.slice(0);
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "count",
+        {
+          value: function (x) {
+            var c = 0;
+            for (var i = 0; i < this.length; i++)
+              if (this[i] === x) c++;
+            return c;
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "equals",
+        {
+          value: function (x) {
+            try {
+              if (this.length !== x.length) return false;
+              for (var i = 0; i < this.length; i++) {
+                if (this[i].hasOwnProperty("equals")) {
+                  if (!this[i].equals(x[i])) return false;
+                } else if (this[i] !== x[i]) return false;
+              }
+              return true;
+            }
+            catch (e) { }
+            return false;
+          },
+          enumerable: false
+        });
         Object.defineProperty(arr, "extend",
         {
           value: function (L) {
@@ -2236,17 +2291,32 @@
           },
           enumerable: false
         });
+        Object.defineProperty(arr, "index",
+        {
+          value: function (x) {
+            return this.indexOf(x);
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "indexOf",
+        {
+          value: function (x, fromIndex) {
+            try {
+              for (var i = fromIndex ? fromIndex : 0; i < this.length; i++) {
+                if (this[i].hasOwnProperty("equals")) {
+                  if (this[i].equals(x)) return i;
+                } else if (this[i] === x) return i;
+              }
+            }
+            catch (e) { }
+            return -1;
+          },
+          enumerable: false
+        });
         Object.defineProperty(arr, "insert",
         {
           value: function (i, x) {
             this.splice(i, 0, x);
-          },
-          enumerable: false
-        });
-        Object.defineProperty(arr, "remove",
-        {
-          value: function (x) {
-            this.splice(this.indexOf(x), 1);
           },
           enumerable: false
         });
@@ -2261,34 +2331,10 @@
           },
           enumerable: false
         });
-        Object.defineProperty(arr, "clear",
-        {
-          value: function () {
-            this.splice(0, this.length);
-          },
-          enumerable: false
-        });
-        Object.defineProperty(arr, "index",
+        Object.defineProperty(arr, "remove",
         {
           value: function (x) {
-            return this.indexOf(x);
-          },
-          enumerable: false
-        });
-        Object.defineProperty(arr, "count",
-        {
-          value: function (x) {
-            var c = 0;
-            for (var i = 0; i < this.length; i++)
-              if (this[i] === x) c++;
-            return c;
-          },
-          enumerable: false
-        });
-        Object.defineProperty(arr, "copy",
-        {
-          value: function () {
-            return this.slice(0);
+            this.splice(this.indexOf(x), 1);
           },
           enumerable: false
         });
