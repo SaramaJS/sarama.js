@@ -314,7 +314,7 @@
 
   var _num = {type: "num"}, _regexp = {type: "regexp"}, _string = {type: "string"};
   var _name = {type: "name"}, _eof = {type: "eof"};
-  var _indent = {type: "indent"}, _dedent = {type: "dedent"};
+  var _newline = {type: "newline"}, _indent = {type: "indent"}, _dedent = {type: "dedent"};
 
   // Keyword tokens. The `keyword` property (also used in keyword-like
   // operators) indicates that the token originated from an
@@ -557,7 +557,7 @@
     tokEnd = tokPos;
     if (options.locations) tokEndLoc = new Position;
     tokType = type;
-    skipSpace();
+    if (type !== _newline) skipSpace();
     tokVal = val;
     tokRegexpAllowed = type.beforeExpr;
   }
@@ -696,15 +696,10 @@
   // TODO: disallow unequal indents of same length (e.g. nested if/else block)
   // TODO: some weird handling of tokPos because of finishOp size logic
 
-  function readToken_indent(code) {
-    if (options.locations) {
-      ++tokCurLine;
-      tokLineStart = tokPos + 1;
-    }
-
+  function readToken_indent() {
     // Read indent, skip empty lines and comments
     var indent = "";
-    var indentPos = tokPos + 1;
+    var indentPos = tokPos;
     while (indentPos < inputLen) {
       var ch = input.charCodeAt(indentPos);
       if (ch === 32 || ch === 9) { // ' ' or '\t'
@@ -754,9 +749,8 @@
         tokPos = inputLen;
         if (options.locations) tokStartLoc = new Position;
         return finishOp(type, 0);
-      default: // linebreak
-        ++tokPos;
-        if (options.locations) tokStartLoc = new Position;
+      default:
+        tokType = null;
         return readToken();
     }
   }
@@ -766,7 +760,13 @@
 
     case 10: // '\n'
       // TODO: other unicode newline characters
-      return readToken_indent(code);
+      ++tokPos;
+      if (options.locations) {
+        ++tokCurLine;
+        tokLineStart = tokPos;
+      }
+      return finishToken(_newline);
+
     case 35: // '#'
       skipLineComment();
       return readToken();
@@ -840,6 +840,7 @@
     if (options.locations) tokStartLoc = new Position;
     if (forceRegexp) return readRegexp();
     if (tokPos >= inputLen) return finishToken(_eof);
+    if (tokType === _newline) return readToken_indent();
 
     var code = input.charCodeAt(tokPos);
     // Identifier or keyword. '\uXXXX' sequences are allowed in
@@ -1270,14 +1271,12 @@
     inFunction = strict = null;
     labels = [];
     readToken();
-    if (tokType === _indent) unexpected();
 
     var node = program || startNode(), first = true;
     if (!program) node.body = [];
     while (tokType !== _eof) {
       var stmt = parseStatement();
-      node.body.push(stmt);
-      if (first && isUseStrict(stmt)) setStrict(true);
+      if (stmt) node.body.push(stmt);
       first = false;
     }
     return finishNode(node, "Program");
@@ -1335,10 +1334,6 @@
       semicolon();
       return finishNode(node, "DebuggerStatement");
 
-    case _dedent:
-      next();
-      return parseStatement();
-
     case _def:
       next();
       return parseFunction(node);
@@ -1367,11 +1362,11 @@
       if (tokType === _parenL) node.test = parseParenExpression();
       else node.test = parseExpression();
       expect(_colon);
-      node.consequent = parseStatement();
+      node.consequent = parseSuite();
       if (tokType === _elif)
         node.alternate = parseStatement();
       else
-        node.alternate = eat(_else) && eat(_colon) ? parseStatement() : null;
+        node.alternate = eat(_else) && eat(_colon) ? parseSuite() : null;
       return finishNode(node, "IfStatement");
 
     case _import: // Skipping from and import statements for now
@@ -1379,9 +1374,10 @@
       next();
       return parseStatement();
 
-    case _indent:
+    case _newline:
+      // TODO: parseStatement() should probably eat it's own newline
       next();
-      return parseBlock();
+      return null;
 
     case _pass:
       next();
@@ -1397,7 +1393,7 @@
       // possibility to insert one.
 
       if (eat(_semi) || canInsertSemicolon()) node.argument = null;
-      else { node.argument = parseExpression(); semicolon(); }
+      else { node.argument = parseExpression();}
       return finishNode(node, "ReturnStatement");
 
     case _switch:
@@ -1475,7 +1471,7 @@
       if (tokType === _parenL) node.test = parseParenExpression();
       else node.test = parseExpression();
       expect(_colon);
-      node.body = parseStatement();
+      node.body = parseSuite();
       return finishNode(node, "WhileStatement");
 
     case _with:
@@ -1489,30 +1485,15 @@
       next();
       return finishNode(node, "EmptyStatement");
 
-      // If the statement does not start with a statement keyword or a
-      // brace, it's an ExpressionStatement or LabeledStatement. We
-      // simply start parsing an expression, and afterwards, if the
-      // next token is a colon and the expression was a simple
-      // Identifier node, we switch to interpreting it as a label.
-      // If an assign has been converted to a variable declaration,
-      // we pass it up as is.
+      // Assume it's an ExpressionStatement. If an assign has been 
+      // converted to a variable declaration, pass it up as is.
 
     default:
-      var maybeName = tokVal, expr = parseExpression();
-      if (starttype === _name && expr.type === "Identifier" && eat(_colon)) {
-        for (var i = 0; i < labels.length; ++i)
-          if (labels[i].name === maybeName) raise(expr.start, "Label '" + maybeName + "' is already declared");
-        var kind = tokType.isLoop ? "loop" : tokType === _switch ? "switch" : null;
-        labels.push({name: maybeName, kind: kind});
-        node.body = parseStatement();
-        labels.pop();
-        node.label = expr;
-        return finishNode(node, "LabeledStatement");
-      } else if (expr.type === "VariableDeclaration") {
+      var expr = parseExpression();
+      if (expr.type === "VariableDeclaration") {
         return expr;
       } else {
         node.expression = expr;
-        semicolon();
         return finishNode(node, "ExpressionStatement");
       }
     }
@@ -1541,6 +1522,25 @@
     return finishNode(node, "BlockStatement");
   }
 
+  // Parse 'suite' from Python grammar spec
+  // Will replace parseBlock eventually
+
+  function parseSuite() {
+    var node = startNode();
+    node.body = [];
+    if (eat(_newline)) {
+      eat(_indent);
+      while (!eat(_dedent) && !eat(_eof)) {
+        var stmt = parseStatement();
+        if (stmt) node.body.push(stmt);
+      }
+    } else {
+      node.body.push(parseStatement());
+      next();
+    }
+    return finishNode(node, "BlockStatement");
+  }
+
   // Parse for/in loop
   // Problem:
   // 1. JavaScript for/in loop iterates on properties, which are the indexes for an Array
@@ -1561,7 +1561,7 @@
     expect(_in);
     var originalRight = parseExpression();
     expect(_colon);
-    var originalBodyForArray = parseStatement();
+    var originalBodyForArray = parseSuite();
     var originalBodyForIn = JSON.parse(JSON.stringify(originalBodyForArray));
     if (originalBodyForArray.type !== "BlockStatement")
       originalBodyForArray = createNode("BlockStatement", { body: [originalBodyForArray] });
@@ -1910,7 +1910,7 @@
       }
     }
     if (classParams.length > 1) raise(tokPos, "Multiple inheritance not supported");
-    expect(_colon); expect(_indent);
+    expect(_colon);
 
     // Start new namespace for class body
 
@@ -1923,7 +1923,7 @@
 
     // Parse class body
 
-    var classBlock = parseBlock();
+    var classBlock = parseSuite();
 
     // Helper to identify class methods which were parsed onto the class prototype
 
@@ -2081,16 +2081,7 @@
       scope.setThisReplace(selfId.name);
     }
 
-    if (tokType === _indent) {
-      next();
-      node.body = parseBlock();
-    } else {
-      var blockNode = startNode();
-      blockNode.body = [];
-      var stmt = parseStatement();
-      blockNode.body.push(stmt);
-      node.body = finishNode(blockNode, "BlockStatement");
-    }
+    node.body = parseSuite();
 
     inFunction = oldInFunc; labels = oldLabels;
 
