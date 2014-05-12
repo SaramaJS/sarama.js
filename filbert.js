@@ -253,9 +253,9 @@
 
   var tokCurDedent;
 
-  // Used for name collision avoidance for extra AST identifiers in for loops
+  // Used for name collision avoidance for extra AST identifiers
 
-  var forLoopCount = 0;
+  var newAstIdCount = 0;
 
   // ## Scope
 
@@ -545,7 +545,7 @@
     tokPos = tokLineStart = 0;
     tokRegexpAllowed = true;
     tokCurIndent = [];
-    forLoopCount = 0;
+    newAstIdCount = 0;
     scope.init();
   }
 
@@ -1203,6 +1203,17 @@
     return finishNode(node, "CallExpression");
   }
 
+  function createVarDeclFromId(refNode, id, init) {
+    var decl = startNodeFrom(refNode);
+    decl.id = id;
+    decl.init = init;
+    decl = finishNode(decl, "VariableDeclarator");
+    var declDecl = startNodeFrom(refNode);
+    declDecl.kind = "var";
+    declDecl.declarations = [decl];
+    return finishNode(declDecl, "VariableDeclaration");
+  }
+
   // Test whether a statement node is the string literal `"use strict"`.
 
   function isUseStrict(stmt) {
@@ -1256,6 +1267,59 @@
       raise(expr.start, "Assigning to rvalue");
     if (strict && expr.type === "Identifier" && isStrictBadIdWord(expr.name))
       raise(expr.start, "Assigning to " + expr.name + " in strict mode");
+  }
+
+  // Get args for a new tuple() expression
+
+  function getTupleArgs(expr) {
+    if (expr.callee && expr.callee.object && expr.callee.object.object &&
+      expr.callee.object.object.name === options.runtimeParamName &&
+      expr.callee.property && expr.callee.property.name === "tuple")
+      return expr.arguments;
+    return null;
+  }
+
+  // Unpack an lvalue tuple into indivual variable assignments
+  // 'arg0, arg1 = right' becomes:
+  // var tmp = right
+  // arg0 = tmp[0]
+  // arg1 = tmp[1]
+  // ...
+
+  function unpackTuple(noIn, tupleArgs, right) {
+    if (!tupleArgs || tupleArgs.length < 1) unexpected();
+
+    var varStmts = [];
+
+    // var tmp = right
+
+    var tmpId = createNodeFrom(tupleArgs[0], "Identifier", { name: "__filbertTmp" + newAstIdCount++ });
+    var tmpDecl = createVarDeclFromId(tmpId, tmpId, right);
+    varStmts.push(tmpDecl)
+
+    // argN = tmp[N]
+
+    for (var i = 0; i < tupleArgs.length; i++) {
+      var lval = tupleArgs[i];
+      checkLVal(lval);
+      var indexId = createNodeFrom(lval, "Literal", { value: i });
+      var init = createNodeFrom(lval, "MemberExpression", { object: tmpId, property: indexId, computed: true });
+      if (lval.type === "Identifier" && !scope.exists(lval.name)) {
+        scope.addVar(lval.name);
+        var varDecl = createVarDeclFromId(lval, lval, init);
+        varStmts.push(varDecl);
+      }
+      else {
+        var node = startNodeFrom(lval);
+        node.left = lval;
+        node.operator = "=";
+        node.right = init;
+        node = finishNode(node, "AssignmentExpression");
+        varStmts.push(createNodeFrom(node, "ExpressionStatement", { expression: node }));
+      }
+    }
+
+    return varStmts;
   }
 
   // ### Statement parsing
@@ -1490,7 +1554,7 @@
 
     default:
       var expr = parseExpression();
-      if (expr.type === "VariableDeclaration") {
+      if (expr.type === "VariableDeclaration" || expr.type === "BlockStatement") {
         return expr;
       } else {
         node.expression = expr;
@@ -1547,63 +1611,100 @@
   //    Python iterates on the list items themselves, not indexes
   // 2. JavaScript for/in does not necessarily iterate in order
   // Solution:
-  // Generate extra AST to do the right thing
-  // If iterating through an Array, build a for(;;) with i = array[index] injected as 1st line of body
-  // Return something like: { var __right = right; if (__right instanceof Array) { 
-  //    for(var __iter=0;;){i = __right[__iter]; ...} } else { for(i in __right){...} } }
+  // Generate extra AST to do the right thing at runtime
+  // If iterating through an ordered sequence, return something like: 
+  // { var __right = right; 
+  //    if (__right instanceof Array) { 
+  //      for(var __iter=0; _iter < __right.length; _iter++) {
+  //        i = __right[__iter]; 
+  //        ...
+  //      } 
+  //    } else { 
+  //      for(i in __right){...} 
+  //    }
+  // }
+  // When the loop target is a Tuple, it is unpacked into each for body in the example above.
+  // E.g. 'for k, v in __right: total += v' becomes:
+  // for (var __tmp in __right) {
+  //    k = __tmp[0];
+  //    v = __tmp[1];
+  //    total += v;
+  // }
 
   // TODO: Extra AST nodes have program end for their start and end.  What should they be?
-  // TODO: for/in on a string should go through items, not indexes.  Add '|| __right instanceof String'
+  // TODO: for/in on a string should go through items, not indexes. String obj and string literal.
 
   function parseFor(node) {
-    var originalInit = parseExpression(false, true);
-    checkLVal(originalInit);
+    var init = parseExpression(false, true);
+    var tupleArgs = getTupleArgs(init);
+    if (!tupleArgs) checkLVal(init);
     expect(_in);
-    var originalRight = parseExpression();
+    var right = parseExpression();
     expect(_colon);
-    var originalBodyForArray = parseSuite();
-    var originalBodyForIn = JSON.parse(JSON.stringify(originalBodyForArray));
-    if (originalBodyForArray.type !== "BlockStatement")
-      originalBodyForArray = createNode("BlockStatement", { body: [originalBodyForArray] });
+    var forOrderedBody = parseSuite();
+    var forInBody = JSON.parse(JSON.stringify(forOrderedBody));
 
     var arrayId = createNode("Identifier", { name: "Array" });
     var lengthId = createNode("Identifier", { name: "length" });
+    var undefinedId = createNode("Identifier", { name: "undefined" });
     var zeroLit = createNode("Literal", { value: 0 });
 
     // var __rightN = right
 
-    var rightId = createNode("Identifier", { name: "__right" + forLoopCount });
-    var rightDecl = createNode("VariableDeclarator", { id: rightId, init: originalRight });
-    var rightAssign = createNode("VariableDeclaration", { kind: "var", declarations: [rightDecl] });
+    var rightId = createNode("Identifier", { name: "__filbertRight" + newAstIdCount });
+    var rightAssign = createVarDeclFromId(node, rightId, right);
 
     // for (var __indexN; __indexN < __rightN.length; ++__indexN)
 
-    var forArrayIndexId = createNode("Identifier", { name: "__index" + forLoopCount });
-    var forArrayIndexDeclr = createNode("VariableDeclarator", { id: forArrayIndexId, init: zeroLit });
-    var forArrayIndexDecln = createNode("VariableDeclaration", { declarations: [forArrayIndexDeclr], kind: "var" });
-    var forArrayTestMember = createNode("MemberExpression", { object: rightId, property: lengthId, computed: false });
-    var forArrayTestBinop = createNode("BinaryExpression", { left: forArrayIndexId, operator: "<", right: forArrayTestMember });
-    var forArrayUpdate = createNode("UpdateExpression", { operator: "++", prefix: true, argument: forArrayIndexId });
-    var forArrayMember = createNode("MemberExpression", { object: rightId, property: forArrayIndexId, computed: true });
-    var forArrayAssign = createNode("AssignmentExpression", { operator: "=", left: originalInit, right: forArrayMember });
-    var forArrayExprStmt = createNode("ExpressionStatement", { expression: forArrayAssign });
-    originalBodyForArray.body.unshift(forArrayExprStmt);
-    var forArray = createNode("ForStatement", { init: forArrayIndexDecln, test: forArrayTestBinop, update: forArrayUpdate, body: originalBodyForArray });
-    var forArrayBlock = createNode("BlockStatement", { body: [forArray] });
+    var forOrderedIndexId = createNode("Identifier", { name: "__filbertIndex" + newAstIdCount });
+    var forOrderedIndexDeclr = createNode("VariableDeclarator", { id: forOrderedIndexId, init: zeroLit });
+    var forOrderedIndexDecln = createNode("VariableDeclaration", { declarations: [forOrderedIndexDeclr], kind: "var" });
+    var forOrderedTestMember = createNode("MemberExpression", { object: rightId, property: lengthId, computed: false });
+    var forOrderedTestBinop = createNode("BinaryExpression", { left: forOrderedIndexId, operator: "<", right: forOrderedTestMember });
+    var forOrderedUpdate = createNode("UpdateExpression", { operator: "++", prefix: true, argument: forOrderedIndexId });
+    var forOrderedMember = createNode("MemberExpression", { object: rightId, property: forOrderedIndexId, computed: true });
+
+    if (tupleArgs) {
+      var varStmts = unpackTuple(true, tupleArgs, forOrderedMember);
+      for (var i = varStmts.length - 1; i >= 0; i--) forOrderedBody.body.unshift(varStmts[i]);
+    }
+    else {
+      if (init.type === "Identifier" && !scope.exists(init.name)) {
+        scope.addVar(init.name);
+        forOrderedBody.body.unshift(createVarDeclFromId(init, init, forOrderedMember));
+      } else {
+        var forOrderedInit = createNode("AssignmentExpression", { operator: "=", left: init, right: forOrderedMember });
+        var forOrderedInitStmt = createNode("ExpressionStatement", { expression: forOrderedInit });
+        forOrderedBody.body.unshift(forOrderedInitStmt);
+      }
+    }
+
+    var forOrdered = createNode("ForStatement", { init: forOrderedIndexDecln, test: forOrderedTestBinop, update: forOrderedUpdate, body: forOrderedBody });
+    var forOrderedBlock = createNode("BlockStatement", { body: [forOrdered] });
 
     // for (init in __rightN)
 
-    var forIn = createNode("ForInStatement", { left: originalInit, right: rightId, body: originalBodyForIn });
+    var forInLeft = init;
+    if (tupleArgs) {
+      var varStmts = unpackTuple(true, tupleArgs, null);
+      forInLeft = varStmts[0];
+      for (var i = varStmts.length - 1; i > 0; i--) forInBody.body.unshift(varStmts[i]);
+    }
+    else if (init.type === "Identifier" && !scope.exists(init.name)) {
+      scope.addVar(init.name);
+      forInLeft = createVarDeclFromId(init, init, null);
+    }
+    var forIn = createNode("ForInStatement", { left: forInLeft, right: rightId, body: forInBody });
     var forInBlock = createNode("BlockStatement", { body: [forIn] });
 
-    // if Array then forArray else forIn
+    // if ordered sequence then forOrdered else forIn
 
     var ifTest = createNode("BinaryExpression", { left: rightId, operator: "instanceof", right: arrayId });
-    var ifStmt = createNode("IfStatement", { test: ifTest, consequent: forArrayBlock, alternate: forInBlock });
+    var ifStmt = createNode("IfStatement", { test: ifTest, consequent: forOrderedBlock, alternate: forInBlock });
 
     node.body = [rightAssign, ifStmt];
 
-    forLoopCount++;
+    newAstIdCount++;
 
     return finishNode(node, "BlockStatement");
   }
@@ -1638,14 +1739,7 @@
   // or the `in` operator (in for loops initalization expressions).
 
   function parseExpression(noComma, noIn) {
-    var expr = parseMaybeAssign(noIn);
-    if (!noComma && tokType === _comma) {
-      var node = startNodeFrom(expr);
-      node.expressions = [expr];
-      while (eat(_comma)) node.expressions.push(parseMaybeAssign(noIn));
-      return finishNode(node, "SequenceExpression");
-    }
-    return expr;
+    return parseMaybeAssign(noIn);
   }
 
   // Parse an assignment expression. This includes applications of
@@ -1655,8 +1749,17 @@
   // identifier doesn't exist in this namespace yet.
 
   function parseMaybeAssign(noIn) {
-    var left = parseMaybeConditional(noIn);
+    var left = parseMaybeTuple(noIn);
     if (tokType.isAssign) {
+      var tupleArgs = getTupleArgs(left);
+      if (tupleArgs && tokType.isAssign) {
+        next();
+        var right = parseMaybeTuple(noIn);
+        var blockNode = startNodeFrom(left);
+        blockNode.body = unpackTuple(noIn, tupleArgs, right);
+        return finishNode(blockNode, "BlockStatement")
+      }
+
       if (scope.isClass()) {
         var thisExpr = createNodeFrom(left, "ThisExpression");
         left = createNodeFrom(left, "MemberExpression", { object: thisExpr, property: left });
@@ -1665,35 +1768,23 @@
       node.operator = tokVal;
       node.left = left;
       next();
-      node.right = parseMaybeAssign(noIn);
+      node.right = parseMaybeTuple(noIn);
       checkLVal(left);
       if (left.type === "Identifier" && !scope.exists(left.name)) {
         scope.addVar(left.name);
-        var decl = startNodeFrom(node);
-        decl.id = node.left;
-        decl.init = node.right
-        decl = finishNode(decl, "VariableDeclarator");
-        var varDecls = startNodeFrom(node);
-        varDecls.kind = "var";
-        varDecls.declarations = [decl];
-        return finishNode(varDecls, "VariableDeclaration");
+        return createVarDeclFromId(node, node.left, node.right);
       }
       return finishNode(node, "AssignmentExpression");
     }
     return left;
   }
 
-  // Parse a ternary conditional (`?:`) operator.
+  // Parse a tuple
 
-  function parseMaybeConditional(noIn) {
+  function parseMaybeTuple(noIn) {
     var expr = parseExprOps(noIn);
-    if (eat(_question)) {
-      var node = startNodeFrom(expr);
-      node.test = expr;
-      node.consequent = parseExpression(true);
-      expect(_colon);
-      node.alternate = parseExpression(true, noIn);
-      return finishNode(node, "ConditionalExpression");
+    if (tokType === _comma) {
+      return parseTuple(noIn, expr);
     }
     return expr;
   }
@@ -1784,10 +1875,7 @@
       var node = startNodeFrom(base);
       var id = parseIdent(true);
       if (pythonRuntime.imports[base.name] && pythonRuntime.imports[base.name][id.name]) {
-
         // Calling a Python import function
-        // TODO: only use user-defined imports, rather everything available
-
         var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
         var importsId = createNode("Identifier", { name: "imports" });
         var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: importsId, computed: false });
@@ -1808,10 +1896,7 @@
     } else if (!noCalls && eat(_parenL)) {
       var node = startNodeFrom(base);
       if (pythonRuntime.functions[base.name]) {
-
         // Calling a Python built-in function
-        // TODO: don't replace user-defined override (e.g. user defines len())
-
         if (base.type !== "Identifier") unexpected();
         var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
         var functionsId = createNode("Identifier", { name: "functions" });
@@ -1822,7 +1907,8 @@
       if (scope.isNewObj(base.name))
         return parseSubscripts(finishNode(node, "NewExpression"), noCalls);
       return parseSubscripts(finishNode(node, "CallExpression"), noCalls);
-    } else return base;
+    }
+    return base;
   }
 
   // Parse an atomic expression — either a single token that is an
@@ -1832,6 +1918,7 @@
 
   function parseExprAtom() {
     switch (tokType) {
+
     case _dict:
       next();
       return parseDict(_parenR);
@@ -1840,8 +1927,10 @@
       var node = startNode();
       next();
       return finishNode(node, "ThisExpression");
+
     case _name:
       return parseIdent();
+
     case _num: case _string: case _regexp:
       var node = startNode();
       node.value = tokVal;
@@ -1859,7 +1948,13 @@
     case _parenL:
       var tokStartLoc1 = tokStartLoc, tokStart1 = tokStart;
       next();
-      var val = parseExpression();
+      if (tokType === _parenR) {
+        // Empty tuple
+        var node = parseTuple(true);
+        eat(_parenR);
+        return node;
+      }
+      var val = parseMaybeTuple(true);
       val.start = tokStart1;
       val.end = tokEnd;
       if (options.locations) {
@@ -2025,14 +2120,14 @@
       if (tokClose === _braceR) {
         key = parsePropertyName();
         expect(_colon);
-        value = parseExpression(true);
+        value = parseExprOps(true);
       } else if (tokClose === _parenR) {
         var keyId = parseIdent(true);
         key = startNodeFrom(keyId);
         key.value = keyId.name;
         key = finishNode(key, "Literal");
         expect(_eq);
-        value = parseExpression(true);
+        value = parseExprOps(true);
       } else unexpected();
       node.arguments.push(createNode("ArrayExpression", { elements: [key, value] }));
     }
@@ -2129,7 +2224,7 @@
       } else first = false;
 
       if (allowEmpty && tokType === _comma) elts.push(null);
-      else elts.push(parseExpression(true));
+      else elts.push(parseExprOps(true));
     }
     return elts;
   }
@@ -2159,6 +2254,30 @@
     return finishNode(node, "Identifier");
   }
 
+  function parseTuple(noIn, expr) {
+    var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
+    var objectsId = createNode("Identifier", { name: "objects" });
+    var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: objectsId, computed: false });
+    var listId = createNode("Identifier", { name: "tuple" });
+
+    var node = expr ? startNodeFrom(expr) : startNode();
+    node.arguments = expr ? [expr] : [];
+    node.callee = createNode("MemberExpression", { object: runtimeMember, property: listId, computed: false });
+
+    // Tuple with single element has special trailing comma: t = 'hi',
+    // Look ahead and eat comma in this scenario
+    if (tokType === _comma) {
+      var oldPos = tokPos; skipSpace();
+      var newPos = tokPos; tokPos = oldPos;
+      if (newPos >= inputLen || input[newPos] === ';' || newline.test(input[newPos])) eat(_comma);
+    }
+
+    while (eat(_comma)) {
+      node.arguments.push(parseExprOps(noIn));
+    }
+    return finishNode(node, "NewExpression");
+  }
+
 
   // Python runtime library
 
@@ -2170,6 +2289,15 @@
       dict: function () {
         var obj = {};
         for (var i in arguments) obj[arguments[i][0]] = arguments[i][1];
+        Object.defineProperty(obj, "items",
+        {
+          value: function () {
+            var items = [];
+            for (var k in this) items.push(new pythonRuntime.objects.tuple(k, this[k]));
+            return items;
+          },
+          enumerable: false
+        });
         Object.defineProperty(obj, "length",
         {
           get: function () {
@@ -2326,6 +2454,60 @@
         {
           value: function (x) {
             this.splice(this.indexOf(x), 1);
+          },
+          enumerable: false
+        });
+        return arr;
+      },
+      tuple: function () {
+        var arr = [];
+        arr.push.apply(arr, arguments);
+        Object.defineProperty(arr, "count",
+        {
+          value: function (x) {
+            var c = 0;
+            for (var i = 0; i < this.length; i++)
+              if (this[i] === x) c++;
+            return c;
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "equals",
+        {
+          value: function (x) {
+            try {
+              if (this.length !== x.length) return false;
+              for (var i = 0; i < this.length; i++) {
+                if (this[i].hasOwnProperty("equals")) {
+                  if (!this[i].equals(x[i])) return false;
+                } else if (this[i] !== x[i]) return false;
+              }
+              return true;
+            }
+            catch (e) { }
+            return false;
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "index",
+        {
+          value: function (x) {
+            return this.indexOf(x);
+          },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "indexOf",
+        {
+          value: function (x, fromIndex) {
+            try {
+              for (var i = fromIndex ? fromIndex : 0; i < this.length; i++) {
+                if (this[i].hasOwnProperty("equals")) {
+                  if (this[i].equals(x)) return i;
+                } else if (this[i] === x) return i;
+              }
+            }
+            catch (e) { }
+            return -1;
           },
           enumerable: false
         });
