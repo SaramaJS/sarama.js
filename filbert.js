@@ -1,24 +1,16 @@
-// Acorn is a tiny, fast JavaScript parser written in JavaScript.
+// Filbert is a Python parser written in JavaScript.
 //
-// Acorn was written by Marijn Haverbeke and released under an MIT
-// license. The Unicode regexps (for identifiers and whitespace) were
-// taken from [Esprima](http://esprima.org) by Ariya Hidayat.
+// Filbert was written by Matt Lott and released under an MIT
+// license. It was adatped from [Acorn](https://github.com/marijnh/acorn.git)
+// by Marijn Haverbeke.
 //
-// Git repositories for Acorn are available at
+// Git repository for Filbert are available at
 //
-//     http://marijnhaverbeke.nl/git/acorn
-//     https://github.com/marijnh/acorn.git
+//     https://github.com/differentmatt/filbert.git
 //
 // Please use the [github bug tracker][ghbt] to report issues.
 //
-// [ghbt]: https://github.com/marijnh/acorn/issues
-//
-// This file defines the main parser interface. The library also comes
-// with a [error-tolerant parser][dammit] and an
-// [abstract syntax tree walker][walk], defined in other files.
-//
-// [dammit]: filbert_loose.js
-// [walk]: util/walk.js
+// [ghbt]: https://github.com/differentmatt/filbert/issues
 
 (function(root, mod) {
   if (typeof exports == "object" && typeof module == "object") return mod(exports); // CommonJS
@@ -29,11 +21,10 @@
 
   exports.version = "0.5.1";
 
-  // The main exported interface (under `self.acorn` when in the
+  // The main exported interface (under `self.filbert` when in the
   // browser) is a `parse` function that takes a code string and
   // returns an abstract syntax tree as specified by [Mozilla parser
-  // API][api], with the caveat that the SpiderMonkey-specific syntax
-  // (`let`, `yield`, inline XML, etc) is not recognized.
+  // API][api].
   //
   // [api]: https://developer.mozilla.org/en-US/docs/SpiderMonkey/Parser_API
 
@@ -50,22 +41,12 @@
   // the parser process. These options are recognized:
 
   var defaultOptions = exports.defaultOptions = {
-    // `ecmaVersion` indicates the ECMAScript version to parse. Must
-    // be either 3 or 5. This
-    // influences support for strict mode, the set of reserved words, and
-    // support for getters and setter.
-    ecmaVersion: 5,
-    // Turn on `strictSemicolons` to prevent the parser from doing
-    // automatic semicolon insertion.
-    strictSemicolons: false,
+    // `languageVersion` indicates the Python version to parse. It
+    // is not currently in use, but will support 2 or 3 eventually.
+    languageVersion: 3,
     // When `allowTrailingCommas` is false, the parser will not allow
     // trailing commas in array and object literals.
     allowTrailingCommas: true,
-    // By default, reserved words are not enforced. Enable
-    // `forbidReserved` to enforce them. When this option has the
-    // value "everywhere", reserved words and keywords can also not be
-    // used as property names.
-    forbidReserved: false,
     // When enabled, a return at the top level is not considered an
     // error.
     allowReturnOutsideFunction: false,
@@ -75,9 +56,8 @@
     // nodes.
     locations: false,
     // A function can be passed as `onComment` option, which will
-    // cause Acorn to call that function with `(block, text, start,
-    // end)` parameters whenever a comment is skipped. `block` is a
-    // boolean indicating whether this is a block (`/* */`) comment,
+    // cause Filbert to call that function with `(text, start,
+    // end)` parameters whenever a comment is skipped.
     // `text` is the content of the comment, and `start` and `end` are
     // character offsets that denote the start and end of the comment.
     // When the `locations` option is on, two more parameters are
@@ -85,9 +65,6 @@
     // end of the comments. Note that you are not allowed to call the
     // parser from the callback—that will corrupt its internal state.
     onComment: null,
-    // Nodes have their start and end characters offsets recorded in
-    // `start` and `end` properties (directly on the node, rather than
-    // the `loc` object, which holds line/column data. To also add a
     // [semi-standardized][range] `range` property holding a `[start,
     // end]` array with the same numbers, set the `ranges` option to
     // `true`.
@@ -135,10 +112,10 @@
     return {line: line, column: offset - cur};
   };
 
-  // Acorn is organized as a tokenizer and a recursive-descent parser.
+  // Filbert is organized as a tokenizer and a recursive-descent parser.
   // The `tokenize` export provides an interface to the tokenizer.
   // Because the tokenizer is optimized for being efficiently used by
-  // the Acorn parser itself, this interface is somewhat crude and not
+  // the Filbert parser itself, this interface is somewhat crude and not
   // very modular. Performing another parse or call to `tokenize` will
   // reset the internal state, and invalidate existing tokenizers.
 
@@ -253,16 +230,16 @@
 
   var tokCurDedent;
 
-  // Used for name collision avoidance for extra AST identifiers
+  // Used for name collision avoidance whend adding extra AST identifiers
 
   var newAstIdCount = 0;
 
   // ## Scope
 
   // Collection of namespaces saved as a stack
-  // Namespace is a mapping of identifiers to 3 types: variables, functions, classes
-  // Namespace also knows whether it is for global, class, or function
-  // New namespace pushed at function and class start, and popped at their end
+  // A namespace is a mapping of identifiers to 3 types: variables, functions, classes
+  // A namespace also knows whether it is for global, class, or function
+  // A new namespace is pushed at function and class start, and popped at their end
   // Starts with a global namespace on the stack
   // E.g. scope.namespaces ~ [{type: 'g', map:{x: 'v', MyClass: 'c'} }, ...]
 
@@ -324,32 +301,29 @@
   // expressions and divisions. It is set on all token types that can
   // be followed by an expression (thus, a slash after them would be a
   // regular expression).
-  //
-  // `isLoop` marks a keyword as starting a loop, which is important
-  // to know when parsing a label, in order to allow or disallow
-  // continue jumps to that label.
-
-  var _break = {keyword: "break"}, _case = {keyword: "case", beforeExpr: true}, _catch = {keyword: "catch"};
-  var _class = { keyword: "class" };
-  var _continue = { keyword: "continue" }, _debugger = { keyword: "debugger" }, _default = { keyword: "default" };
-  var _do = {keyword: "do", isLoop: true}, _elif = {keyword: "elif", beforeExpr: true}, _else = {keyword: "else", beforeExpr: true};
-  var _finally = {keyword: "finally"}, _for = {keyword: "for", isLoop: true};
-  var _if = { keyword: "if" }, _pass = { keyword: "pass" };
-  var _return = { keyword: "return", beforeExpr: true }, _switch = { keyword: "switch" };
-  var _throw = { keyword: "throw", beforeExpr: true }, _try = { keyword: "try" }, _var = { keyword: "var" };
-  var _while = {keyword: "while", isLoop: true}, _with = {keyword: "with"}, _new = {keyword: "new", beforeExpr: true};
-  var _this = {keyword: "this"};
-  var _def = { keyword: "def" }, _dict = { keyword: "dict" };
-  var _import = { keyword: "import" }, _from = { keyword: "from" };
+  
+  var _dict = { keyword: "dict" };  // TODO: not a keyword
+  var _as = { keyword: "as" }, _assert = { keyword: "assert" }, _break = { keyword: "break" };
+  var _class = { keyword: "class" }, _continue = { keyword: "continue" };
+  var _def = { keyword: "def" }, _del = { keyword: "del" };
+  var _elif = { keyword: "elif", beforeExpr: true }, _else = { keyword: "else", beforeExpr: true };
+  var _except = { keyword: "except", beforeExpr: true }, _finally = {keyword: "finally"};
+  var _for = { keyword: "for" }, _from = { keyword: "from" }, _global = { keyword: "global" };
+  var _if = { keyword: "if" }, _import = { keyword: "import" };
+  var _lambda = {keyword: "lambda"}, _nonlocal = {keyword: "nonlocal"};
+  var _pass = { keyword: "pass" }, _raise = {keyword: "raise"};
+  var _return = { keyword: "return", beforeExpr: true }, _try = { keyword: "try" }
+  var _while = {keyword: "while"}, _with = {keyword: "with"}, _yield = {keyword: "yield"};
 
   // The keywords that denote values.
 
-  var _null = {keyword: "null", atomValue: null}, _true = {keyword: "True", atomValue: true};
+  var _none = {keyword: "None", atomValue: null}, _true = {keyword: "True", atomValue: true};
   var _false = {keyword: "False", atomValue: false};
 
   // Some keywords are treated as regular operators. `in` sometimes
   // (when parsing `for`) needs to be tested against specifically, so
   // we assign a variable name to it for quick comparing.
+  // 'prec' is the operator precedence'
 
   var _logicalOR = { keyword: "or", prec: 1, beforeExpr: true, rep: "||" }
   var _logicalAND = { keyword: "and", prec: 2, beforeExpr: true, rep: "&&" }
@@ -359,18 +333,15 @@
 
   // Map keyword names to token types.
 
-  var keywordTypes = {"break": _break, "case": _case, "catch": _catch, "class": _class,
-                      "continue": _continue, "debugger": _debugger, "def": _def, "default": _default,
-                      "dict": _dict, "do": _do, "elif": _elif, "else": _else, "finally": _finally, "for": _for,
-                      "if": _if, "pass": _pass, "return": _return, "switch": _switch,
-                      "throw": _throw, "try": _try, "var": _var, "while": _while, "with": _with,
-                      "null": _null, "True": _true, "False": _false, "new": _new, "in": _in, "is": _is,
-                      "instanceof": {keyword: "instanceof", binop: 7, beforeExpr: true}, "this": _this,
-                      "typeof": {keyword: "typeof", prefix: true, beforeExpr: true},
-                      "void": {keyword: "void", prefix: true, beforeExpr: true},
-                      "delete": { keyword: "delete", prefix: true, beforeExpr: true },
-                      "import": _import, "from": _from,
-                      "or": _logicalOR, "and": _logicalAND, "not": _logicalNOT
+  var keywordTypes = {
+    "dict": _dict,
+    "False": _false, "None": _none, "True": _true, "and": _logicalAND, "as": _as, 
+    "break": _break, "class": _class, "continue": _continue, "def": _def, "del": _del,
+    "elif": _elif, "else": _else, "except": _except, "finally": _finally, "for": _for,
+    "from": _from, "global": _global, "if": _if, "import": _import, "in": _in, "is": _is, 
+    "lambda": _lambda, "nonlocal": _nonlocal, "not": _logicalNOT, "or": _logicalOR, 
+    "pass": _pass, "raise": _raise, "return": _return, "try": _try, "while": _while, 
+    "with": _with, "yield": _yield
   };
 
   // Punctuation token types. Again, the `type` property is purely for debugging.
@@ -464,25 +435,14 @@
     return new Function("str", f);
   }
 
-  // The ECMAScript 3 reserved word list.
-
-  var isReservedWord3 = makePredicate("abstract boolean byte char class double enum export extends final float goto implements import int interface long native package private protected public short static super synchronized throws transient volatile");
-
-  // ECMAScript 5 reserved words.
-
-  var isReservedWord5 = makePredicate("class enum extends super const export import");
-
-  // The additional reserved words in strict mode.
-
-  var isStrictReservedWord = makePredicate("implements interface let package private protected public static yield");
-
-  // The forbidden variable names in strict mode.
+  // The forbidden variable names
 
   var isStrictBadIdWord = makePredicate("eval arguments");
 
-  // And the keywords.
+  // Keywords
+  // TODO: dict isn't a keyword, it's a builtin
 
-  var isKeyword = makePredicate("and break case catch class continue debugger def default dict do elif else finally for from function if import in is not or pass return switch throw try var while with null True False instanceof typeof void delete new this");
+  var isKeyword = makePredicate("dict False None True and as assert break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield");
 
   // ## Character categories
 
@@ -562,24 +522,6 @@
     tokRegexpAllowed = type.beforeExpr;
   }
 
-  function skipBlockComment() {
-    var startLoc = options.onComment && options.locations && new Position;
-    var start = tokPos, end = input.indexOf("*/", tokPos += 2);
-    if (end === -1) raise(tokPos - 2, "Unterminated comment");
-    tokPos = end + 2;
-    if (options.locations) {
-      lineBreak.lastIndex = start;
-      var match;
-      while ((match = lineBreak.exec(input)) && match.index < tokPos) {
-        ++tokCurLine;
-        tokLineStart = match.index + match[0].length;
-      }
-    }
-    if (options.onComment)
-      options.onComment(true, input.slice(start + 2, end), start, tokPos,
-                        startLoc, options.locations && new Position);
-  }
-
   function skipLine() {
     var ch = input.charCodeAt(++tokPos);
     while (tokPos < inputLen && ch !== 10 && ch !== 13 && ch !== 8232 && ch !== 8233) {
@@ -593,7 +535,7 @@
     var startLoc = options.onComment && options.locations && new Position;
     skipLine();
     if (options.onComment)
-      options.onComment(false, input.slice(start + 1, tokPos), start, tokPos,
+      options.onComment(input.slice(start + 1, tokPos), start, tokPos,
                         startLoc, options.locations && new Position);
   }
 
@@ -717,6 +659,7 @@
         do {
           var next = input.charCodeAt(++indentPos);
         } while (indentPos < inputLen && next !== 10);
+        // TODO: call onComment
       } else {
         break;
       }
@@ -1214,13 +1157,6 @@
     return finishNode(declDecl, "VariableDeclaration");
   }
 
-  // Test whether a statement node is the string literal `"use strict"`.
-
-  function isUseStrict(stmt) {
-    return options.ecmaVersion >= 5 && stmt.type === "ExpressionStatement" &&
-      stmt.expression.type === "Literal" && stmt.expression.value === "use strict";
-  }
-
   // Predicate that tests whether the next token is of the given
   // type, and if yes, consumes it as a side effect.
 
@@ -1229,20 +1165,6 @@
       next();
       return true;
     }
-  }
-
-  // Test whether a semicolon can be inserted at the current position.
-
-  function canInsertSemicolon() {
-    return !options.strictSemicolons &&
-      (tokType === _eof || tokType === _indent || tokType === _dedent || newline.test(input.slice(lastEnd, tokStart)));
-  }
-
-  // Consume a semicolon, or, failing that, see if we are allowed to
-  // pretend that there is a semicolon at this position.
-
-  function semicolon() {
-    if (!eat(_semi) && !canInsertSemicolon()) unexpected();
   }
 
   // Expect a token of a given type. If found, consume it, otherwise,
@@ -1269,7 +1191,7 @@
       raise(expr.start, "Assigning to " + expr.name + " in strict mode");
   }
 
-  // Get args for a new tuple() expression
+  // Get args for a new tuple expression
 
   function getTupleArgs(expr) {
     if (expr.callee && expr.callee.object && expr.callee.object.object &&
@@ -1293,7 +1215,7 @@
 
     // var tmp = right
 
-    var tmpId = createNodeFrom(tupleArgs[0], "Identifier", { name: "__filbertTmp" + newAstIdCount++ });
+    var tmpId = createNodeFrom(tupleArgs[0], "Identifier", { name: "filbertTmp" + newAstIdCount++ });
     var tmpDecl = createVarDeclFromId(tmpId, tmpId, right);
     varStmts.push(tmpDecl)
 
@@ -1367,50 +1289,21 @@
 
     switch (starttype) {
 
-    case _break: case _continue:
+    case _break:
       next();
-      var isBreak = starttype === _break;
-      if (eat(_semi) || canInsertSemicolon()) node.label = null;
-      else if (tokType !== _name) unexpected();
-      else {
-        node.label = parseIdent();
-        semicolon();
-      }
+      return finishNode(node, "BreakStatement");
 
-      // Verify that there is an actual destination to break or
-      // continue to.
-      for (var i = 0; i < labels.length; ++i) {
-        var lab = labels[i];
-        if (node.label == null || lab.name === node.label.name) {
-          if (lab.kind != null && (isBreak || lab.kind === "loop")) break;
-          if (node.label && isBreak) break;
-        }
-      }
-      if (i === labels.length) raise(node.start, "Unsyntactic " + starttype.keyword);
-      return finishNode(node, isBreak ? "BreakStatement" : "ContinueStatement");
+    case _continue:
+      next();
+      return finishNode(node, "ContinueStatement");
 
     case _class:
       next();
       return parseClass(node);
 
-    case _debugger:
-      next();
-      semicolon();
-      return finishNode(node, "DebuggerStatement");
-
     case _def:
       next();
       return parseFunction(node);
-
-    case _do:
-      next();
-      labels.push(loopLabel);
-      node.body = parseStatement();
-      labels.pop();
-      expect(_while);
-      node.test = parseParenExpression();
-      semicolon();
-      return finishNode(node, "DoWhileStatement");
 
     case _for:
       next();
@@ -1451,58 +1344,11 @@
       if (!inFunction && !options.allowReturnOutsideFunction)
         raise(tokStart, "'return' outside of function");
       next();
-
-      // In `return` (and `break`/`continue`), the keywords with
-      // optional arguments, we eagerly look for a semicolon or the
-      // possibility to insert one.
-
-      if (eat(_semi) || canInsertSemicolon()) node.argument = null;
+      if (tokType ===_newline || tokType === _eof) node.argument = null;
       else { node.argument = parseExpression();}
       return finishNode(node, "ReturnStatement");
 
-    case _switch:
-      next();
-      node.discriminant = parseParenExpression();
-      node.cases = [];
-      expect(_braceL);
-      labels.push(switchLabel);
-
-      // Statements under must be grouped (by label) in SwitchCase
-      // nodes. `cur` is used to keep the node that we are currently
-      // adding statements to.
-
-      for (var cur, sawDefault; tokType != _braceR;) {
-        if (tokType === _case || tokType === _default) {
-          var isCase = tokType === _case;
-          if (cur) finishNode(cur, "SwitchCase");
-          node.cases.push(cur = startNode());
-          cur.consequent = [];
-          next();
-          if (isCase) cur.test = parseExpression();
-          else {
-            if (sawDefault) raise(lastStart, "Multiple default clauses"); sawDefault = true;
-            cur.test = null;
-          }
-          expect(_colon);
-        } else {
-          if (!cur) unexpected();
-          cur.consequent.push(parseStatement());
-        }
-      }
-      if (cur) finishNode(cur, "SwitchCase");
-      next(); // Closing brace
-      labels.pop();
-      return finishNode(node, "SwitchStatement");
-
-    case _throw:
-      next();
-      if (newline.test(input.slice(lastEnd, tokStart)))
-        raise(lastEnd, "Illegal newline after throw");
-      node.argument = parseExpression();
-      semicolon();
-      return finishNode(node, "ThrowStatement");
-
-    case _try:
+    case _try: // TODO, and remove parseBlock
       next();
       node.block = parseBlock();
       node.handler = null;
@@ -1524,12 +1370,6 @@
         raise(node.start, "Missing catch or finally clause");
       return finishNode(node, "TryStatement");
 
-    case _var:
-      next();
-      parseVar(node);
-      semicolon();
-      return finishNode(node, "VariableDeclaration");
-
     case _while:
       next();
       if (tokType === _parenL) node.test = parseParenExpression();
@@ -1538,7 +1378,7 @@
       node.body = parseSuite();
       return finishNode(node, "WhileStatement");
 
-    case _with:
+    case _with: // TODO
       if (strict) raise(tokStart, "'with' in strict mode");
       next();
       node.object = parseParenExpression();
@@ -1615,8 +1455,8 @@
   // If iterating through an ordered sequence, return something like: 
   // { var __right = right; 
   //    if (__right instanceof Array) { 
-  //      for(var __iter=0; _iter < __right.length; _iter++) {
-  //        i = __right[__iter]; 
+  //      for(var __index=0; __index < __right.length; __index++) {
+  //        i = __right[__index]; 
   //        ...
   //      } 
   //    } else { 
@@ -1651,12 +1491,12 @@
 
     // var __rightN = right
 
-    var rightId = createNode("Identifier", { name: "__filbertRight" + newAstIdCount });
+    var rightId = createNode("Identifier", { name: "filbertRight" + newAstIdCount });
     var rightAssign = createVarDeclFromId(node, rightId, right);
 
     // for (var __indexN; __indexN < __rightN.length; ++__indexN)
 
-    var forOrderedIndexId = createNode("Identifier", { name: "__filbertIndex" + newAstIdCount });
+    var forOrderedIndexId = createNode("Identifier", { name: "filbertIndex" + newAstIdCount });
     var forOrderedIndexDeclr = createNode("VariableDeclarator", { id: forOrderedIndexId, init: zeroLit });
     var forOrderedIndexDecln = createNode("VariableDeclaration", { declarations: [forOrderedIndexDeclr], kind: "var" });
     var forOrderedTestMember = createNode("MemberExpression", { object: rightId, property: lengthId, computed: false });
@@ -1707,23 +1547,6 @@
     newAstIdCount++;
 
     return finishNode(node, "BlockStatement");
-  }
-
-  // Parse a list of variable declarations.
-
-  function parseVar(node, noIn) {
-    node.declarations = [];
-    node.kind = "var";
-    for (;;) {
-      var decl = startNode();
-      decl.id = parseIdent();
-      if (strict && isStrictBadIdWord(decl.id.name))
-        raise(decl.id.start, "Binding " + decl.id.name + " in strict mode");
-      decl.init = eat(_eq) ? parseExpression(true, noIn) : null;
-      node.declarations.push(finishNode(decl, "VariableDeclarator"));
-      if (!eat(_comma)) break;
-    }
-    return node;
   }
 
   // ### Expression parsing
@@ -1923,11 +1746,6 @@
       next();
       return parseDict(_parenR);
 
-    case _this:
-      var node = startNode();
-      next();
-      return finishNode(node, "ThisExpression");
-
     case _name:
       return parseIdent();
 
@@ -1938,7 +1756,7 @@
       next();
       return finishNode(node, "Literal");
 
-    case _null: case _true: case _false:
+    case _none: case _true: case _false:
       var node = startNode();
       node.value = tokType.atomValue;
       node.raw = tokType.keyword;
@@ -1982,9 +1800,6 @@
 
     case _braceL:
 	    return parseDict(_braceR);
-
-    case _new:
-      return parseNew();
 
     default:
       unexpected();
@@ -2134,19 +1949,6 @@
     return finishNode(node, "NewExpression");
   }
 
-  // New's precedence is slightly tricky. It must allow its argument
-  // to be a `[]` or dot subscript expression, but not a call — at
-  // least, not without wrapping it in parentheses. Thus, it uses the
-
-  function parseNew() {
-    var node = startNode();
-    next();
-    node.callee = parseSubscripts(parseExprAtom(), true);
-    if (eat(_parenL)) node.arguments = parseExprList(_parenR, false);
-    else node.arguments = empty;
-    return finishNode(node, "NewExpression");
-  }
-
   function parsePropertyName() {
     if (tokType === _num || tokType === _string) return parseExprAtom();
     return parseIdent(true);
@@ -2185,7 +1987,7 @@
     // or `arguments`.
     for (var i = node.id ? -1 : 0; i < node.params.length; ++i) {
       var id = i < 0 ? node.id : node.params[i];
-      if (isStrictReservedWord(id.name) || isStrictBadIdWord(id.name))
+      if (isStrictBadIdWord(id.name))
         raise(id.start, "Defining '" + id.name + "' in strict mode");
       if (i >= 0) for (var j = 0; j < i; ++j) if (id.name === node.params[j].name)
         raise(id.start, "Argument name clash");
@@ -2235,13 +2037,9 @@
 
   function parseIdent(liberal) {
     var node = startNode();
-    if (liberal && options.forbidReserved == "everywhere") liberal = false;
+    if (liberal) liberal = false;
     if (tokType === _name) {
-      if (!liberal &&
-          (options.forbidReserved &&
-           (options.ecmaVersion === 3 ? isReservedWord3 : isReservedWord5)(tokVal) ||
-           strict && isStrictReservedWord(tokVal)) &&
-          input.slice(tokStart, tokEnd).indexOf("\\") == -1)
+      if (!liberal && strict && input.slice(tokStart, tokEnd).indexOf("\\") == -1)
         raise(tokStart, "The keyword '" + tokVal + "' is reserved");
       node.name = tokVal;
     } else if (liberal && tokType.keyword) {
@@ -2279,7 +2077,7 @@
   }
 
 
-  // Python runtime library
+  // ## Python runtime library
 
   var pythonRuntime = exports.pythonRuntime = {
 

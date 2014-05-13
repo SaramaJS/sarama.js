@@ -164,4 +164,39 @@ describe("Basics", function () {
     expect(util.run(code)).toBe(true);
   });
 
+  it("break", function () {
+    var code = "\
+    total = 0\n\
+    for n in range(5):\n\
+      if n > 2:\n\
+        break\n\
+      total += 1\n\
+    return total\n\
+    ";
+    expect(util.run(code)).toBe(3);
+  });
+
+  it("continue", function () {
+    var code = "\
+    total = 0\n\
+    for n in range(5):\n\
+      total += 1\n\
+      if n < 2:\n\
+        continue\n\
+      break\n\
+    return total\n\
+    ";
+    expect(util.run(code)).toBe(3);
+  });
+
+  it("return no param", function () {
+    var code = "\
+    def foo():\n\
+      print('hi')\n\
+      return\n\
+    foo()\n\
+    return 7\n\
+    ";
+    expect(util.run(code)).toBe(7);
+  });
 });
