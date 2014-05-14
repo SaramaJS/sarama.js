@@ -3,7 +3,9 @@
 JavaScript-based Python parser.  Outputs an abstract syntax tree as specified by the
 [Mozilla Parser API][mozapi].
 
-This parser is a work in progress, adapted from the JavaScript parser [`Acorn`][acorn].
+[mozapi]: https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/Parser_API
+
+This parser is a work in progress, adapted from the JavaScript parser [Acorn][acorn].
 
 [acorn]: https://github.com/marijnh/acorn
 
@@ -15,10 +17,15 @@ TODO:
 
 TODO:
 
-## What's Left?
+## Testing
 
-Python3 is the target language.  
-Much of the language is working.  Some parts remain, and are outlined below.
+```sh
+grunt test
+```
+
+## Language Support
+
+Python3 is the target language.  Much of it is working, and the remaining pieces are outlined below.
 
 ### Keywords     
 
@@ -31,11 +38,12 @@ Unsupported:
 ### Built-ins   
 
 Supported:
->int() len() print() range()
+>abs() all() any() bool() chr() dict() enumerate() filter() float() hex() int() len() list() map() max() min() oct() ord() pow() print() range() repr() reversed() round() sorted() str() sum() tuple()
 
 Unsupported:
->abs() all() any() ascii() bin() bool() bytearray() bytes() callable() chr() classmethod() compile() complex() delattr() dict() dir() divmod() enumerate() eval() exec() filter() float() format() frozenset() getattr() globals() hasattr() hash() help() hex() id() input() isinstance() issubclass() iter() list() locals() map() max() memoryview() min() next() object() oct() open() ord() pow() property() repr() reversed() round() set() setattr() slice() sorted() staticmethod() str() sum() super() tuple() type() vars() zip() __import__() 
+>ascii() bin() bytearray() bytes() callable() classmethod() compile() complex() delattr() dir() divmod() eval() exec() format() frozenset() getattr() globals() hasattr() hash() help() id() input() isinstance() issubclass() iter() locals() memoryview() next() object() open() property() set() setattr() slice() staticmethod() super() type() vars() zip() \__import__() 
 
 ### Language features
 
 TODO: what's left?
+

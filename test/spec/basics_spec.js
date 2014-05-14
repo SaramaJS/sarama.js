@@ -192,7 +192,7 @@ describe("Basics", function () {
   it("return no param", function () {
     var code = "\
     def foo():\n\
-      print('hi')\n\
+      x = 5\n\
       return\n\
     foo()\n\
     return 7\n\

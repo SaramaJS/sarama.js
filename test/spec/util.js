@@ -13,7 +13,7 @@ exports.run = function (code) {
     return eval(js);
   }
   catch (e) {
-    console.log(e.toString());
+    //console.log(code + "\n" + e.toString());
     return e;
   }
 }

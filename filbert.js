@@ -2083,10 +2083,18 @@
 
     // Shim JavaScript objects that impersonate Python equivalents
 
+    // TODO: need a generic isSequence() or equivalent
+    // TODO: use 'type' or isSequence instead of 'instanceof Array' to id these
+
     objects: {
       dict: function () {
         var obj = {};
         for (var i in arguments) obj[arguments[i][0]] = arguments[i][1];
+        Object.defineProperty(obj, "type",
+        {
+          get: function () { return 'dict';},
+          enumerable: false
+        });
         Object.defineProperty(obj, "items",
         {
           value: function () {
@@ -2153,6 +2161,11 @@
       list: function () {
         var arr = [];
         arr.push.apply(arr, arguments);
+        Object.defineProperty(arr, "type",
+        {
+          get: function () { return 'list'; },
+          enumerable: false
+        });
         Object.defineProperty(arr, "append",
         {
           value: function (x) {
@@ -2260,6 +2273,11 @@
       tuple: function () {
         var arr = [];
         arr.push.apply(arr, arguments);
+        Object.defineProperty(arr, "type",
+        {
+          get: function () { return 'tuple'; },
+          enumerable: false
+        });
         Object.defineProperty(arr, "count",
         {
           value: function (x) {
@@ -2316,11 +2334,85 @@
     // Python built-in functions
 
     functions: {
+      abs: function(x) {
+        return Math.abs(x);
+      },
+      all: function(iterable) {
+        for (var i in iterable) if (iterable[i] != true) return false;
+        return true;
+      },
+      any: function(iterable) {
+        for (var i in iterable) if (iterable[i] == true) return true;
+        return false;
+      },
+      bool: function(x) {
+        return x == true;
+      },
+      chr: function(i) {
+        return String.fromCharCode(i);
+      },
+      enumerate: function(iterable, start) {
+        start = start || 0;
+        var ret = new pythonRuntime.objects.list();
+        for (var i in iterable) ret.push(new pythonRuntime.objects.tuple(start++, iterable[i]));
+        return ret;
+      },
+      filter: function(fn, iterable) {
+        fn = fn || function () { return true; };
+        var ret = new pythonRuntime.objects.list();
+        for (var i in iterable) if (fn(iterable[i])) ret.push(iterable[i]);
+        return ret;
+      },
+      float: function(x) {
+        return x ? parseFloat(x): 0.0;
+      },
+      hex: function(x) {
+        return x.toString(16);
+      },
       int: function (s) {
         return parseInt(s);
       },
       len: function (o) {
         return o.length;
+      },
+      list: function (iterable) {
+        var ret = new pythonRuntime.objects.list();
+        if (iterable instanceof Array) for (var i in iterable) ret.push(iterable[i]);
+        else for (var i in iterable) ret.push(i);
+        return ret;
+      },
+      map: function(fn, iterable) {
+        // TODO: support additional iterables passed
+        var ret = new pythonRuntime.objects.list();
+        for (var i in iterable) ret.push(fn(iterable[i]));
+        return ret;
+      },
+      max: function(arg1, arg2) {
+        // TODO: support optional keyword-only arguments
+        // TODO: empty iterable raises Python ValueError
+        if (!arg2) { // iterable
+          var max = null;
+          for (var i in arg1) if (max === null || arg1[i] > max) max = arg1[i];
+          return max;
+        } else return arg1 >= arg2 ? arg1 : arg2;
+      },
+      min: function(arg1, arg2) {
+        // TODO: support optional keyword-only arguments
+        // TODO: empty iterable raises Python ValueError
+        if (!arg2) { // iterable
+          var max = null;
+          for (var i in arg1) if (max === null || arg1[i] < max) max = arg1[i];
+          return max;
+        } else return arg1 <= arg2 ? arg1 : arg2;
+      },
+      oct: function(x) {
+        return x.toString(8);
+      },
+      ord: function(c) {
+        return c.charCodeAt(0);
+      },
+      pow: function(x, y, z) {
+        return z ? Math.pow(x, y) % z : Math.pow(x, y);
       },
       print: function () {
         var s = "";
@@ -2344,6 +2436,42 @@
           }
         }
         return r;
+      },
+      repr: function (obj) {
+        return obj.toString();
+      },
+      reversed: function (seq) {
+        var ret = new pythonRuntime.objects.list();
+        for (var i in seq) ret.push(seq[i]);
+        return ret.reverse();
+      },
+      round: function (num, ndigits) {
+        if (ndigits) {
+          var scale = Math.pow(10, ndigits);
+          return Math.round(num * scale) / scale;
+        }
+        return Math.round(num);
+      },
+      sorted: function (iterable, key, reverse) {
+        var ret = new pythonRuntime.objects.list();
+        for (var i in iterable) ret.push(iterable[i]);
+        ret = key ? ret.sort(key) : ret.sort();
+        if (reverse) ret.reverse();
+        return ret;
+      },
+      str: function (obj) {
+        return new String(obj);
+      },
+      sum: function (iterable, start) {
+        // TODO: start can't be a string
+        var ret = start || 0;
+        for (var i in iterable) ret += iterable[i];
+        return ret;
+      },
+      tuple: function (iterable) {
+        var ret = new pythonRuntime.objects.tuple();
+        for (var i in iterable) ret.push(iterable[i]);
+        return ret;
       }
     },
 
