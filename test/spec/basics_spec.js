@@ -199,4 +199,24 @@ describe("Basics", function () {
     ";
     expect(util.run(code)).toBe(7);
   });
+
+  it("newlines", function () {
+    var code = "\
+    def f():\n\
+    \u2028\
+      data = [4, 2, 65, 7]\n\
+      \r\n\
+      total = 0\r\n\
+      \n\
+      for d in data:\n\
+      \n\r\
+        total += d\u2028\
+      \u2029\u2029\u2029\n\
+      return total\n\
+    \u2029\
+    return f()\n\
+    ";
+    expect(util.run(code)).toBe(78);
+  });
+
 });

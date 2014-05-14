@@ -3,7 +3,7 @@ var escodegen = require('escodegen');
 
 exports.run = function (code) {
   try {
-    var lines = code.split("\n");
+    var lines = code.split(/\r\n|[\n\r\u2028\u2029]/g);
     for (var i in lines) lines[i] = "  " + lines[i];
     var indentedCode = lines.join("\n");
     var wrappedCode = "def foo(" + filbert.defaultOptions.runtimeParamName + "):\n" + indentedCode + "\n";

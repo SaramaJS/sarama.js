@@ -647,10 +647,11 @@
       if (ch === 32 || ch === 9) { // ' ' or '\t'
         indent += String.fromCharCode(ch);
         ++indentPos;
-      } else if (ch === 10) { // '\n'
+      } else if (ch === 13 || ch === 10 || ch === 8232 || ch === 8233) { // newline
         indent = "";
-        tokPos = indentPos;
+        if (ch === 13 && input.charCodeAt(indentPos + 1) === 10) ++indentPos;
         ++indentPos;
+        tokPos = indentPos;
         if (options.locations) {
           tokLineStart = indentPos;
           ++tokCurLine;
@@ -701,9 +702,9 @@
   function getTokenFromCode(code) {
     switch(code) {
 
-    case 10: // '\n'
-      // TODO: other unicode newline characters
+    case 13: case 10: case 8232: case 8233:
       ++tokPos;
+      if (code === 13 && input.charCodeAt(tokPos) === 10) ++tokPos;
       if (options.locations) {
         ++tokCurLine;
         tokLineStart = tokPos;
