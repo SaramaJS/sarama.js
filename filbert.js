@@ -1063,8 +1063,6 @@
 
   function Node() {
     this.type = null;
-    this.start = tokStart;
-    this.end = null;
   }
 
   exports.Node = Node;
@@ -1092,7 +1090,6 @@
 
   function startNodeFrom(other) {
     var node = new Node();
-    node.start = other.start;
     if (options.locations) {
       node.loc = new SourceLocation();
       node.loc.start = other.loc.start;
@@ -1107,55 +1104,65 @@
 
   function finishNode(node, type) {
     node.type = type;
-    node.end = lastEnd;
     if (options.locations)
       node.loc.end = lastEndLoc;
     if (options.ranges)
       node.range[1] = lastEnd;
-
-    // Exclude start/end from final node.  locations and ranges options cover this.
-    delete node.start;
-    delete node.end;
-
     return node;
   }
 
-  function createNode(type, props) {
-    var node = startNode();
-    for (var prop in props) {
-      node[prop] = props[prop];
-    }
-    node = finishNode(node, type);
+  // Finish a node whose end offset information should be based on
+  // the end of another node.  For example, createNode* functions
+  // are used to create extra AST nodes which may be based on a single
+  // parsed user code node.
+
+  function finishNodeFrom(endNode, node, type) {
+    node.type = type;
+    if (options.locations) node.loc.end = endNode.loc.end;
+    if (options.ranges) node.range[1] = endNode.range[1];
     return node;
   }
 
-  function createNodeFrom(other, type, props) {
-    var node = startNodeFrom(other);
-    for (var prop in props) {
-      node[prop] = props[prop];
-    }
-    node = finishNode(node, type);
-    return node;
+  // Create an AST node using start offsets
+
+  // TODO: Isolate extra AST node creation from the parse functions. It's a proper mess.
+
+  function createNodeFrom(startNode, type, props) {
+    var node = startNodeFrom(startNode);
+    for (var prop in props) node[prop] = props[prop];
+    return finishNode(node, type);
   }
+
+  // Create an AST node using start and end offsets
+
+  function createNodeSpan(startNode, endNode, type, props) {
+    var node = startNodeFrom(startNode);
+    for (var prop in props) node[prop] = props[prop];
+    return finishNodeFrom(endNode, node, type);
+  }
+
+  // E.g. Math.pow(2, 3)
 
   function createNodeMemberCall(node, object, property, args) {
-    var objId = createNode("Identifier", { name: object });
-    var propId = createNode("Identifier", { name: property });
-    var member = createNode("MemberExpression", { object: objId, property: propId, computed: false });
+    var objId = createNodeFrom(node, "Identifier", { name: object });
+    var propId = createNodeFrom(node, "Identifier", { name: property });
+    var member = createNodeFrom(node, "MemberExpression", { object: objId, property: propId, computed: false });
     node.callee = member
     node.arguments = args;
     return finishNode(node, "CallExpression");
   }
 
+  // Used to convert 'id = init' to 'var id = init'
+
   function createVarDeclFromId(refNode, id, init) {
     var decl = startNodeFrom(refNode);
     decl.id = id;
     decl.init = init;
-    decl = finishNode(decl, "VariableDeclarator");
+    finishNodeFrom(refNode, decl, "VariableDeclarator");
     var declDecl = startNodeFrom(refNode);
     declDecl.kind = "var";
     declDecl.declarations = [decl];
-    return finishNode(declDecl, "VariableDeclaration");
+    return finishNodeFrom(refNode, declDecl, "VariableDeclaration");
   }
 
   // Predicate that tests whether the next token is of the given
@@ -1216,8 +1223,8 @@
 
     // var tmp = right
 
-    var tmpId = createNodeFrom(tupleArgs[0], "Identifier", { name: "filbertTmp" + newAstIdCount++ });
-    var tmpDecl = createVarDeclFromId(tmpId, tmpId, right);
+    var tmpId = createNodeSpan(right, right, "Identifier", { name: "filbertTmp" + newAstIdCount++ });
+    var tmpDecl = createVarDeclFromId(right, tmpId, right);
     varStmts.push(tmpDecl)
 
     // argN = tmp[N]
@@ -1225,8 +1232,8 @@
     for (var i = 0; i < tupleArgs.length; i++) {
       var lval = tupleArgs[i];
       checkLVal(lval);
-      var indexId = createNodeFrom(lval, "Literal", { value: i });
-      var init = createNodeFrom(lval, "MemberExpression", { object: tmpId, property: indexId, computed: true });
+      var indexId = createNodeSpan(right, right, "Literal", { value: i });
+      var init = createNodeSpan(right, right, "MemberExpression", { object: tmpId, property: indexId, computed: true });
       if (lval.type === "Identifier" && !scope.exists(lval.name)) {
         scope.addVar(lval.name);
         var varDecl = createVarDeclFromId(lval, lval, init);
@@ -1237,7 +1244,7 @@
         node.left = lval;
         node.operator = "=";
         node.right = init;
-        node = finishNode(node, "AssignmentExpression");
+        finishNode(node, "AssignmentExpression");
         varStmts.push(createNodeFrom(node, "ExpressionStatement", { expression: node }));
       }
     }
@@ -1485,25 +1492,32 @@
     var forOrderedBody = parseSuite();
     var forInBody = JSON.parse(JSON.stringify(forOrderedBody));
 
-    var arrayId = createNode("Identifier", { name: "Array" });
-    var lengthId = createNode("Identifier", { name: "length" });
-    var undefinedId = createNode("Identifier", { name: "undefined" });
-    var zeroLit = createNode("Literal", { value: 0 });
+    finishNode(node, "BlockStatement");
+
+    var tmpVarSuffix = newAstIdCount++;
+
+    var arrayId = createNodeSpan(node, node, "Identifier", { name: "Array" });
+    var lengthId = createNodeSpan(init, init, "Identifier", { name: "length" });
+    var zeroLit = createNodeSpan(init, init, "Literal", { value: 0 });
 
     // var __rightN = right
 
-    var rightId = createNode("Identifier", { name: "filbertRight" + newAstIdCount });
-    var rightAssign = createVarDeclFromId(node, rightId, right);
+    var rightId = createNodeSpan(right, right, "Identifier", { name: "filbertRight" + tmpVarSuffix });
+    var rightAssign = createVarDeclFromId(right, rightId, right);
+
+    // for(;;) and for(in) loops
+
+    var forRightId = createNodeSpan(init, init, "Identifier", { name: "filbertRight" + tmpVarSuffix });
 
     // for (var __indexN; __indexN < __rightN.length; ++__indexN)
 
-    var forOrderedIndexId = createNode("Identifier", { name: "filbertIndex" + newAstIdCount });
-    var forOrderedIndexDeclr = createNode("VariableDeclarator", { id: forOrderedIndexId, init: zeroLit });
-    var forOrderedIndexDecln = createNode("VariableDeclaration", { declarations: [forOrderedIndexDeclr], kind: "var" });
-    var forOrderedTestMember = createNode("MemberExpression", { object: rightId, property: lengthId, computed: false });
-    var forOrderedTestBinop = createNode("BinaryExpression", { left: forOrderedIndexId, operator: "<", right: forOrderedTestMember });
-    var forOrderedUpdate = createNode("UpdateExpression", { operator: "++", prefix: true, argument: forOrderedIndexId });
-    var forOrderedMember = createNode("MemberExpression", { object: rightId, property: forOrderedIndexId, computed: true });
+    var forOrderedIndexId = createNodeSpan(init, init, "Identifier", { name: "filbertIndex" + tmpVarSuffix });
+    var forOrderedIndexDeclr = createNodeSpan(init, init, "VariableDeclarator", { id: forOrderedIndexId, init: zeroLit });
+    var forOrderedIndexDecln = createNodeSpan(init, init, "VariableDeclaration", { declarations: [forOrderedIndexDeclr], kind: "var" });
+    var forOrderedTestMember = createNodeSpan(init, init, "MemberExpression", { object: forRightId, property: lengthId, computed: false });
+    var forOrderedTestBinop = createNodeSpan(init, init, "BinaryExpression", { left: forOrderedIndexId, operator: "<", right: forOrderedTestMember });
+    var forOrderedUpdate = createNodeSpan(init, init, "UpdateExpression", { operator: "++", prefix: true, argument: forOrderedIndexId });
+    var forOrderedMember = createNodeSpan(init, init, "MemberExpression", { object: forRightId, property: forOrderedIndexId, computed: true });
 
     if (tupleArgs) {
       var varStmts = unpackTuple(true, tupleArgs, forOrderedMember);
@@ -1514,20 +1528,20 @@
         scope.addVar(init.name);
         forOrderedBody.body.unshift(createVarDeclFromId(init, init, forOrderedMember));
       } else {
-        var forOrderedInit = createNode("AssignmentExpression", { operator: "=", left: init, right: forOrderedMember });
-        var forOrderedInitStmt = createNode("ExpressionStatement", { expression: forOrderedInit });
+        var forOrderedInit = createNodeSpan(init, init, "AssignmentExpression", { operator: "=", left: init, right: forOrderedMember });
+        var forOrderedInitStmt = createNodeSpan(init, init, "ExpressionStatement", { expression: forOrderedInit });
         forOrderedBody.body.unshift(forOrderedInitStmt);
       }
     }
 
-    var forOrdered = createNode("ForStatement", { init: forOrderedIndexDecln, test: forOrderedTestBinop, update: forOrderedUpdate, body: forOrderedBody });
-    var forOrderedBlock = createNode("BlockStatement", { body: [forOrdered] });
+    var forOrdered = createNodeSpan(node, node, "ForStatement", { init: forOrderedIndexDecln, test: forOrderedTestBinop, update: forOrderedUpdate, body: forOrderedBody });
+    var forOrderedBlock = createNodeSpan(node, node, "BlockStatement", { body: [forOrdered] });
 
     // for (init in __rightN)
 
     var forInLeft = init;
     if (tupleArgs) {
-      var varStmts = unpackTuple(true, tupleArgs, null);
+      var varStmts = unpackTuple(true, tupleArgs, right);
       forInLeft = varStmts[0];
       for (var i = varStmts.length - 1; i > 0; i--) forInBody.body.unshift(varStmts[i]);
     }
@@ -1535,19 +1549,18 @@
       scope.addVar(init.name);
       forInLeft = createVarDeclFromId(init, init, null);
     }
-    var forIn = createNode("ForInStatement", { left: forInLeft, right: rightId, body: forInBody });
-    var forInBlock = createNode("BlockStatement", { body: [forIn] });
+    var forIn = createNodeSpan(node, node, "ForInStatement", { left: forInLeft, right: forRightId, body: forInBody });
+    var forInBlock = createNodeSpan(node, node, "BlockStatement", { body: [forIn] });
 
     // if ordered sequence then forOrdered else forIn
 
-    var ifTest = createNode("BinaryExpression", { left: rightId, operator: "instanceof", right: arrayId });
-    var ifStmt = createNode("IfStatement", { test: ifTest, consequent: forOrderedBlock, alternate: forInBlock });
+    var ifRightId = createNodeSpan(node, node, "Identifier", { name: "filbertRight" + tmpVarSuffix });
+    var ifTest = createNodeSpan(node, node, "BinaryExpression", { left: ifRightId, operator: "instanceof", right: arrayId });
+    var ifStmt = createNodeSpan(node, node, "IfStatement", { test: ifTest, consequent: forOrderedBlock, alternate: forInBlock });
 
     node.body = [rightAssign, ifStmt];
 
-    newAstIdCount++;
-
-    return finishNode(node, "BlockStatement");
+    return node;
   }
 
   // ### Expression parsing
@@ -1596,7 +1609,7 @@
       checkLVal(left);
       if (left.type === "Identifier" && !scope.exists(left.name)) {
         scope.addVar(left.name);
-        return createVarDeclFromId(node, node.left, node.right);
+        return createVarDeclFromId(node.left, node.left, node.right);
       }
       return finishNode(node, "AssignmentExpression");
     }
@@ -1644,16 +1657,18 @@
         node = startNodeFrom(left);
         if (op === _floorDiv) {
           right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
-          var binExpr = createNode("BinaryExpression", { left: left, operator: '/', right: right });
+          finishNode(node);
+          var binExpr = createNodeSpan(node, node, "BinaryExpression", { left: left, operator: '/', right: right });
           exprNode = createNodeMemberCall(node, "Math", "floor", [binExpr]);
         } else if (op === _in || op === _logicalNOT) {
           if (op === _in || eat(_in)) {
             right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
-            var zeroLit = createNode("Literal", { value: 0 });
-            var indexOfLit = createNode("Literal", { name: "indexOf" });
-            var memberExpr = createNode("MemberExpression", { object: right, property: indexOfLit, computed: false });
-            var callExpr = createNode("CallExpression", { callee: memberExpr, arguments: [left] });
-            exprNode = createNode("BinaryExpression", { left: callExpr, operator: op === _in ? ">=" : "<", right: zeroLit });
+            finishNode(node);
+            var zeroLit = createNodeSpan(node, node, "Literal", { value: 0 });
+            var indexOfLit = createNodeSpan(node, node, "Literal", { name: "indexOf" });
+            var memberExpr = createNodeSpan(node, node, "MemberExpression", { object: right, property: indexOfLit, computed: false });
+            var callExpr = createNodeSpan(node, node, "CallExpression", { callee: memberExpr, arguments: [left] });
+            exprNode = createNodeSpan(node, node, "BinaryExpression", { left: callExpr, operator: op === _in ? ">=" : "<", right: zeroLit });
           } else raise(tokPos, "Expected 'not in' comparison operator");
         } else {
           if (op === _is) {
@@ -1700,12 +1715,12 @@
       var id = parseIdent(true);
       if (pythonRuntime.imports[base.name] && pythonRuntime.imports[base.name][id.name]) {
         // Calling a Python import function
-        var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
-        var importsId = createNode("Identifier", { name: "imports" });
-        var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: importsId, computed: false });
-        node.object = createNode("MemberExpression", { object: runtimeMember, property: base, computed: false });
+        var runtimeId = createNodeSpan(base, base, "Identifier", { name: options.runtimeParamName });
+        var importsId = createNodeSpan(base, base, "Identifier", { name: "imports" });
+        var runtimeMember = createNodeSpan(base, base, "MemberExpression", { object: runtimeId, property: importsId, computed: false });
+        node.object = createNodeSpan(base, base, "MemberExpression", { object: runtimeMember, property: base, computed: false });
       } else if (base.name && base.name === scope.getThisReplace()) {
-        node.object = createNodeFrom(base, "ThisExpression");
+        node.object = createNodeSpan(base, base, "ThisExpression");
       } else node.object = base;
       node.property = id;
       node.computed = false;
@@ -1719,18 +1734,18 @@
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (!noCalls && eat(_parenL)) {
       var node = startNodeFrom(base);
+      node.arguments = parseExprList(_parenR, false);
+      if (scope.isNewObj(base.name)) finishNode(node, "NewExpression");
+      else finishNode(node, "CallExpression");
       if (pythonRuntime.functions[base.name]) {
         // Calling a Python built-in function
         if (base.type !== "Identifier") unexpected();
-        var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
-        var functionsId = createNode("Identifier", { name: "functions" });
-        var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: functionsId, computed: false });
-        node.callee = createNode("MemberExpression", { object: runtimeMember, property: base, computed: false });
+        var runtimeId = createNodeSpan(base, base, "Identifier", { name: options.runtimeParamName });
+        var functionsId = createNodeSpan(base, base, "Identifier", { name: "functions" });
+        var runtimeMember = createNodeSpan(base, base, "MemberExpression", { object: runtimeId, property: functionsId, computed: false });
+        node.callee = createNodeSpan(base, base, "MemberExpression", { object: runtimeMember, property: base, computed: false });
       } else node.callee = base;
-      node.arguments = parseExprList(_parenR, false);
-      if (scope.isNewObj(base.name))
-        return parseSubscripts(finishNode(node, "NewExpression"), noCalls);
-      return parseSubscripts(finishNode(node, "CallExpression"), noCalls);
+      return parseSubscripts(node, noCalls);
     }
     return base;
   }
@@ -1774,8 +1789,6 @@
         return node;
       }
       var val = parseMaybeTuple(true);
-      val.start = tokStart1;
-      val.end = tokEnd;
       if (options.locations) {
         val.loc.start = tokStartLoc1;
         val.loc.end = tokEndLoc;
@@ -1791,13 +1804,14 @@
     case _bracketL:
       var node = startNode();
       next();
-      var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
-      var objectsId = createNode("Identifier", { name: "objects" });
-      var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: objectsId, computed: false });
-      var listId = createNode("Identifier", { name: "list" });
-      node.callee = createNode("MemberExpression", { object: runtimeMember, property: listId, computed: false });
       node.arguments = parseExprList(_bracketR, true, false);
-      return finishNode(node, "NewExpression");
+      finishNode(node, "NewExpression");
+      var runtimeId = createNodeSpan(node, node, "Identifier", { name: options.runtimeParamName });
+      var objectsId = createNodeSpan(node, node, "Identifier", { name: "objects" });
+      var runtimeMember = createNodeSpan(node, node, "MemberExpression", { object: runtimeId, property: objectsId, computed: false });
+      var listId = createNodeSpan(node, node, "Identifier", { name: "list" });
+      node.callee = createNodeSpan(node, node, "MemberExpression", { object: runtimeMember, property: listId, computed: false });
+      return node;
 
     case _braceL:
 	    return parseDict(_braceR);
@@ -1810,6 +1824,13 @@
   // Parse class
 
   function parseClass(ctorNode) {
+    // Container for class constructor and prototype functions
+
+    var container = startNodeFrom(ctorNode);
+    container.body = [];
+
+    // Parse class signature
+
     ctorNode.id = parseIdent();
     ctorNode.params = [];
     var classParams = [];
@@ -1827,10 +1848,9 @@
 
     scope.startClass(ctorNode.id.name);
 
-    // Container for class constructor and prototype functions
+    // Save a reference for source ranges
 
-    var container = startNode();
-    container.body = [];
+    var classBodyRefNode = finishNode(startNode());
 
     // Parse class body
 
@@ -1847,18 +1867,18 @@
 
     // Start building class constructor
 
-    var ctorBlock = startNodeFrom(container);
+    var ctorBlock = startNodeFrom(classBlock);
     ctorBlock.body = [];
 
     // Add parent class constructor call
-
-    for (var i in classParams) {
-      var objId = createNode("Identifier", { name: classParams[0].name });
-      var propertyId = createNode("Identifier", { name: "call" });
-      var calleeMember = createNode("MemberExpression", { object: objId, property: propertyId, computed: false });
-      var thisExpr = createNode("ThisExpression");
-      var callExpr = createNode("CallExpression", { callee: calleeMember, arguments: [thisExpr] });
-      var superExpr = createNode("ExpressionStatement", { expression: callExpr });
+    
+    if (classParams.length === 1) {
+      var objId = createNodeSpan(classBodyRefNode, classBodyRefNode, "Identifier", { name: classParams[0].name });
+      var propertyId = createNodeSpan(classBodyRefNode, classBodyRefNode, "Identifier", { name: "call" });
+      var calleeMember = createNodeSpan(classBodyRefNode, classBodyRefNode, "MemberExpression", { object: objId, property: propertyId, computed: false });
+      var thisExpr = createNodeSpan(classBodyRefNode, classBodyRefNode, "ThisExpression");
+      var callExpr = createNodeSpan(classBodyRefNode, classBodyRefNode, "CallExpression", { callee: calleeMember, arguments: [thisExpr] });
+      var superExpr = createNodeSpan(classBodyRefNode, classBodyRefNode, "ExpressionStatement", { expression: callExpr });
       ctorBlock.body.push(superExpr);
     }
 
@@ -1880,24 +1900,24 @@
     // Finish class constructor
 
     ctorNode.body = finishNode(ctorBlock, "BlockStatement");
-    ctorNode = finishNode(ctorNode, "FunctionDeclaration");
+    finishNode(ctorNode, "FunctionDeclaration");
     container.body.push(ctorNode);
 
     // Add inheritance via 'MyClass.prototype = Object.create(ParentClass.prototype)'
 
     if (classParams.length === 1) {
-      var childClassId = createNode("Identifier", { name: ctorNode.id.name });
-      var childPrototypeId = createNode("Identifier", { name: "prototype" });
-      var childPrototypeMember = createNode("MemberExpression", { object: childClassId, property: childPrototypeId, computed: false });
-      var parentClassId = createNode("Identifier", { name: classParams[0].name });
-      var parentPrototypeId = createNode("Identifier", { name: "prototype" });
-      var parentPrototypeMember = createNode("MemberExpression", { object: parentClassId, property: parentPrototypeId, computed: false });
-      var objClassId = createNode("Identifier", { name: "Object" });
-      var objCreateId = createNode("Identifier", { name: "create" });
-      var objPropertyMember = createNode("MemberExpression", { object: objClassId, property: objCreateId, computed: false });
-      var callExpr = createNode("CallExpression", { callee: objPropertyMember, arguments: [parentPrototypeMember] });
-      var assignExpr = createNode("AssignmentExpression", { left: childPrototypeMember, operator: "=", right: callExpr });
-      var inheritanceExpr = createNode("ExpressionStatement", { expression: assignExpr });
+      var childClassId = createNodeSpan(ctorNode, ctorNode, "Identifier", { name: ctorNode.id.name });
+      var childPrototypeId = createNodeSpan(ctorNode, ctorNode, "Identifier", { name: "prototype" });
+      var childPrototypeMember = createNodeSpan(ctorNode, ctorNode, "MemberExpression", { object: childClassId, property: childPrototypeId, computed: false });
+      var parentClassId = createNodeSpan(ctorNode, ctorNode, "Identifier", { name: classParams[0].name });
+      var parentPrototypeId = createNodeSpan(ctorNode, ctorNode, "Identifier", { name: "prototype" });
+      var parentPrototypeMember = createNodeSpan(ctorNode, ctorNode, "MemberExpression", { object: parentClassId, property: parentPrototypeId, computed: false });
+      var objClassId = createNodeSpan(ctorNode, ctorNode, "Identifier", { name: "Object" });
+      var objCreateId = createNodeSpan(ctorNode, ctorNode, "Identifier", { name: "create" });
+      var objPropertyMember = createNodeSpan(ctorNode, ctorNode, "MemberExpression", { object: objClassId, property: objCreateId, computed: false });
+      var callExpr = createNodeSpan(ctorNode, ctorNode, "CallExpression", { callee: objPropertyMember, arguments: [parentPrototypeMember] });
+      var assignExpr = createNodeSpan(ctorNode, ctorNode, "AssignmentExpression", { left: childPrototypeMember, operator: "=", right: callExpr });
+      var inheritanceExpr = createNodeSpan(ctorNode, ctorNode, "ExpressionStatement", { expression: assignExpr });
       container.body.push(inheritanceExpr);
     }
 
@@ -1923,11 +1943,6 @@
     var node = startNode(), first = true, key, value;
     node.arguments = [];
     next();
-    var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
-    var objectsId = createNode("Identifier", { name: "objects" });
-    var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: objectsId, computed: false });
-    var listId = createNode("Identifier", { name: "dict" });
-    node.callee = createNode("MemberExpression", { object: runtimeMember, property: listId, computed: false });
     while (!eat(tokClose)) {
       if (!first) {
         expect(_comma);
@@ -1941,13 +1956,21 @@
         var keyId = parseIdent(true);
         key = startNodeFrom(keyId);
         key.value = keyId.name;
-        key = finishNode(key, "Literal");
+        finishNode(key, "Literal");
         expect(_eq);
         value = parseExprOps(true);
       } else unexpected();
-      node.arguments.push(createNode("ArrayExpression", { elements: [key, value] }));
+      node.arguments.push(createNodeSpan(key, value, "ArrayExpression", { elements: [key, value] }));
     }
-    return finishNode(node, "NewExpression");
+    finishNode(node, "NewExpression");
+
+    var runtimeId = createNodeSpan(node, node, "Identifier", { name: options.runtimeParamName });
+    var objectsId = createNodeSpan(node, node, "Identifier", { name: "objects" });
+    var runtimeMember = createNodeSpan(node, node, "MemberExpression", { object: runtimeId, property: objectsId, computed: false });
+    var listId = createNodeSpan(node, node, "Identifier", { name: "dict" });
+    node.callee = createNodeSpan(node, node, "MemberExpression", { object: runtimeMember, property: listId, computed: false });
+
+    return node;
   }
 
   function parsePropertyName() {
@@ -1997,14 +2020,15 @@
     // If class method, replace with prototype function literals
     var retNode;
     if (scope.isParentClass()) {
-      var classId = createNode("Identifier", { name: scope.getParentClassName() });
-      var prototypeId = createNode("Identifier", { name: "prototype" });
+      finishNode(node);
+      var classId = createNodeSpan(node, node, "Identifier", { name: scope.getParentClassName() });
+      var prototypeId = createNodeSpan(node, node, "Identifier", { name: "prototype" });
       var functionId = node.id;
-      var prototypeMember = createNode("MemberExpression", { object: classId, property: prototypeId, computed: false });
-      var functionMember = createNode("MemberExpression", { object: prototypeMember, property: functionId, computed: false });
-      var functionExpr = createNode("FunctionExpression", { body: node.body, params: node.params });
-      var assignExpr = createNode("AssignmentExpression", { left: functionMember, operator: "=", right: functionExpr });
-      retNode = createNode("ExpressionStatement", { expression: assignExpr });
+      var prototypeMember = createNodeSpan(node, node, "MemberExpression", { object: classId, property: prototypeId, computed: false });
+      var functionMember = createNodeSpan(node, node, "MemberExpression", { object: prototypeMember, property: functionId, computed: false });
+      var functionExpr = createNodeSpan(node, node, "FunctionExpression", { body: node.body, params: node.params });
+      var assignExpr = createNodeSpan(node, node, "AssignmentExpression", { left: functionMember, operator: "=", right: functionExpr });
+      retNode = createNodeSpan(node, node, "ExpressionStatement", { expression: assignExpr });
     } else retNode = finishNode(node, "FunctionDeclaration");
 
     scope.end();
@@ -2054,14 +2078,8 @@
   }
 
   function parseTuple(noIn, expr) {
-    var runtimeId = createNode("Identifier", { name: options.runtimeParamName });
-    var objectsId = createNode("Identifier", { name: "objects" });
-    var runtimeMember = createNode("MemberExpression", { object: runtimeId, property: objectsId, computed: false });
-    var listId = createNode("Identifier", { name: "tuple" });
-
     var node = expr ? startNodeFrom(expr) : startNode();
     node.arguments = expr ? [expr] : [];
-    node.callee = createNode("MemberExpression", { object: runtimeMember, property: listId, computed: false });
 
     // Tuple with single element has special trailing comma: t = 'hi',
     // Look ahead and eat comma in this scenario
@@ -2074,7 +2092,15 @@
     while (eat(_comma)) {
       node.arguments.push(parseExprOps(noIn));
     }
-    return finishNode(node, "NewExpression");
+    finishNode(node, "NewExpression");
+
+    var runtimeId = createNodeSpan(node, node, "Identifier", { name: options.runtimeParamName });
+    var objectsId = createNodeSpan(node, node, "Identifier", { name: "objects" });
+    var runtimeMember = createNodeSpan(node, node, "MemberExpression", { object: runtimeId, property: objectsId, computed: false });
+    var listId = createNodeSpan(node, node, "Identifier", { name: "tuple" });
+    node.callee = createNodeSpan(node, node, "MemberExpression", { object: runtimeMember, property: listId, computed: false });
+
+    return node;
   }
 
 
