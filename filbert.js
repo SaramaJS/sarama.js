@@ -197,11 +197,10 @@
   var lastStart, lastEnd, lastEndLoc;
 
   // This is the parser's state. `inFunction` is used to reject
-  // `return` statements outside of functions, `labels` to verify that
-  // `break` and `continue` have somewhere to jump to, and `strict`
+  // `return` statements outside of functions, and `strict`
   // indicates whether strict mode is on.
 
-  var inFunction, labels, strict;
+  var inFunction, strict;
 
   // This function is used to raise exceptions on parse errors. It
   // takes an offset integer (into the current `input`) to indicate
@@ -245,7 +244,7 @@
 
   // TODO: Not tracking built-in namespace
   
-  var scope = {
+  var scope = exports.scope = {
     namespaces: [],
     init: function () { this.namespaces = [{ type: 'g', map: {} }]; },
     current: function(offset) { 
@@ -325,9 +324,9 @@
   // we assign a variable name to it for quick comparing.
   // 'prec' is the operator precedence'
 
-  var _logicalOR = { keyword: "or", prec: 1, beforeExpr: true, rep: "||" }
-  var _logicalAND = { keyword: "and", prec: 2, beforeExpr: true, rep: "&&" }
-  var _logicalNOT = { keyword: "not", prec: 3, prefix: true, beforeExpr: true, rep: "!" };
+  var _or = { keyword: "or", prec: 1, beforeExpr: true, rep: "||" }
+  var _and = { keyword: "and", prec: 2, beforeExpr: true, rep: "&&" }
+  var _not = { keyword: "not", prec: 3, prefix: true, beforeExpr: true, rep: "!" };
   var _in = { keyword: "in", prec: 4, beforeExpr: true };
   var _is = { keyword: "is", prec: 4, beforeExpr: true };
 
@@ -335,11 +334,11 @@
 
   var keywordTypes = {
     "dict": _dict,
-    "False": _false, "None": _none, "True": _true, "and": _logicalAND, "as": _as, 
+    "False": _false, "None": _none, "True": _true, "and": _and, "as": _as, 
     "break": _break, "class": _class, "continue": _continue, "def": _def, "del": _del,
     "elif": _elif, "else": _else, "except": _except, "finally": _finally, "for": _for,
     "from": _from, "global": _global, "if": _if, "import": _import, "in": _in, "is": _is, 
-    "lambda": _lambda, "nonlocal": _nonlocal, "not": _logicalNOT, "or": _logicalOR, 
+    "lambda": _lambda, "nonlocal": _nonlocal, "not": _not, "or": _or, 
     "pass": _pass, "raise": _raise, "return": _return, "try": _try, "while": _while, 
     "with": _with, "yield": _yield
   };
@@ -384,7 +383,11 @@
   exports.tokTypes = {bracketL: _bracketL, bracketR: _bracketR, braceL: _braceL, braceR: _braceR,
                       parenL: _parenL, parenR: _parenR, comma: _comma, semi: _semi, colon: _colon,
                       dot: _dot, question: _question, slash: _slash, eq: _eq, name: _name, eof: _eof,
-                      num: _num, regexp: _regexp, string: _string};
+                      num: _num, regexp: _regexp, string: _string,
+                      newline: _newline, indent: _indent, dedent: _dedent,
+                      exponentiation: _exponentiation, floorDiv: _floorDiv, plusMin: _plusMin,
+                      posNegNot: _posNegNot
+  };
   for (var kw in keywordTypes) exports.tokTypes["_" + kw] = keywordTypes[kw];
 
   // This is a trick taken from Esprima. It turns out that, on
@@ -779,6 +782,13 @@
   }
 
   function readToken(forceRegexp) {
+    if (tokType === _dedent) {
+      if (tokCurDedent < 1 || tokCurIndent.length < 1) unexpected();
+      --tokCurDedent;
+      tokCurIndent.pop();
+      if (tokCurDedent > 0) return;
+    }
+
     if (!forceRegexp) tokStart = tokPos;
     else tokPos = tokStart + 1;
     if (options.locations) tokStartLoc = new Position;
@@ -1031,12 +1041,6 @@
   // Continue to the next token.
 
   function next() {
-    if (tokType === _dedent) {
-      if (tokCurDedent < 1 || tokCurIndent.length < 1) unexpected();
-      --tokCurDedent;
-      tokCurIndent.pop();
-      if (tokCurDedent > 0) return;
-    }
     lastStart = tokStart;
     lastEnd = tokEnd;
     lastEndLoc = tokEndLoc;
@@ -1263,20 +1267,15 @@
     lastStart = lastEnd = tokPos;
     if (options.locations) lastEndLoc = new Position;
     inFunction = strict = null;
-    labels = [];
     readToken();
-
-    var node = program || startNode(), first = true;
+    var node = program || startNode();
     if (!program) node.body = [];
     while (tokType !== _eof) {
       var stmt = parseStatement();
       if (stmt) node.body.push(stmt);
-      first = false;
     }
     return finishNode(node, "Program");
   }
-
-  var loopLabel = {kind: "loop"}, switchLabel = {kind: "switch"};
 
   // Parse a single statement.
   //
@@ -1411,16 +1410,6 @@
     }
   }
 
-  // Used for constructs like `switch` and `if` that insist on
-  // parentheses around their expression.
-
-  function parseParenExpression() {
-    expect(_parenL);
-    var val = parseExpression();
-    expect(_parenR);
-    return val;
-  }
-
   // Parse indent-enclosed block of statements
 
   function parseBlock() {
@@ -1428,7 +1417,7 @@
     node.body = [];
     while (tokType !== _dedent && tokType !== _eof) {
       var stmt = parseStatement();
-      node.body.push(stmt);
+      if (stmt) node.body.push(stmt);
     }
     if (tokType === _dedent) next();
     return finishNode(node, "BlockStatement");
@@ -1479,7 +1468,6 @@
   //    total += v;
   // }
 
-  // TODO: Extra AST nodes have program end for their start and end.  What should they be?
   // TODO: for/in on a string should go through items, not indexes. String obj and string literal.
 
   function parseFor(node) {
@@ -1579,6 +1567,16 @@
     return parseMaybeAssign(noIn);
   }
 
+  // Used for constructs like `switch` and `if` that insist on
+  // parentheses around their expression.
+
+  function parseParenExpression() {
+    expect(_parenL);
+    var val = parseExpression();
+    expect(_parenR);
+    return val;
+  }
+
   // Parse an assignment expression. This includes applications of
   // operators like `+=`.
   // Add 'this.' to assignments in a class constructor.
@@ -1589,7 +1587,7 @@
     var left = parseMaybeTuple(noIn);
     if (tokType.isAssign) {
       var tupleArgs = getTupleArgs(left);
-      if (tupleArgs && tokType.isAssign) {
+      if (tupleArgs) {
         next();
         var right = parseMaybeTuple(noIn);
         var blockNode = startNodeFrom(left);
@@ -1601,6 +1599,7 @@
         var thisExpr = createNodeFrom(left, "ThisExpression");
         left = createNodeFrom(left, "MemberExpression", { object: thisExpr, property: left });
       }
+
       var node = startNodeFrom(left);
       node.operator = tokVal;
       node.left = left;
@@ -1644,7 +1643,7 @@
 
   function parseExprOp(left, minPrec, noIn) {
     var node, exprNode, right, op = tokType, val = tokVal;
-    var prec = op === _logicalNOT ? _in.prec : op.prec;
+    var prec = op === _not ? _in.prec : op.prec;
     if (op === _exponentiation && prec >= minPrec) {
       node = startNodeFrom(left);
       next();
@@ -1660,7 +1659,7 @@
           finishNode(node);
           var binExpr = createNodeSpan(node, node, "BinaryExpression", { left: left, operator: '/', right: right });
           exprNode = createNodeMemberCall(node, "Math", "floor", [binExpr]);
-        } else if (op === _in || op === _logicalNOT) {
+        } else if (op === _in || op === _not) {
           if (op === _in || eat(_in)) {
             right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
             finishNode(node);
@@ -1672,12 +1671,12 @@
           } else raise(tokPos, "Expected 'not in' comparison operator");
         } else {
           if (op === _is) {
-            if (eat(_logicalNOT)) node.operator = "!==";
+            if (eat(_not)) node.operator = "!==";
             else node.operator = "===";
           } else node.operator = op.rep != null ? op.rep : val;
           node.left = left;
           node.right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
-          exprNode = finishNode(node, (op === _logicalOR || op === _logicalAND) ? "LogicalExpression" : "BinaryExpression");
+          exprNode = finishNode(node, (op === _or || op === _and) ? "LogicalExpression" : "BinaryExpression");
         }
         return parseExprOp(exprNode, minPrec, noIn);
       }
@@ -1699,8 +1698,7 @@
       node.argument = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
       return finishNode(node, "UnaryExpression");
     }
-    var expr = parseExprSubscripts();
-    return expr;
+    return parseExprSubscripts();
   }
 
   // Parse call, dot, and `[]`-subscript expressions.
@@ -1989,10 +1987,9 @@
     }
     expect(_colon);
 
-    // Start a new scope with regard to labels and the `inFunction`
+    // Start a new scope with regard to the `inFunction`
     // flag (restore them to their old value afterwards).
-    var oldInFunc = inFunction, oldLabels = labels;
-    inFunction = true; labels = [];
+    var oldInFunc = inFunction = true;
 
     scope.startFn(node.id.name);
 
@@ -2004,7 +2001,7 @@
 
     node.body = parseSuite();
 
-    inFunction = oldInFunc; labels = oldLabels;
+    inFunction = oldInFunc;
 
     // Verify that argument names
     // are not repeated, and it does not try to bind the words `eval`
@@ -2059,6 +2056,8 @@
   // Parse the next token as an identifier. If `liberal` is true (used
   // when parsing properties), it will also convert keywords into
   // identifiers.
+
+  // TODO: liberal?
 
   function parseIdent(liberal) {
     var node = startNode();

@@ -1,8 +1,11 @@
 var filbert = require('../../filbert.js');
+var filbert_loose = require('../../filbert_loose.js');
 var escodegen = require('escodegen');
 
 var parse = exports.parse = function(code, options) {
-  return filbert.parse(code, options)
+  // Swap returns for low tech testing of filbert_loose
+   return filbert.parse(code, options)
+  //return filbert_loose.parse_dammit(code, options)
 }
 
 exports.run = function (code) {
