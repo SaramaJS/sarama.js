@@ -220,18 +220,40 @@
 
   var empty = [];
 
-  // Current indentation stack
-
-  var tokCurIndent = [];
-  
-  // Number of dedent tokens left (i.e. if tokType == _dedent, tokCurDedent > 0)
-  // Multiple dedent tokens are read in at once, but processed individually in next()
-
-  var tokCurDedent;
-
   // Used for name collision avoidance whend adding extra AST identifiers
 
   var newAstIdCount = 0;
+
+  var indentHist = exports.indentHist = {
+    // Current indentation stack
+    indent: [],
+
+    // Number of dedent tokens left (i.e. if tokType == _dedent, dedentCount > 0)
+    // Multiple dedent tokens are read in at once, but processed individually in readToken()
+    dedentCount: 0,
+
+    init: function () { this.indent = []; this.dedentCount = 0; },
+    count: function () { return this.indent.length; },
+    curLength: function () { return this.indent[this.indent.length - 1].length },
+    isIndent: function(s) {
+      return this.indent.length === 0 || s.length > this.curLength();
+    },
+    isDedent: function(s) {
+      return this.indent.length > 0 && s.length < this.curLength();
+    },
+    addIndent: function(s) { this.indent.push(s)},
+    addDedent: function (s) {
+      this.dedentCount = 0;
+      for (var i = this.indent.length - 1; i >= 0 && s.length < this.indent[i].length; --i)
+        ++this.dedentCount;
+    },
+    updateDedent: function () { this.dedentCount = this.count(); },
+    pop: function () {
+      --this.dedentCount;
+      this.indent.pop();
+    },
+    undoIndent: function () { this.pop(); }
+  };
 
   // ## Scope
 
@@ -507,7 +529,7 @@
     tokCurLine = 1;
     tokPos = tokLineStart = 0;
     tokRegexpAllowed = true;
-    tokCurIndent = [];
+    indentHist.init();
     newAstIdCount = 0;
     scope.init();
   }
@@ -672,22 +694,20 @@
     // Determine token type based on indent found versus indentation history
     var type;
     if (indent.length > 0) {
-      if (tokCurIndent.length === 0 || indent.length > tokCurIndent[tokCurIndent.length - 1].length) {
+      if (indentHist.isIndent(indent)) {
         type = _indent;
-        tokCurIndent.push(indent);
-      } else if (tokCurIndent.length > 0 && indent.length < tokCurIndent[tokCurIndent.length - 1].length) {
+        indentHist.addIndent(indent);
+      } else if (indentHist.isDedent(indent)) {
         type = _dedent;
-        tokCurDedent = 0;
-        for (var i = tokCurIndent.length - 1; i >= 0 && indent.length < tokCurIndent[i].length; --i)
-            ++tokCurDedent;
+        indentHist.addDedent(indent);
       } else {
         tokPos += indent.length;
       }
     } else if (indentPos >= inputLen) {
       type = _eof;
-    } else if (tokCurIndent.length > 0) {
+    } else if (indentHist.count() > 0) {
       type = _dedent;
-      tokCurDedent = tokCurIndent.length;
+      indentHist.updateDedent();
     }
 
     switch (type) {
@@ -783,10 +803,8 @@
 
   function readToken(forceRegexp) {
     if (tokType === _dedent) {
-      if (tokCurDedent < 1 || tokCurIndent.length < 1) unexpected();
-      --tokCurDedent;
-      tokCurIndent.pop();
-      if (tokCurDedent > 0) return;
+      indentHist.pop();
+      if (indentHist.dedentCount > 0) return;
     }
 
     if (!forceRegexp) tokStart = tokPos;

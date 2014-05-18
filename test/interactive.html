@@ -8,6 +8,7 @@
         }
     </style>
     <script type='text/javascript' src='../filbert.js'></script>
+    <script type='text/javascript' src='../filbert_loose.js'></script>
     <script src="escodegen.browser.js"></script>
     <script>
         // Intercept console.log
@@ -24,12 +25,14 @@
             clearTimeout(timerId);
             timerId = setTimeout(compile, 1000);
         }
+
+        var parseFn = filbert.parse;
         function compile() {
             try {
                 outputText.value = "";
-			    var code = pythonText.value;
-			    var ast = filbert.parse(code);
-			    astText.value = JSON.stringify(ast, null, 2);
+                var code = pythonText.value;
+                var ast = parseFn(code);
+                astText.value = JSON.stringify(ast, null, 2);
             }
             catch (e) {
                 jsText.value = "";
@@ -37,18 +40,29 @@
                 outputText.value = "";
             }
             try {
-			    var js = escodegen.generate(ast);
-			    js = "(function(" + filbert.defaultOptions.runtimeParamName + "){" + js + "})(filbert.pythonRuntime);";
-			    jsText.value = js;
-			    eval(js); // TODO: recover from infinite loops (e.g. compile before added loop increment)
-		    }
-		    catch (e) {
-			    outputText.value = e.toString();
+                var js = escodegen.generate(ast);
+                js = "(function(" + filbert.defaultOptions.runtimeParamName + "){" + js + "})(filbert.pythonRuntime);";
+                jsText.value = js;
+                eval(js); // TODO: recover from infinite loops (e.g. compile before added loop increment)
             }
+            catch (e) {
+                outputText.value = e.toString();
+            }
+        }
+
+        function changeParser() {
+            if (parserSelect.value === 'loose') parseFn = filbert_loose.parse_dammit;
+            else parseFn = filbert.parse;
+            compile();
         }
     </script>
 </head>
 <body>
+    <div><select id="parserSelect" onchange="changeParser()">
+        <option value="normal">filbert.js</option>
+        <option value="loose">filbert_loose.js</option>
+    </select>
+    </div>
     <textarea id='pythonText' style='border: 1px solid black; width:49%; height:30%;' onkeyup="inputChange()">print('Type your Python code in the first box.')</textarea>
     <textarea id='jsText' style='border: 1px solid blue; width: 49%; height: 30%; ' readonly='true'></textarea>
     <textarea id='astText' style='border: 1px solid purple; width: 49%; height: 69%; ' readonly='true'></textarea>

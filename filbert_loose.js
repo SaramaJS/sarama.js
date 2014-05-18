@@ -27,13 +27,14 @@
 
 (function(root, mod) {
   if (typeof exports == "object" && typeof module == "object") return mod(exports, require("./filbert")); // CommonJS
-  if (typeof define == "function" && define.amd) return define(["exports", "./filbert"], mod); // AMD
-  mod(root.filbert || (root.filbert = {}), root.filbert); // Plain browser env
+  if (typeof define == "function" && define.amd) return define(["exports", "./filbert_loose"], mod); // AMD
+  mod(root.filbert_loose || (root.filbert_loose = {}), root.filbert); // Plain browser env
 })(this, function(exports, filbert) {
   "use strict";
 
   var tt = filbert.tokTypes;
   var scope = filbert.scope;
+  var indentHist = filbert.indentHist;
 
   var options, input, inputLen, fetchToken;
 
@@ -443,6 +444,12 @@
       next();
       return finishNode(node, "EmptyStatement");
 
+    case tt.indent:
+      // Unexpected indent, let's ignore it
+      indentHist.undoIndent();
+      next();
+      return parseStatement();
+
     default:
       var expr = parseExpression();
       if (isDummy(expr)) {
@@ -646,6 +653,10 @@
             if (eat(tt._not)) node.operator = "!==";
             else node.operator = "===";
           } else node.operator = op.rep != null ? op.rep : val;
+
+          // Accept '===' as '=='
+          if (input[token.start - 1] === '=' && input[token.start - 2] === '=') next();
+
           node.left = left;
           node.right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
           exprNode = finishNode(node, (op === tt._or || op === tt._and) ? "LogicalExpression" : "BinaryExpression");
