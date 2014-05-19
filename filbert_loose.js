@@ -244,7 +244,7 @@
     var objId = createNodeFrom(node, "Identifier", { name: object });
     var propId = createNodeFrom(node, "Identifier", { name: property });
     var member = createNodeFrom(node, "MemberExpression", { object: objId, property: propId, computed: false });
-    node.callee = member
+    node.callee = member;
     node.arguments = args;
     return finishNode(node, "CallExpression");
   }
@@ -269,7 +269,7 @@
       loc.end = loc.start;
       return loc;
     }
-  };
+  }
 
   function dummyIdent() {
     var dummy = new Node(token.start);
@@ -329,7 +329,7 @@
 
     var tmpId = createNodeSpan(right, right, "Identifier", { name: "filbertTmp" + newAstIdCount++ });
     var tmpDecl = createVarDeclFromId(right, tmpId, right);
-    varStmts.push(tmpDecl)
+    varStmts.push(tmpDecl);
 
     // argN = tmp[N]
 
@@ -584,7 +584,7 @@
         var right = parseMaybeTuple(noIn);
         var blockNode = startNodeFrom(left);
         blockNode.body = unpackTuple(noIn, tupleArgs, right);
-        return finishNode(blockNode, "BlockStatement")
+        return finishNode(blockNode, "BlockStatement");
       }
 
       if (scope.isClass()) {
@@ -685,8 +685,8 @@
   }
 
   function parseSubscripts(base, noCalls) {
+    var node = startNodeFrom(base);
     if (eat(tt.dot)) {
-      var node = startNodeFrom(base);
       var id = parseIdent(true);
       if (filbert.pythonRuntime.imports[base.name] && filbert.pythonRuntime.imports[base.name][id.name]) {
         // Calling a Python import function
@@ -701,14 +701,12 @@
       node.computed = false;
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (eat(tt.bracketL)) {
-      var node = startNodeFrom(base);
       node.object = base;
       node.property = parseExpression();
       node.computed = true;
       expect(tt.bracketR);
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (!noCalls && eat(tt.parenL)) {
-      var node = startNodeFrom(base);
       node.arguments = parseExprList(tt.parenR, false);
       if (scope.isNewObj(base.name)) finishNode(node, "NewExpression");
       else finishNode(node, "CallExpression");

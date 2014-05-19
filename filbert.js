@@ -63,7 +63,7 @@
     // When the `locations` option is on, two more parameters are
     // passed, the full `{line, column}` locations of the start and
     // end of the comments. Note that you are not allowed to call the
-    // parser from the callback—that will corrupt its internal state.
+    // parser from the callback-that will corrupt its internal state.
     onComment: null,
     // [semi-standardized][range] `range` property holding a `[start,
     // end]` array with the same numbers, set the `ranges` option to
@@ -234,14 +234,14 @@
 
     init: function () { this.indent = []; this.dedentCount = 0; },
     count: function () { return this.indent.length; },
-    curLength: function () { return this.indent[this.indent.length - 1].length },
+    curLength: function () { return this.indent[this.indent.length - 1].length; },
     isIndent: function(s) {
       return this.indent.length === 0 || s.length > this.curLength();
     },
     isDedent: function(s) {
       return this.indent.length > 0 && s.length < this.curLength();
     },
-    addIndent: function(s) { this.indent.push(s)},
+    addIndent: function (s) { this.indent.push(s); },
     addDedent: function (s) {
       this.dedentCount = 0;
       for (var i = this.indent.length - 1; i >= 0 && s.length < this.indent[i].length; --i)
@@ -333,7 +333,7 @@
   var _if = { keyword: "if" }, _import = { keyword: "import" };
   var _lambda = {keyword: "lambda"}, _nonlocal = {keyword: "nonlocal"};
   var _pass = { keyword: "pass" }, _raise = {keyword: "raise"};
-  var _return = { keyword: "return", beforeExpr: true }, _try = { keyword: "try" }
+  var _return = { keyword: "return", beforeExpr: true }, _try = { keyword: "try" };
   var _while = {keyword: "while"}, _with = {keyword: "with"}, _yield = {keyword: "yield"};
 
   // The keywords that denote values.
@@ -346,8 +346,8 @@
   // we assign a variable name to it for quick comparing.
   // 'prec' is the operator precedence'
 
-  var _or = { keyword: "or", prec: 1, beforeExpr: true, rep: "||" }
-  var _and = { keyword: "and", prec: 2, beforeExpr: true, rep: "&&" }
+  var _or = { keyword: "or", prec: 1, beforeExpr: true, rep: "||" };
+  var _and = { keyword: "and", prec: 2, beforeExpr: true, rep: "&&" };
   var _not = { keyword: "not", prec: 3, prefix: true, beforeExpr: true, rep: "!" };
   var _in = { keyword: "in", prec: 4, beforeExpr: true };
   var _is = { keyword: "is", prec: 4, beforeExpr: true };
@@ -667,8 +667,9 @@
     // Read indent, skip empty lines and comments
     var indent = "";
     var indentPos = tokPos;
+    var ch, next;
     while (indentPos < inputLen) {
-      var ch = input.charCodeAt(indentPos);
+      ch = input.charCodeAt(indentPos);
       if (ch === 32 || ch === 9) { // ' ' or '\t'
         indent += String.fromCharCode(ch);
         ++indentPos;
@@ -683,7 +684,7 @@
         }
       } else if (ch === 35) { // '#'
         do {
-          var next = input.charCodeAt(++indentPos);
+          next = input.charCodeAt(++indentPos);
         } while (indentPos < inputLen && next !== 10);
         // TODO: call onComment
       } else {
@@ -841,7 +842,7 @@
   // since a '/' inside a '[]' set does not end the expression.
 
   function readRegexp() {
-    var content = "", escaped, inClass, start = tokPos;
+    var content = "", escaped, inClass, start = tokPos, value;
     for (;;) {
       if (tokPos >= inputLen) raise(start, "Unterminated regular expression");
       var ch = input.charAt(tokPos);
@@ -854,14 +855,14 @@
       } else escaped = false;
       ++tokPos;
     }
-    var content = input.slice(start, tokPos);
+    content = input.slice(start, tokPos);
     ++tokPos;
     // Need to use `readWord1` because '\uXXXX' sequences are allowed
     // here (don't ask).
     var mods = readWord1();
     if (mods && !/^[gmsiy]*$/.test(mods)) raise(start, "Invalid regular expression flag");
     try {
-      var value = new RegExp(content, mods);
+      value = new RegExp(content, mods);
     } catch (e) {
       if (e instanceof SyntaxError) raise(start, "Error parsing regular expression: " + e.message);
       raise(e);
@@ -1042,7 +1043,7 @@
   // of constructs (for example, the fact that `!x[1]` means `!(x[1])`
   // instead of `(!x)[1]` is handled by the fact that the parser
   // function that parses unary prefix operators is called first, and
-  // in turn calls the function that parses `[]` subscripts — that
+  // in turn calls the function that parses `[]` subscripts - that
   // way, it'll receive the node for `x[1]` already parsed, and wraps
   // *that* in the unary operator node.
   //
@@ -1169,7 +1170,7 @@
     var objId = createNodeFrom(node, "Identifier", { name: object });
     var propId = createNodeFrom(node, "Identifier", { name: property });
     var member = createNodeFrom(node, "MemberExpression", { object: objId, property: propId, computed: false });
-    node.callee = member
+    node.callee = member;
     node.arguments = args;
     return finishNode(node, "CallExpression");
   }
@@ -1211,7 +1212,7 @@
     raise(tokStart, "Unexpected token");
   }
 
-  // Verify that a node is an lval — something that can be assigned
+  // Verify that a node is an lval - something that can be assigned
   // to.
 
   function checkLVal(expr) {
@@ -1247,7 +1248,7 @@
 
     var tmpId = createNodeSpan(right, right, "Identifier", { name: "filbertTmp" + newAstIdCount++ });
     var tmpDecl = createVarDeclFromId(right, tmpId, right);
-    varStmts.push(tmpDecl)
+    varStmts.push(tmpDecl);
 
     // argN = tmp[N]
 
@@ -1610,7 +1611,7 @@
         var right = parseMaybeTuple(noIn);
         var blockNode = startNodeFrom(left);
         blockNode.body = unpackTuple(noIn, tupleArgs, right);
-        return finishNode(blockNode, "BlockStatement")
+        return finishNode(blockNode, "BlockStatement");
       }
 
       if (scope.isClass()) {
@@ -1726,8 +1727,8 @@
   }
 
   function parseSubscripts(base, noCalls) {
+    var node = startNodeFrom(base);
     if (eat(_dot)) {
-      var node = startNodeFrom(base);
       var id = parseIdent(true);
       if (pythonRuntime.imports[base.name] && pythonRuntime.imports[base.name][id.name]) {
         // Calling a Python import function
@@ -1742,14 +1743,12 @@
       node.computed = false;
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (eat(_bracketL)) {
-      var node = startNodeFrom(base);
       node.object = base;
       node.property = parseExpression();
       node.computed = true;
       expect(_bracketR);
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (!noCalls && eat(_parenL)) {
-      var node = startNodeFrom(base);
       node.arguments = parseExprList(_parenR, false);
       if (scope.isNewObj(base.name)) finishNode(node, "NewExpression");
       else finishNode(node, "CallExpression");
@@ -1766,7 +1765,7 @@
     return base;
   }
 
-  // Parse an atomic expression — either a single token that is an
+  // Parse an atomic expression - either a single token that is an
   // expression, an expression started by a keyword like `function` or
   // `new`, or an expression wrapped in punctuation like `()`, `[]`,
   // or `{}`.
@@ -2467,8 +2466,8 @@
       range: function (start, stop, step) {
         if (stop === undefined) {
           stop = start;
-          start = 0
-          step = 1
+          start = 0;
+          step = 1;
         }
         else if (step === undefined) step = 1;
         var r = new pythonRuntime.objects.list();
@@ -2504,7 +2503,7 @@
         return ret;
       },
       str: function (obj) {
-        return new String(obj);
+        return obj.toString();
       },
       sum: function (iterable, start) {
         // TODO: start can't be a string
