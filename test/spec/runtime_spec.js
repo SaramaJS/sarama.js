@@ -36,6 +36,13 @@ describe("Runtime library tests", function () {
     expect(util.run(code)).toBe(false);
   });
 
+  it("ascii()", function () {
+    var code = "\
+    return ascii(\"TEST\123\xd4\u1234\U00010000\")\
+    ";
+    expect(util.run(code)).toBe("'TEST\\xd3\\xd4\\u1234\\U00010000'");
+  });
+
   it("bool(None)", function () {
     var code = "\
     return bool(None)\
@@ -94,32 +101,32 @@ describe("Runtime library tests", function () {
 
   it("bool() with __bool__", function () {
     var code = "\
-    class MyClass():
-      def __bool__(self):
-        return True
-    x = MyClass()
-    return bool(x)
+    class MyClass():\n\
+      def __bool__(self):\n\
+        return True\n\
+    x = MyClass()\n\
+    return bool(x)\
     ";
     expect(util.run(code)).toBe(true);
   });
 
   it("bool() with __len__", function () {
     var code = "\
-    class MyClass():
-      def __len__(self):
-        return 0
-    x = MyClass()
-    return bool(x)
+    class MyClass():\n\
+      def __len__(self):\n\
+        return 0\n\
+    x = MyClass()\n\
+    return bool(x)\
     ";
     expect(util.run(code)).toBe(false);
   });
 
   it("bool() with nothing", function () {
     var code = "\
-    class MyClass():
-      pass
-    x = MyClass()
-    return bool(x)
+    class MyClass():\n\
+      pass\n\
+    x = MyClass()\n\
+    return bool(x)\
     ";
     expect(util.run(code)).toBe(true);
   });

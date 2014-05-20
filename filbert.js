@@ -2391,23 +2391,23 @@
         return Math.abs(x);
       },
       all: function(iterable) {
-        for (var i in iterable) if (pythonRuntime.functions.bool(iterable[i]) != true) return false;
+        for (var i in iterable) if (pythonRuntime.functions.bool(iterable[i]) !== true) return false;
         return true;
       },
       any: function(iterable) {
-        for (var i in iterable) if (pythonRuntime.functions.bool(iterable[i]) == true) return true;
+        for (var i in iterable) if (pythonRuntime.functions.bool(iterable[i]) === true) return true;
         return false;
       },
       ascii: function(obj) {
         var s = pythonRuntime.functions.repr(obj),
-            asc = '',
+            asc = "",
             code;
         for (var i = 0; i < s.length; i++) {
           code = s.charCodeAt(i);
           if (code <= 127) asc += s[i];
-          else if (code <= 255) asc += '\\x' + code.toString(16);
-          else if (code <= 65535) asc += '\\u' + ('0'+code.toString(16)).slice(-4);
-          else if (code <= 4294967295) asc += '\\U' + ('000'+code.toString(16)).slice(-8);
+          else if (code <= 255) asc += "\\x" + code.toString(16);
+          else if (code <= 65535) asc += "\\u" + ("0"+code.toString(16)).slice(-4);
+          else if (code <= 4294967295) asc += "\\U" + ("000"+code.toString(16)).slice(-8);
         }
         return asc;
       },
@@ -2418,11 +2418,11 @@
                  x === 0 || // Zero
                  x.length === 0 || // Empty Sequence
                  // TODO: Empty Mapping, needs more support for python mappings first
-                 (x.__bool__ !== undefined && x.__bool__() == false) || // If it has bool conversion defined
-                 (x.__len__ !== undefined && (x.__len__() == false || x.__len__() == 0))); // If it has length conversion defined
+                 (x.__bool__ !== undefined && x.__bool__() === false) || // If it has bool conversion defined
+                 (x.__len__ !== undefined && (x.__len__() === false || x.__len__() === 0))); // If it has length conversion defined
       },
       chr: function(i) {
-        return String.fromCharCode(i);
+        return String.fromCharCode(i); // TODO: Error code for not 0 <= i <= 1114111
       },
       enumerate: function(iterable, start) {
         start = start || 0;
@@ -2437,7 +2437,18 @@
         return ret;
       },
       float: function(x) {
-        return x ? parseFloat(x): 0.0;
+        if (x === undefined) return 0.0;
+        else if (typeof x == "string") { // TODO: Fix type check
+          x = x.trim().toLowerCase();
+          if ((/^[+-]?inf(inity)?$/i).exec(x) !== null) return Infinity*(x[0]==="-"?-1:1);
+          else if ((/^nan$/i).exec(x) !== null) return NaN;
+          else return parseFloat(x);
+        } else if (typeof x == "number") { // TODO: Fix type check
+          return x; // TODO: Get python types working right so we can return an actual float
+        } else {
+          if (x.__float__ !== undefined) return x.__float__();
+          else return null; // TODO: Throw TypeError: float() argument must be a string or a number, not '<type of x>'
+        }
       },
       hex: function(x) {
         return x.toString(16);
