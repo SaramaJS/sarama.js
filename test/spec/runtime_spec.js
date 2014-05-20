@@ -36,11 +36,32 @@ describe("Runtime library tests", function () {
     expect(util.run(code)).toBe(false);
   });
 
-  it("bool(1)", function () {
+  it("bool(None)", function () {
     var code = "\
-    return bool(1)\
+    return bool(None)\
+    ";
+    expect(util.run(code)).toBe(false);
+  });
+
+  it("bool(2)", function () {
+    var code = "\
+    return bool(2)\
     ";
     expect(util.run(code)).toBe(true);
+  });
+
+  it("bool(2.5)", function () {
+    var code = "\
+    return bool(2.5)\
+    ";
+    expect(util.run(code)).toBe(true);
+  });
+
+  it("bool(0)", function () {
+    var code = "\
+    return bool(0)\
+    ";
+    expect(util.run(code)).toBe(false);
   });
 
   it("bool('')", function () {
@@ -48,6 +69,59 @@ describe("Runtime library tests", function () {
     return bool('')\
     ";
     expect(util.run(code)).toBe(false);
+  });
+
+  it("bool('test')", function () {
+    var code = "\
+    return bool('test')\
+    ";
+    expect(util.run(code)).toBe(true);
+  });
+
+  it("bool([])", function () {
+    var code = "\
+    return bool([])\
+    ";
+    expect(util.run(code)).toBe(false);
+  });
+
+  it("bool((3,4))", function () {
+    var code = "\
+    return bool((3,4))\
+    ";
+    expect(util.run(code)).toBe(true);
+  });
+
+  it("bool() with __bool__", function () {
+    var code = "\
+    class MyClass():
+      def __bool__(self):
+        return True
+    x = MyClass()
+    return bool(x)
+    ";
+    expect(util.run(code)).toBe(true);
+  });
+
+  it("bool() with __len__", function () {
+    var code = "\
+    class MyClass():
+      def __len__(self):
+        return 0
+    x = MyClass()
+    return bool(x)
+    ";
+    expect(util.run(code)).toBe(false);
+  });
+
+  it("bool() with nothing", function () {
+    var code = "\
+    class MyClass():
+      pass
+    x = MyClass()
+    return bool(x)
+    ";
+    expect(util.run(code)).toBe(true);
   });
 
   it("chr(97)", function () {

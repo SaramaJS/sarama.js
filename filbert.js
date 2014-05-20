@@ -2412,7 +2412,14 @@
         return asc;
       },
       bool: function(x) {
-        return x == true;
+        return !(x === undefined || // No argument
+                 x === null || // None
+                 x === false || // False
+                 x === 0 || // Zero
+                 x.length === 0 || // Empty Sequence
+                 // TODO: Empty Mapping, needs more support for python mappings first
+                 (x.__bool__ !== undefined && x.__bool__() == false) || // If it has bool conversion defined
+                 (x.__len__ !== undefined && (x.__len__() == false || x.__len__() == 0))); // If it has length conversion defined
       },
       chr: function(i) {
         return String.fromCharCode(i);
