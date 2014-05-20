@@ -2391,11 +2391,11 @@
         return Math.abs(x);
       },
       all: function(iterable) {
-        for (var i in iterable) if (iterable[i] != true) return false;
+        for (var i in iterable) if (pythonRuntime.functions.bool(iterable[i]) != true) return false;
         return true;
       },
       any: function(iterable) {
-        for (var i in iterable) if (iterable[i] == true) return true;
+        for (var i in iterable) if (pythonRuntime.functions.bool(iterable[i]) == true) return true;
         return false;
       },
       ascii: function(obj) {
