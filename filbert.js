@@ -210,7 +210,6 @@
 
   function raise(pos, message) {
     var loc = getLineInfo(input, pos);
-    message += " (" + loc.line + ":" + loc.column + ")";
     var err = new SyntaxError(message);
     err.pos = pos; err.loc = loc; err.raisedAt = tokPos;
     throw err;
@@ -234,12 +233,15 @@
 
     init: function () { this.indent = []; this.dedentCount = 0; },
     count: function () { return this.indent.length; },
-    curLength: function () { return this.indent[this.indent.length - 1].length; },
+    len: function (i) { 
+      if (typeof i === 'undefined' || i >= this.indent.length) i = this.indent.length - 1;
+      return this.indent[i].length; 
+    },
     isIndent: function(s) {
-      return this.indent.length === 0 || s.length > this.curLength();
+      return this.indent.length === 0 || s.length > this.len();
     },
     isDedent: function(s) {
-      return this.indent.length > 0 && s.length < this.curLength();
+      return this.indent.length > 0 && s.length < this.len();
     },
     addIndent: function (s) { this.indent.push(s); },
     addDedent: function (s) {
@@ -697,10 +699,15 @@
     if (indent.length > 0) {
       if (indentHist.isIndent(indent)) {
         type = _indent;
+        if (indentHist.count() >= 1) tokStart += indentHist.len(indentHist.count() - 1);
         indentHist.addIndent(indent);
       } else if (indentHist.isDedent(indent)) {
         type = _dedent;
         indentHist.addDedent(indent);
+        var nextDedent = indentHist.count() - indentHist.dedentCount;
+        if (nextDedent >= 2) {
+          tokStart += indentHist.len(nextDedent) - indentHist.len(nextDedent - 1);
+        }
       } else {
         tokPos += indent.length;
       }
@@ -1830,6 +1837,9 @@
 
     case _braceL:
 	    return parseDict(_braceR);
+
+    case _indent:
+      raise(tokStart, "Unexpected indent");
 
     default:
       unexpected();
