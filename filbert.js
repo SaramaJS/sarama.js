@@ -2398,6 +2398,19 @@
         for (var i in iterable) if (iterable[i] == true) return true;
         return false;
       },
+      ascii: function(obj) {
+        var s = pythonRuntime.functions.repr(obj),
+            asc = '',
+            code;
+        for (var i = 0; i < s.length; i++) {
+          code = s.charCodeAt(i);
+          if (code <= 127) asc += s[i];
+          else if (code <= 255) asc += '\\x' + code.toString(16);
+          else if (code <= 65535) asc += '\\u' + ('0'+code.toString(16)).slice(-4);
+          else if (code <= 4294967295) asc += '\\U' + ('000'+code.toString(16)).slice(-8);
+        }
+        return asc;
+      },
       bool: function(x) {
         return x == true;
       },
