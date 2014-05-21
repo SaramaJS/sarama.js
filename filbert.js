@@ -2522,7 +2522,8 @@
         return r;
       },
       repr: function (obj) {
-        return obj.toString();
+        if (x.__repr__ !== undefined) return obj.__repr__();
+        else return '<'+x.__class__.__module__+'.'+x.__class__.__name__+' object>';
       },
       reversed: function (seq) {
         var ret = new pythonRuntime.objects.list();
