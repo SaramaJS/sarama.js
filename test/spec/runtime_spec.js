@@ -38,9 +38,9 @@ describe("Runtime library tests", function () {
 
   it("ascii()", function () {
     var code = "\
-    return ascii(\"TEST\123\xd4\u1234\U00010000\")\
+    return ascii(\"TEST\123\xd4\u1234\U00028b4e\")\
     ";
-    expect(util.run(code)).toBe("'TESTS\\xd4\\u1234\\U00010000'");
+    expect(util.run(code)).toBe("'TESTS\\xd4\\u1234\\U00028b4e'");
   });
 
   it("bool(None)", function () {
@@ -356,6 +356,13 @@ describe("Runtime library tests", function () {
     return repr(88)\n\
     ";
     expect(util.run(code)).toEqual('88');
+  });
+
+  it("repr()", function () {
+    var code = "\
+    return repr(\"88\")\n\
+    ";
+    expect(util.run(code)).toEqual("'88'");
   });
 
   it("reversed()", function () {

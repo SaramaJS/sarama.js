@@ -2527,8 +2527,11 @@
         return r;
       },
       repr: function (obj) {
-        if (x.__repr__ !== undefined) return obj.__repr__();
-        else return '<'+x.__class__.__module__+'.'+x.__class__.__name__+' object>';
+        if (typeof obj === 'string') return "'" + obj + "'"; // TODO: Patch until typesystem comes up.
+        if (obj.__repr__ !== undefined) return obj.__repr__();
+        else if (obj.__class__ !== undefined && obj.__class__.module !== undefined && obj.__class__.__name__) {
+          return '<'+obj.__class__.__module__+'.'+obj.__class__.__name__+' object>';
+        } else return obj.toString(); // Raise a please report warning here, we should never reach this piece of code
       },
       reversed: function (seq) {
         var ret = new pythonRuntime.objects.list();
