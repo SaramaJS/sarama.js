@@ -972,7 +972,7 @@
           case 10: // ' \n'
             if (options.locations) { tokLineStart = tokPos; ++tokCurLine; }
             break;
-          default: out += String.fromCharCode(ch); break;
+          default: out += '\\' + String.fromCharCode(ch); break; // Python doesn't remove slashes on failed escapes
           }
         }
       } else {
