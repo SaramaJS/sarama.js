@@ -40,7 +40,7 @@ describe("Runtime library tests", function () {
     var code = "\
     return ascii(\"TEST\123\xd4\u1234\U00010000\")\
     ";
-    expect(util.run(code)).toBe("'TEST\\xd3\\xd4\\u1234\\U00010000'");
+    expect(util.run(code)).toBe("'TESTS\\xd4\\u1234\\U00010000'");
   });
 
   it("bool(None)", function () {

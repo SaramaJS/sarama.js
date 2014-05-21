@@ -2405,9 +2405,14 @@
         for (var i = 0; i < s.length; i++) {
           code = s.charCodeAt(i);
           if (code <= 127) asc += s[i];
-          else if (code <= 255) asc += "\\x" + code.toString(16);
-          else if (code <= 65535) asc += "\\u" + ("0"+code.toString(16)).slice(-4);
-          else if (code <= 4294967295) asc += "\\U" + ("000"+code.toString(16)).slice(-8);
+          else if (code <= 0xFF) asc += "\\x" + code.toString(16);
+          else if (0xD800 <= code && code <= 0xDBFF) { // UCS-2 for the astral chars
+            // if (i+1 >= s.length) throw "High surrogate not followed by low surrogate"; // Is this needed?
+            code = ((code-0xD800)*0x400)+(s.charCodeAt(++i)-0xDC00)+0x10000;
+            asc += "\\U" + ("000"+code.toString(16)).slice(-8);
+          } else if (code <= 0xFFFF) asc += "\\u" + ("0"+code.toString(16)).slice(-4);
+          else if (code <= 0x10FFFF) asc += "\\U" + ("000"+code.toString(16)).slice(-8);
+          else; // Invalid value, should probably throw something. It should never get here though as strings shouldn't contain them in the first place
         }
         return asc;
       },
