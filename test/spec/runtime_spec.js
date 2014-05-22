@@ -38,9 +38,9 @@ describe("Runtime library tests", function () {
 
   it("ascii()", function () {
     var code = "\
-    return ascii(\"TEST\123\xd4\u1234\U00028b4e\")\
+    return ascii(\"TEST\\xD4\\u1234\\U00028B4E\")\
     ";
-    expect(util.run(code)).toBe("'TESTS\\xd4\\u1234\\U00028b4e'");
+    expect(util.run(code)).toBe("'TEST\\xd4\\u1234\\U00028b4e'");
   });
 
   it("bool(None)", function () {
