@@ -36,11 +36,39 @@ describe("Runtime library tests", function () {
     expect(util.run(code)).toBe(false);
   });
 
-  it("bool(1)", function () {
+  it("ascii()", function () {
     var code = "\
-    return bool(1)\
+    return ascii(\"TEST\\xD4\\u1234\\U00028B4E\")\
+    ";
+    expect(util.run(code)).toBe("'TEST\\xd4\\u1234\\U00028b4e'");
+  });
+
+  it("bool(None)", function () {
+    var code = "\
+    return bool(None)\
+    ";
+    expect(util.run(code)).toBe(false);
+  });
+
+  it("bool(2)", function () {
+    var code = "\
+    return bool(2)\
     ";
     expect(util.run(code)).toBe(true);
+  });
+
+  it("bool(2.5)", function () {
+    var code = "\
+    return bool(2.5)\
+    ";
+    expect(util.run(code)).toBe(true);
+  });
+
+  it("bool(0)", function () {
+    var code = "\
+    return bool(0)\
+    ";
+    expect(util.run(code)).toBe(false);
   });
 
   it("bool('')", function () {
@@ -48,6 +76,59 @@ describe("Runtime library tests", function () {
     return bool('')\
     ";
     expect(util.run(code)).toBe(false);
+  });
+
+  it("bool('test')", function () {
+    var code = "\
+    return bool('test')\
+    ";
+    expect(util.run(code)).toBe(true);
+  });
+
+  it("bool([])", function () {
+    var code = "\
+    return bool([])\
+    ";
+    expect(util.run(code)).toBe(false);
+  });
+
+  it("bool((3,4))", function () {
+    var code = "\
+    return bool((3,4))\
+    ";
+    expect(util.run(code)).toBe(true);
+  });
+
+  it("bool() with __bool__", function () {
+    var code = "\
+    class MyClass():\n\
+      def __bool__(self):\n\
+        return True\n\
+    x = MyClass()\n\
+    return bool(x)\
+    ";
+    expect(util.run(code)).toBe(true);
+  });
+
+  it("bool() with __len__", function () {
+    var code = "\
+    class MyClass():\n\
+      def __len__(self):\n\
+        return 0\n\
+    x = MyClass()\n\
+    return bool(x)\
+    ";
+    expect(util.run(code)).toBe(false);
+  });
+
+  it("bool() with nothing", function () {
+    var code = "\
+    class MyClass():\n\
+      pass\n\
+    x = MyClass()\n\
+    return bool(x)\
+    ";
+    expect(util.run(code)).toBe(true);
   });
 
   it("chr(97)", function () {
@@ -275,6 +356,13 @@ describe("Runtime library tests", function () {
     return repr(88)\n\
     ";
     expect(util.run(code)).toEqual('88');
+  });
+
+  it("repr()", function () {
+    var code = "\
+    return repr(\"88\")\n\
+    ";
+    expect(util.run(code)).toEqual("'88'");
   });
 
   it("reversed()", function () {

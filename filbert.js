@@ -962,7 +962,14 @@
           case 114: out += "\r"; break; // 'r' -> '\r'
           case 120: out += String.fromCharCode(readHexChar(2)); break; // 'x'
           case 117: out += String.fromCharCode(readHexChar(4)); break; // 'u'
-          case 85: out += String.fromCharCode(readHexChar(8)); break; // 'U'
+          case 85: // 'U'
+            ch = readHexChar(8);
+            if (ch < 0xFFFF && (ch < 0xD800 || 0xDBFF < ch)) out += String.fromCharCode(ch); // If it's UTF-16
+            else { // If we need UCS-2
+              ch -= 0x10000;
+              out += String.fromCharCode((ch>>10)+0xd800)+String.fromCharCode((ch%0x400)+0xdc00);
+            }
+            break;
           case 116: out += "\t"; break; // 't' -> '\t'
           case 98: out += "\b"; break; // 'b' -> '\b'
           case 118: out += "\u000b"; break; // 'v' -> '\u000b'
@@ -972,7 +979,7 @@
           case 10: // ' \n'
             if (options.locations) { tokLineStart = tokPos; ++tokCurLine; }
             break;
-          default: out += String.fromCharCode(ch); break;
+          default: out += '\\' + String.fromCharCode(ch); break; // Python doesn't remove slashes on failed escapes
           }
         }
       } else {
@@ -2391,18 +2398,43 @@
         return Math.abs(x);
       },
       all: function(iterable) {
-        for (var i in iterable) if (iterable[i] != true) return false;
+        for (var i in iterable) if (pythonRuntime.functions.bool(iterable[i]) !== true) return false;
         return true;
       },
       any: function(iterable) {
-        for (var i in iterable) if (iterable[i] == true) return true;
+        for (var i in iterable) if (pythonRuntime.functions.bool(iterable[i]) === true) return true;
         return false;
       },
+      ascii: function(obj) {
+        var s = pythonRuntime.functions.repr(obj),
+            asc = "",
+            code;
+        for (var i = 0; i < s.length; i++) {
+          code = s.charCodeAt(i);
+          if (code <= 127) asc += s[i];
+          else if (code <= 0xFF) asc += "\\x" + code.toString(16);
+          else if (0xD800 <= code && code <= 0xDBFF) { // UCS-2 for the astral chars
+            // if (i+1 >= s.length) throw "High surrogate not followed by low surrogate"; // Is this needed?
+            code = ((code-0xD800)*0x400)+(s.charCodeAt(++i)-0xDC00)+0x10000;
+            asc += "\\U" + ("000"+code.toString(16)).slice(-8);
+          } else if (code <= 0xFFFF) asc += "\\u" + ("0"+code.toString(16)).slice(-4);
+          else if (code <= 0x10FFFF) asc += "\\U" + ("000"+code.toString(16)).slice(-8);
+          else; // Invalid value, should probably throw something. It should never get here though as strings shouldn't contain them in the first place
+        }
+        return asc;
+      },
       bool: function(x) {
-        return x == true;
+        return !(x === undefined || // No argument
+                 x === null || // None
+                 x === false || // False
+                 x === 0 || // Zero
+                 x.length === 0 || // Empty Sequence
+                 // TODO: Empty Mapping, needs more support for python mappings first
+                 (x.__bool__ !== undefined && x.__bool__() === false) || // If it has bool conversion defined
+                 (x.__len__ !== undefined && (x.__len__() === false || x.__len__() === 0))); // If it has length conversion defined
       },
       chr: function(i) {
-        return String.fromCharCode(i);
+        return String.fromCharCode(i); // TODO: Error code for not 0 <= i <= 1114111
       },
       enumerate: function(iterable, start) {
         start = start || 0;
@@ -2417,7 +2449,18 @@
         return ret;
       },
       float: function(x) {
-        return x ? parseFloat(x): 0.0;
+        if (x === undefined) return 0.0;
+        else if (typeof x == "string") { // TODO: Fix type check
+          x = x.trim().toLowerCase();
+          if ((/^[+-]?inf(inity)?$/i).exec(x) !== null) return Infinity*(x[0]==="-"?-1:1);
+          else if ((/^nan$/i).exec(x) !== null) return NaN;
+          else return parseFloat(x);
+        } else if (typeof x == "number") { // TODO: Fix type check
+          return x; // TODO: Get python types working right so we can return an actual float
+        } else {
+          if (x.__float__ !== undefined) return x.__float__();
+          else return null; // TODO: Throw TypeError: float() argument must be a string or a number, not '<type of x>'
+        }
       },
       hex: function(x) {
         return x.toString(16);
@@ -2491,7 +2534,11 @@
         return r;
       },
       repr: function (obj) {
-        return obj.toString();
+        if (typeof obj === 'string') return "'" + obj + "'"; // TODO: Patch until typesystem comes up.
+        if (obj.__repr__ !== undefined) return obj.__repr__();
+        else if (obj.__class__ !== undefined && obj.__class__.module !== undefined && obj.__class__.__name__) {
+          return '<'+obj.__class__.__module__+'.'+obj.__class__.__name__+' object>';
+        } else return obj.toString(); // Raise a please report warning here, we should never reach this piece of code
       },
       reversed: function (seq) {
         var ret = new pythonRuntime.objects.list();
