@@ -219,4 +219,15 @@ describe("Basics", function () {
     expect(util.run(code)).toBe(78);
   });
 
+  it("multi-statement lines", function () {
+    var code = "h='Hello'; w='World'; print(h); print(w); return h;";
+    expect(util.run(code)).toEqual('Hello');
+  });
+
+  it("multi-statement lines error", function () {
+    var code = "h='Hello' w='World' print(h) print(w)";
+    var err = util.run(code);
+    expect(err.message).toEqual("Unexpected token");
+  });
+
 });

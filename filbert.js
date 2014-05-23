@@ -572,20 +572,20 @@
   function skipSpace() {
     while (tokPos < inputLen) {
       var ch = input.charCodeAt(tokPos);
-      if (ch === 32) { // ' '
-        ++tokPos;
-      } else if (ch === 9 || ch === 11 || ch === 12) {
-        ++tokPos;
-      } else if (ch === 35) { // '#'
-        skipLineComment();
-      } else if (ch === 160) { // '\xa0'
-        ++tokPos;
-      } else if (ch >= 5760 && nonASCIIwhitespace.test(String.fromCharCode(ch))) {
-        ++tokPos;
-      } else {
-        break;
-      }
+      if (ch === 35) skipLineComment();
+      else if (isSpace(ch)) ++tokPos;
+      else break;
     }
+  }
+
+  function isSpace(ch) {
+    if (ch === 32 || // ' '
+      ch === 9 || ch === 11 || ch === 12 ||
+      ch === 160 || // '\xa0'
+      ch >= 5760 && nonASCIIwhitespace.test(String.fromCharCode(ch))) {
+      return true;
+    }
+    return false;
   }
 
   // ### Token reading
@@ -658,12 +658,9 @@
     return finishOp(_eq, 1);
   }
 
-  // Parse an indent
-  // Possible output tokens: _indent, _dedent, _eof
-  // TODO: assumes no \r\n for now, hence positions all moved by 1 spot
-  // TODO: skip all whitespace characters, not just ' ' and '\t'
+  // Parse indentation
+  // Possible output: _indent, _dedent, _eof, readToken()
   // TODO: disallow unequal indents of same length (e.g. nested if/else block)
-  // TODO: some weird handling of tokPos because of finishOp size logic
 
   function readToken_indent() {
     // Read indent, skip empty lines and comments
@@ -672,7 +669,7 @@
     var ch, next;
     while (indentPos < inputLen) {
       ch = input.charCodeAt(indentPos);
-      if (ch === 32 || ch === 9) { // ' ' or '\t'
+      if (isSpace(ch)) {
         indent += String.fromCharCode(ch);
         ++indentPos;
       } else if (ch === 13 || ch === 10 || ch === 8232 || ch === 8233) { // newline
@@ -1434,6 +1431,7 @@
 
     default:
       var expr = parseExpression();
+      if (tokType !== _semi && tokType !== _newline && tokType !== _eof) unexpected();
       if (expr.type === "VariableDeclaration" || expr.type === "BlockStatement") {
         return expr;
       } else {

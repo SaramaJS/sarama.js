@@ -4,7 +4,7 @@ var escodegen = require('escodegen');
 
 var parse = exports.parse = function(code, options) {
   // Swap returns for low tech testing of filbert_loose
-   return filbert.parse(code, options)
+  return filbert.parse(code, options)
   //return filbert_loose.parse_dammit(code, options)
 }
 
