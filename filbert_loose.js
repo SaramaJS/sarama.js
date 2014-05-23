@@ -677,10 +677,6 @@
       node.argument = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
       return finishNode(node, "UnaryExpression");
     }
-    return parseExprSubscripts();
-  }
-
-  function parseExprSubscripts() {
     return parseSubscripts(parseExprAtom(), false);
   }
 
@@ -701,8 +697,13 @@
       node.computed = false;
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (eat(tt.bracketL)) {
+      var expr, isSlice = false;
+      if (eat(tt.colon)) isSlice = true;
+      else expr = parseExpression();
+      if (!isSlice && eat(tt.colon)) isSlice = true;
+      if (isSlice) return parseSlice(node, base, expr, noCalls);
       node.object = base;
-      node.property = parseExpression();
+      node.property = expr;
       node.computed = true;
       expect(tt.bracketR);
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
@@ -720,6 +721,26 @@
       return parseSubscripts(node, noCalls);
     }
     return base;
+  }
+
+  function parseSlice(node, base, start, noCalls) {
+    var end, step;
+    if (!start) start = createNodeFrom(node, "Literal", { value: null });
+    if (token.type === tt.bracketR || eat(tt.colon)) {
+      end = createNodeFrom(node, "Literal", { value: null });
+    } else {
+      end = parseExpression();
+      if (token.type !== tt.bracketR) expect(tt.colon);
+    }
+    if (token.type === tt.bracketR) step = createNodeFrom(node, "Literal", { value: null });
+    else step = parseExpression();
+    expect(tt.bracketR);
+
+    node.arguments = [start, end, step];
+    var sliceId = createNodeFrom(base, "Identifier", { name: "pySlice" });
+    var memberExpr = createNodeSpan(base, base, "MemberExpression", { object: base, property: sliceId, computed: false });
+    node.callee = memberExpr;
+    return parseSubscripts(finishNode(node, "CallExpression"), noCalls);
   }
 
   function parseExprAtom() {

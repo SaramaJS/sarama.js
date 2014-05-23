@@ -102,7 +102,7 @@ Keywords:
 >False None True and break class continue def elif else for if in is not or pass return while
 
 Built-ins:
->abs() all() any() bool() chr() dict() enumerate() filter() float() hex() int() len() list() map() max() min() oct() ord() pow() print() range() repr() reversed() round() sorted() str() sum() tuple()
+>abs() all() any() ascii() bool() chr() dict() enumerate() filter() float() hex() int() len() list() map() max() min() oct() ord() pow() print() range() repr() reversed() round() sorted() str() sum() tuple()
 
 ### Coming Soon!
 
@@ -110,13 +110,12 @@ Keywords:
 >as assert del except finally from import global lambda nonlocal raise try with yield
 
 Built-ins:
->ascii() bin() bytearray() bytes() callable() classmethod() compile() complex() delattr() dir() divmod() eval() exec() format() frozenset() getattr() globals() hasattr() hash() help() id() input() isinstance() issubclass() iter() locals() memoryview() next() object() open() property() set() setattr() slice() staticmethod() super() type() vars() zip() \__import__() 
+>bin() bytearray() bytes() callable() classmethod() compile() complex() delattr() dir() divmod() eval() exec() format() frozenset() getattr() globals() hasattr() hash() help() id() input() isinstance() issubclass() iter() locals() memoryview() next() object() open() property() set() setattr() slice() staticmethod() super() type() vars() zip() \__import__() 
 
 Advanced features:
 - Sequence operations
 - List comprehensions
 - Regular expressions
-- Slices
 
 ## Testing
 

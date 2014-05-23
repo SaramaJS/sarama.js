@@ -1729,14 +1729,10 @@
       node.argument = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
       return finishNode(node, "UnaryExpression");
     }
-    return parseExprSubscripts();
+    return parseSubscripts(parseExprAtom());
   }
 
   // Parse call, dot, and `[]`-subscript expressions.
-
-  function parseExprSubscripts() {
-    return parseSubscripts(parseExprAtom());
-  }
 
   function parseSubscripts(base, noCalls) {
     var node = startNodeFrom(base);
@@ -1755,8 +1751,13 @@
       node.computed = false;
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (eat(_bracketL)) {
+      var expr, isSlice = false;
+      if (eat(_colon)) isSlice = true;
+      else expr = parseExpression();
+      if (!isSlice && eat(_colon)) isSlice = true;
+      if (isSlice) return parseSlice(node, base, expr, noCalls);
       node.object = base;
-      node.property = parseExpression();
+      node.property = expr;
       node.computed = true;
       expect(_bracketR);
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
@@ -1775,6 +1776,26 @@
       return parseSubscripts(node, noCalls);
     }
     return base;
+  }
+
+  function parseSlice(node, base, start, noCalls) {
+    var end, step;
+    if (!start) start = createNodeFrom(node, "Literal", { value: null });
+    if (tokType === _bracketR || eat(_colon)) {
+      end = createNodeFrom(node, "Literal", { value: null });
+    } else {
+      end = parseExpression();
+      if (tokType !== _bracketR) expect(_colon);
+    }
+    if (tokType === _bracketR) step = createNodeFrom(node, "Literal", { value: null });
+    else step = parseExpression();
+    expect(_bracketR);
+
+    node.arguments = [start, end, step];
+    var sliceId = createNodeFrom(base, "Identifier", { name: "pySlice" });
+    var memberExpr = createNodeSpan(base, base, "MemberExpression", { object: base, property: sliceId, computed: false });
+    node.callee = memberExpr;
+    return parseSubscripts(finishNode(node, "CallExpression"), noCalls);
   }
 
   // Parse an atomic expression - either a single token that is an
@@ -2144,6 +2165,30 @@
     // TODO: need a generic isSequence() or equivalent
     // TODO: use 'type' or isSequence instead of 'instanceof Array' to id these
 
+    internal: {
+      slice: function (obj, start, end, step) {
+        if (step == null || step === 0) step = 1; // TODO: step === 0 is a runtime error
+        if (start == null) {
+          if (step < 0) start = obj.length - 1;
+          else start = 0;
+        } else if (start < 0) start += obj.length;
+        if (end == null) {
+          if (step < 0) end = -1;
+          else end = obj.length;
+        } else if (end < 0) end += obj.length;
+
+        var ret = [], tmp, i;
+        if (step < 0) {
+          tmp = obj.slice(end + 1, start + 1);
+          for (i = tmp.length - 1; i >= 0; i += step) ret.push(tmp[i]);
+        } else {
+          tmp = obj.slice(start, end);
+          if (step === 1) ret = tmp;
+          else for (i = 0; i < tmp.length; i += step) ret.push(tmp[i]);
+        }
+        return ret;
+      }
+    },
     objects: {
       dict: function () {
         var obj = {};
@@ -2319,6 +2364,13 @@
           },
           enumerable: false
         });
+        Object.defineProperty(arr, "pySlice",
+        {
+          value: function (start, end, step) {
+            return pythonRuntime.internal.slice(this, start, end, step);
+          },
+          enumerable : false
+        });
         Object.defineProperty(arr, "remove",
         {
           value: function (x) {
@@ -2385,6 +2437,14 @@
           },
           enumerable: false
         });
+        Object.defineProperty(arr, "pySlice",
+        {
+          value: function (start, end, step) { 
+            return pythonRuntime.internal.slice(this, start, end, step);
+          },
+            enumerable: false
+        });
+
         return arr;
       }
     },
