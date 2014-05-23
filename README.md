@@ -9,6 +9,8 @@ This parser is a work in progress, adapted from the JavaScript parser [Acorn][ac
 
 [acorn]: https://github.com/marijnh/acorn
 
+Check out the [demo page](https://rawgit.com/differentmatt/filbert/master/test/interactive.html) to see what Filbert can do.
+
 ## Want to contribute?
 
 Great!  Feel free to [submit a pull request](https://help.github.com/articles/using-pull-requests), file some [GitHub issues](https://github.com/differentmatt/filbert/issues), or [email Matt](mailto:mattlott@gmail.com)
