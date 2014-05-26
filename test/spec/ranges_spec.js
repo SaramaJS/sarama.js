@@ -2039,7 +2039,7 @@ describe("Source Locations", function () {
                           "column": 21
                         }
                       },
-                      "name": "filbertTmp0"
+                      "name": "__filbertTmp0"
                     },
                     "init": {
                       "type": "NewExpression",
@@ -2247,7 +2247,7 @@ describe("Source Locations", function () {
                             "column": 21
                           }
                         },
-                        "name": "filbertTmp0"
+                        "name": "__filbertTmp0"
                       },
                       "property": {
                         "type": "Literal",
@@ -2337,7 +2337,7 @@ describe("Source Locations", function () {
                             "column": 21
                           }
                         },
-                        "name": "filbertTmp0"
+                        "name": "__filbertTmp0"
                       },
                       "property": {
                         "type": "Literal",
@@ -2427,7 +2427,7 @@ describe("Source Locations", function () {
                             "column": 21
                           }
                         },
-                        "name": "filbertTmp0"
+                        "name": "__filbertTmp0"
                       },
                       "property": {
                         "type": "Literal",

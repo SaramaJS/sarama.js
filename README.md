@@ -114,8 +114,8 @@ Built-ins:
 
 Advanced features:
 - Sequence operations
-- List comprehensions
 - Regular expressions
+- Error types
 
 ## Testing
 

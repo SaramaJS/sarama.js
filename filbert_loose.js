@@ -262,6 +262,144 @@
     return finishNodeFrom(refNode, declDecl, "VariableDeclaration");
   }
 
+  // Create for loop
+  // 
+  // Problem:
+  // 1. JavaScript for/in loop iterates on properties, which are the indexes for an Array
+  //    Python iterates on the list items themselves, not indexes
+  // 2. JavaScript for/in does not necessarily iterate in order
+  // Solution:
+  // Generate extra AST to do the right thing at runtime
+  // JavaScript for/in is used for dictionaries
+  // If iterating through an ordered sequence, return something like: 
+  // { var __right = right; 
+  //    if (__right instanceof Array) { 
+  //      for(var __index=0; __index < __right.length; __index++) {
+  //        i = __right[__index]; 
+  //        ...
+  //      } 
+  //    } else { 
+  //      for(i in __right){...} 
+  //    }
+  // }
+  // When the loop target is a Tuple, it is unpacked into each for body in the example above.
+  // E.g. 'for k, v in __right: total += v' becomes:
+  // for (var __tmp in __right) {
+  //    k = __tmp[0];
+  //    v = __tmp[1];
+  //    total += v;
+  // }
+
+  // TODO: for/in on a string should go through items, not indexes. String obj and string literal.
+
+  function createFor(node, init, tupleArgs, right, body) {
+    var forOrderedBody = body;
+    var forInBody = JSON.parse(JSON.stringify(forOrderedBody));
+
+    var tmpVarSuffix = newAstIdCount++;
+
+    var arrayId = createNodeSpan(node, node, "Identifier", { name: "Array" });
+    var lengthId = createNodeSpan(init, init, "Identifier", { name: "length" });
+    var zeroLit = createNodeSpan(init, init, "Literal", { value: 0 });
+
+    // var __rightN = right
+
+    var rightId = createNodeSpan(right, right, "Identifier", { name: "__filbertRight" + tmpVarSuffix });
+    var rightAssign = createVarDeclFromId(right, rightId, right);
+
+    // for(;;) and for(in) loops
+
+    var forRightId = createNodeSpan(init, init, "Identifier", { name: "__filbertRight" + tmpVarSuffix });
+
+    // for (var __indexN; __indexN < __rightN.length; ++__indexN)
+
+    var forOrderedIndexId = createNodeSpan(init, init, "Identifier", { name: "__filbertIndex" + tmpVarSuffix });
+    var forOrderedIndexDeclr = createNodeSpan(init, init, "VariableDeclarator", { id: forOrderedIndexId, init: zeroLit });
+    var forOrderedIndexDecln = createNodeSpan(init, init, "VariableDeclaration", { declarations: [forOrderedIndexDeclr], kind: "var" });
+    var forOrderedTestMember = createNodeSpan(init, init, "MemberExpression", { object: forRightId, property: lengthId, computed: false });
+    var forOrderedTestBinop = createNodeSpan(init, init, "BinaryExpression", { left: forOrderedIndexId, operator: "<", right: forOrderedTestMember });
+    var forOrderedUpdate = createNodeSpan(init, init, "UpdateExpression", { operator: "++", prefix: true, argument: forOrderedIndexId });
+    var forOrderedMember = createNodeSpan(init, init, "MemberExpression", { object: forRightId, property: forOrderedIndexId, computed: true });
+
+    if (tupleArgs) {
+      var varStmts = unpackTuple(true, tupleArgs, forOrderedMember);
+      for (var i = varStmts.length - 1; i >= 0; i--) forOrderedBody.body.unshift(varStmts[i]);
+    }
+    else {
+      if (init.type === "Identifier" && !scope.exists(init.name)) {
+        scope.addVar(init.name);
+        forOrderedBody.body.unshift(createVarDeclFromId(init, init, forOrderedMember));
+      } else {
+        var forOrderedInit = createNodeSpan(init, init, "AssignmentExpression", { operator: "=", left: init, right: forOrderedMember });
+        var forOrderedInitStmt = createNodeSpan(init, init, "ExpressionStatement", { expression: forOrderedInit });
+        forOrderedBody.body.unshift(forOrderedInitStmt);
+      }
+    }
+
+    var forOrdered = createNodeSpan(node, node, "ForStatement", { init: forOrderedIndexDecln, test: forOrderedTestBinop, update: forOrderedUpdate, body: forOrderedBody });
+    var forOrderedBlock = createNodeSpan(node, node, "BlockStatement", { body: [forOrdered] });
+
+    // for (init in __rightN)
+
+    var forInLeft = init;
+    if (tupleArgs) {
+      var varStmts = unpackTuple(true, tupleArgs, right);
+      forInLeft = varStmts[0];
+      for (var i = varStmts.length - 1; i > 0; i--) forInBody.body.unshift(varStmts[i]);
+    }
+    else if (init.type === "Identifier" && !scope.exists(init.name)) {
+      scope.addVar(init.name);
+      forInLeft = createVarDeclFromId(init, init, null);
+    }
+    var forIn = createNodeSpan(node, node, "ForInStatement", { left: forInLeft, right: forRightId, body: forInBody });
+    var forInBlock = createNodeSpan(node, node, "BlockStatement", { body: [forIn] });
+
+    // if ordered sequence then forOrdered else forIn
+
+    var ifRightId = createNodeSpan(node, node, "Identifier", { name: "__filbertRight" + tmpVarSuffix });
+    var ifTest = createNodeSpan(node, node, "BinaryExpression", { left: ifRightId, operator: "instanceof", right: arrayId });
+    var ifStmt = createNodeSpan(node, node, "IfStatement", { test: ifTest, consequent: forOrderedBlock, alternate: forInBlock });
+
+    node.body = [rightAssign, ifStmt];
+
+    return node;
+  }
+
+  // expr => __tmpList.push(expr);
+
+  function createListCompPush(expr, tmpVarSuffix) {
+    var exprPushTmpListId = createNodeSpan(expr, expr, "Identifier", { name: "__tmpList" + tmpVarSuffix });
+    var exprPushId = createNodeSpan(expr, expr, "Identifier", { name: "push" });
+    var exprMember = createNodeSpan(expr, expr, "MemberExpression", { object: exprPushTmpListId, property: exprPushId, computed: false });
+    var exprCall = createNodeSpan(expr, expr, "CallExpression", { callee: exprMember, arguments: [expr] });
+    return createNodeSpan(expr, expr, "ExpressionStatement", { expression: exprCall });
+  }
+
+  //  (function() {
+  //    var _list = [];
+  //    ...
+  //    body
+  //    return _list;
+  //  }());
+
+  function createListCompIife(node, body, tmpVarSuffix) {
+    var iifeRuntimeId = createNodeSpan(node, node, "Identifier", { name: options.runtimeParamName });
+    var iifeObjectsId = createNodeSpan(node, node, "Identifier", { name: "objects" });
+    var iifeObjMember = createNodeSpan(node, node, "MemberExpression", { object: iifeRuntimeId, property: iifeObjectsId, computed: false });
+    var iifeListId = createNodeSpan(node, node, "Identifier", { name: "list" });
+    var iifeListMember = createNodeSpan(node, node, "MemberExpression", { object: iifeObjMember, property: iifeListId, computed: false });
+    var iifeNewExpr = createNodeSpan(node, node, "NewExpression", { callee: iifeListMember, arguments: [] });
+    var iifeListId = createNodeSpan(node, node, "Identifier", { name: "__tmpList" + tmpVarSuffix });
+    var iifeListDecl = createVarDeclFromId(node, iifeListId, iifeNewExpr);
+
+    var iifeReturnListId = createNodeSpan(node, node, "Identifier", { name: "__tmpList" + tmpVarSuffix });
+    var iifeReturn = createNodeSpan(node, node, "ReturnStatement", { argument: iifeReturnListId });
+
+    var iifeBlock = createNodeSpan(node, node, "BlockStatement", { body: [iifeListDecl, body, iifeReturn] });
+    var fnExpr = createNodeSpan(node, node, "FunctionExpression", { params: [], defaults: [], body: iifeBlock, generator: false, expression: false });
+
+    return createNodeSpan(node, node, "CallExpression", { callee: fnExpr, arguments: [] });
+  }
 
   function getDummyLoc() {
     if (options.locations) {
@@ -327,7 +465,7 @@
 
     // var tmp = right
 
-    var tmpId = createNodeSpan(right, right, "Identifier", { name: "filbertTmp" + newAstIdCount++ });
+    var tmpId = createNodeSpan(right, right, "Identifier", { name: "__filbertTmp" + newAstIdCount++ });
     var tmpDecl = createVarDeclFromId(right, tmpId, right);
     varStmts.push(tmpDecl);
 
@@ -488,78 +626,9 @@
     expect(tt._in);
     var right = parseExpression();
     expect(tt.colon);
-    var forOrderedBody = parseSuite();
-    var forInBody = JSON.parse(JSON.stringify(forOrderedBody));
-
+    var body = parseSuite();
     finishNode(node, "BlockStatement");
-
-    var tmpVarSuffix = newAstIdCount++;
-
-    var arrayId = createNodeSpan(node, node, "Identifier", { name: "Array" });
-    var lengthId = createNodeSpan(init, init, "Identifier", { name: "length" });
-    var zeroLit = createNodeSpan(init, init, "Literal", { value: 0 });
-
-    // var __rightN = right
-
-    var rightId = createNodeSpan(right, right, "Identifier", { name: "filbertRight" + tmpVarSuffix });
-    var rightAssign = createVarDeclFromId(right, rightId, right);
-
-    // for(;;) and for(in) loops
-
-    var forRightId = createNodeSpan(init, init, "Identifier", { name: "filbertRight" + tmpVarSuffix });
-
-    // for (var __indexN; __indexN < __rightN.length; ++__indexN)
-
-    var forOrderedIndexId = createNodeSpan(init, init, "Identifier", { name: "filbertIndex" + tmpVarSuffix });
-    var forOrderedIndexDeclr = createNodeSpan(init, init, "VariableDeclarator", { id: forOrderedIndexId, init: zeroLit });
-    var forOrderedIndexDecln = createNodeSpan(init, init, "VariableDeclaration", { declarations: [forOrderedIndexDeclr], kind: "var" });
-    var forOrderedTestMember = createNodeSpan(init, init, "MemberExpression", { object: forRightId, property: lengthId, computed: false });
-    var forOrderedTestBinop = createNodeSpan(init, init, "BinaryExpression", { left: forOrderedIndexId, operator: "<", right: forOrderedTestMember });
-    var forOrderedUpdate = createNodeSpan(init, init, "UpdateExpression", { operator: "++", prefix: true, argument: forOrderedIndexId });
-    var forOrderedMember = createNodeSpan(init, init, "MemberExpression", { object: forRightId, property: forOrderedIndexId, computed: true });
-
-    if (tupleArgs) {
-      var varStmts = unpackTuple(true, tupleArgs, forOrderedMember);
-      for (var i = varStmts.length - 1; i >= 0; i--) forOrderedBody.body.unshift(varStmts[i]);
-    }
-    else {
-      if (init.type === "Identifier" && !scope.exists(init.name)) {
-        scope.addVar(init.name);
-        forOrderedBody.body.unshift(createVarDeclFromId(init, init, forOrderedMember));
-      } else {
-        var forOrderedInit = createNodeSpan(init, init, "AssignmentExpression", { operator: "=", left: init, right: forOrderedMember });
-        var forOrderedInitStmt = createNodeSpan(init, init, "ExpressionStatement", { expression: forOrderedInit });
-        forOrderedBody.body.unshift(forOrderedInitStmt);
-      }
-    }
-
-    var forOrdered = createNodeSpan(node, node, "ForStatement", { init: forOrderedIndexDecln, test: forOrderedTestBinop, update: forOrderedUpdate, body: forOrderedBody });
-    var forOrderedBlock = createNodeSpan(node, node, "BlockStatement", { body: [forOrdered] });
-
-    // for (init in __rightN)
-
-    var forInLeft = init;
-    if (tupleArgs) {
-      var varStmts = unpackTuple(true, tupleArgs, right);
-      forInLeft = varStmts[0];
-      for (var i = varStmts.length - 1; i > 0; i--) forInBody.body.unshift(varStmts[i]);
-    }
-    else if (init.type === "Identifier" && !scope.exists(init.name)) {
-      scope.addVar(init.name);
-      forInLeft = createVarDeclFromId(init, init, null);
-    }
-    var forIn = createNodeSpan(node, node, "ForInStatement", { left: forInLeft, right: forRightId, body: forInBody });
-    var forInBlock = createNodeSpan(node, node, "BlockStatement", { body: [forIn] });
-
-    // if ordered sequence then forOrdered else forIn
-
-    var ifRightId = createNodeSpan(node, node, "Identifier", { name: "filbertRight" + tmpVarSuffix });
-    var ifTest = createNodeSpan(node, node, "BinaryExpression", { left: ifRightId, operator: "instanceof", right: arrayId });
-    var ifStmt = createNodeSpan(node, node, "IfStatement", { test: ifTest, consequent: forOrderedBlock, alternate: forInBlock });
-
-    node.body = [rightAssign, ifStmt];
-
-    return node;
+    return createFor(node, init, tupleArgs, right, body);
   }
 
   // ### Expression parsing
@@ -786,16 +855,7 @@
       return val;
 
     case tt.bracketL:
-      var node = startNode();
-      next();
-      node.arguments = parseExprList(tt.bracketR, true, false);
-      finishNode(node, "NewExpression");
-      var runtimeId = createNodeSpan(node, node, "Identifier", { name: options.runtimeParamName });
-      var objectsId = createNodeSpan(node, node, "Identifier", { name: "objects" });
-      var runtimeMember = createNodeSpan(node, node, "MemberExpression", { object: runtimeId, property: objectsId, computed: false });
-      var listId = createNodeSpan(node, node, "Identifier", { name: "list" });
-      node.callee = createNodeSpan(node, node, "MemberExpression", { object: runtimeMember, property: listId, computed: false });
-      return node;
+      return parseList();
 
     case tt.braceL:
       return parseDict(tt.braceR);
@@ -803,6 +863,77 @@
     default:
       return dummyIdent();
     }
+  }
+
+  // Parse list
+
+  // Custom list object is used to simulate native Python list
+  // E.g. Python '[]' becomes JavaScript 'new __pythonRuntime.objects.list();'
+  // If list comprehension, build something like this:
+  //(function() {
+  //  var _list = [];
+  //  ...
+  //  _list.push(expr);
+  //  return _list;
+  //}());
+
+  function parseList() {
+    var node = startNode();
+    node.arguments = [];
+    next();
+
+    if (!eat(tt.bracketR)) {
+      var expr = parseExprOps(true);
+      if (token.type === tt._for || token.type === tt._if) {
+
+        // List comprehension
+        var tmpVarSuffix = newAstIdCount++;
+        expr = createListCompPush(expr, tmpVarSuffix);
+        var body = parseCompIter(expr, true);
+        finishNode(node);
+        return createListCompIife(node, body, tmpVarSuffix);
+
+      } else if (eat(tt.comma)) {
+        node.arguments = [expr].concat(parseExprList(tt.bracketR, true, false));
+      }
+      else {
+        expect(tt.bracketR);
+        node.arguments = [expr];
+      }
+    }
+
+    finishNode(node, "NewExpression");
+    var runtimeId = createNodeSpan(node, node, "Identifier", { name: options.runtimeParamName });
+    var objectsId = createNodeSpan(node, node, "Identifier", { name: "objects" });
+    var runtimeMember = createNodeSpan(node, node, "MemberExpression", { object: runtimeId, property: objectsId, computed: false });
+    var listId = createNodeSpan(node, node, "Identifier", { name: "list" });
+    node.callee = createNodeSpan(node, node, "MemberExpression", { object: runtimeMember, property: listId, computed: false });
+    return node;
+  }
+
+  // Parse a comp_iter from Python language grammar
+  // 'expr' is the body to be used after unrolling the ifs and fors
+
+  function parseCompIter(expr, first) {
+    if (first && token.type !== tt._for) return dummyIdent();
+    if (eat(tt.bracketR)) return expr;
+    var node = startNode();
+    if (eat(tt._for)) {
+      var init = parseExpression(false, true);
+      var tupleArgs = getTupleArgs(init);
+      if (!tupleArgs) checkLVal(init);
+      expect(tt._in);
+      var right = parseExpression();
+      var body = parseCompIter(expr, false);
+      var block = createNodeSpan(body, body, "BlockStatement", { body: [body] });
+      finishNode(node, "BlockStatement");
+      return createFor(node, init, tupleArgs, right, block);
+    } else if (eat(tt._if)) {
+      if (token.type === tt.parenL) node.test = parseParenExpression();
+      else node.test = parseExpression();
+      node.consequent = parseCompIter(expr, false);
+      return finishNode(node, "IfStatement");
+    } else return dummyIdent();
   }
 
   // Parse class
