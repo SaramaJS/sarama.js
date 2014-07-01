@@ -351,6 +351,20 @@ describe("Runtime library tests", function () {
     expect(util.run(code)).toEqual([]);
   });
 
+  it("range(0, 10, 4)", function () {
+    var code = "\
+    return range(0, 10, 4)\n\
+    ";
+    expect(util.run(code)).toEqual([0, 4, 8]);
+  });
+
+  it("range(9, -2, -4)", function () {
+    var code = "\
+    return range(9, -2, -4)\n\
+    ";
+    expect(util.run(code)).toEqual([9, 5, 1]);
+  });
+
   it("repr()", function () {
     var code = "\
     return repr(88)\n\

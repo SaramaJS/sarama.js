@@ -2712,7 +2712,7 @@
         var r = new pythonRuntime.objects.list();
         if (start < stop && step > 0 || start > stop && step < 0) {
           var i = start;
-          while (i !== stop) {
+          while (i < stop && step > 0 || i > stop && step < 0) {
             r.append(i);
             i += step;
           }
