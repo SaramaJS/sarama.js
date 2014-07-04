@@ -217,15 +217,16 @@
     }
   }
 
+  var dummyCount = 0
   function dummyIdent() {
     var dummy = new Node(token.start);
     dummy.type = "Identifier";
     dummy.end = token.start;
-    dummy.name = "✖";
+    dummy.name = "dummy" + dummyCount++;
     dummy.loc = getDummyLoc();
     return dummy;
   }
-  function isDummy(node) { return node.name == "✖"; }
+  function isDummy(node) { return node.name && node.name.indexOf("dummy") === 0; }
 
   function eat(type) {
     if (token.type === type) {
@@ -416,7 +417,7 @@
     node.body = [];
     if (eat(tt.newline)) {
       eat(tt.indent);
-      while (!eat(tt.dedent) && !eat(tt.eof)) {
+      while (!eat(tt.dedent) && token.type !== tt.eof) {
         var stmt = parseStatement();
         if (stmt) node.body.push(stmt);
       }
@@ -757,7 +758,7 @@
     var classParams = [];
     if (eat(tt.parenL)) {
       var first = true;
-      while (!eat(tt.parenR)) {
+      while (!eat(tt.parenR) && token.type !== tt.eof) {
         if (!first) expect(tt.comma); else first = false;
         classParams.push(parseIdent());
       }
@@ -789,7 +790,7 @@
     var node = startNode(), first = true, key, value;
     node.arguments = [];
     next();
-    while (!eat(tokClose) && !eat(tt.newline) && !eat(tt.eof)) {
+    while (!eat(tokClose) && !eat(tt.newline) && token.type !== tt.eof) {
       if (!first) {
         expect(tt.comma);
       } else first = false;
@@ -827,6 +828,7 @@
   function parseIdent() {
     var node = startNode();
     node.name = token.type === tt.name ? token.value : token.type.keyword;
+    if (!node.name) node = dummyIdent();
     next();
     return finishNode(node, "Identifier");
   }
@@ -836,7 +838,7 @@
     node.params = [];
     var first = true;
     expect(tt.parenL);
-    while (!eat(tt.parenR)) {
+    while (!eat(tt.parenR) && token.type !== tt.eof) {
       if (!first) expect(tt.comma); else first = false;
       node.params.push(parseIdent());
     }
@@ -873,7 +875,7 @@
 
   function parseExprList(close) {
     var elts = [];
-    while (!eat(close) && !eat(tt.newline) && !eat(tt.eof)) {
+    while (!eat(close) && !eat(tt.newline) && token.type !== tt.eof) {
       var elt = parseExprOps(true);
       if (isDummy(elt)) {
         next();
