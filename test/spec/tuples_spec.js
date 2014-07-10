@@ -110,4 +110,22 @@ describe("Tuples", function () {
     expect(util.run(code)).toEqual([true, true, true]);
   });
 
+  it("for ((i,(j, l)),k) in [[[1,[2, 7]],5], [[3,[4, 8]],6]]: ...", function () {
+    var code = "\
+    total = 0\n\
+    for ((i,(j, l)),k) in [[[1,[2, 7]],5], [[3,[4, 8]],6]]:\n\
+      total += i + j + k + l\n\
+    return total";
+    expect(util.run(code)).toEqual(36);
+  });
+
+  it("for ((i,i),i) in [[[1,2],5], [[3,4],6]]: ...", function () {
+    var code = "\
+    total = 0\n\
+    for ((i,i),i) in [[[1,2],5], [[3,4],6]]:\n\
+      total += i\n\
+    return total";
+    expect(util.run(code)).toEqual(11);
+  });
+
 });

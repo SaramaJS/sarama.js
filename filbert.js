@@ -1352,7 +1352,7 @@
         var forOrderedMember = this.createNodeSpan(init, init, "MemberExpression", { object: forRightId, property: forOrderedIndexId, computed: true });
 
         if (tupleArgs) {
-          var varStmts = unpackTuple(true, tupleArgs, forOrderedMember);
+          var varStmts = unpackTuple(tupleArgs, forOrderedMember);
           for (var i = varStmts.length - 1; i >= 0; i--) forOrderedBody.body.unshift(varStmts[i]);
         }
         else {
@@ -1373,7 +1373,7 @@
 
         var forInLeft = init;
         if (tupleArgs) {
-          var varStmts = unpackTuple(true, tupleArgs, right);
+          var varStmts = unpackTuple(tupleArgs, right);
           forInLeft = varStmts[0];
           for (var i = varStmts.length - 1; i > 0; i--) forInBody.body.unshift(varStmts[i]);
         }
@@ -1484,7 +1484,7 @@
   // arg1 = tmp[1]
   // ...
 
-  function unpackTuple(noIn, tupleArgs, right) {
+  function unpackTuple(tupleArgs, right) {
     if (!tupleArgs || tupleArgs.length < 1) unexpected();
 
     var varStmts = [];
@@ -1499,21 +1499,29 @@
 
     for (var i = 0; i < tupleArgs.length; i++) {
       var lval = tupleArgs[i];
-      checkLVal(lval);
-      var indexId = nc.createNodeSpan(right, right, "Literal", { value: i });
-      var init = nc.createNodeSpan(right, right, "MemberExpression", { object: tmpId, property: indexId, computed: true });
-      if (lval.type === "Identifier" && !scope.exists(lval.name)) {
-        scope.addVar(lval.name);
-        var varDecl = nc.createVarDeclFromId(lval, lval, init);
-        varStmts.push(varDecl);
-      }
-      else {
-        var node = startNodeFrom(lval);
-        node.left = lval;
-        node.operator = "=";
-        node.right = init;
-        finishNode(node, "AssignmentExpression");
-        varStmts.push(nc.createNodeFrom(node, "ExpressionStatement", { expression: node }));
+      var subTupleArgs = getTupleArgs(lval);
+      if (subTupleArgs) {
+        var subLit = nc.createNodeSpan(right, right, "Literal", { value: i });
+        var subRight = nc.createNodeSpan(right, right, "MemberExpression", { object: tmpId, property: subLit, computed: true });
+        var subStmts = unpackTuple(subTupleArgs, subRight);
+        for (var j = 0; j < subStmts.length; j++) varStmts.push(subStmts[j]);
+      } else {
+        checkLVal(lval);
+        var indexId = nc.createNodeSpan(right, right, "Literal", { value: i });
+        var init = nc.createNodeSpan(right, right, "MemberExpression", { object: tmpId, property: indexId, computed: true });
+        if (lval.type === "Identifier" && !scope.exists(lval.name)) {
+          scope.addVar(lval.name);
+          var varDecl = nc.createVarDeclFromId(lval, lval, init);
+          varStmts.push(varDecl);
+        }
+        else {
+          var node = startNodeFrom(lval);
+          node.left = lval;
+          node.operator = "=";
+          node.right = init;
+          finishNode(node, "AssignmentExpression");
+          varStmts.push(nc.createNodeFrom(node, "ExpressionStatement", { expression: node }));
+        }
       }
     }
 
@@ -1761,7 +1769,7 @@
         next();
         var right = parseMaybeTuple(noIn);
         var blockNode = startNodeFrom(left);
-        blockNode.body = unpackTuple(noIn, tupleArgs, right);
+        blockNode.body = unpackTuple(tupleArgs, right);
         return finishNode(blockNode, "BlockStatement");
       }
 
@@ -2062,6 +2070,7 @@
   }
 
   // Parse a comp_iter from Python language grammar
+  // Used to build list comprehensions
   // 'expr' is the body to be used after unrolling the ifs and fors
 
   function parseCompIter(expr, first) {
