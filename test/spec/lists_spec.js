@@ -149,4 +149,28 @@ describe("Lists", function () {
     expect(util.run(code)).toEqual(['hi', 'hi']);
   });
 
+  it("1 in [1, 2]", function () {
+    var code = "\n\
+    return 1 in [1, 2]";
+    expect(util.run(code)).toEqual(true);
+  });
+
+  it("1 not in [1, 2]", function () {
+    var code = "\n\
+    return 1 not in [1, 2]";
+    expect(util.run(code)).toEqual(false);
+  });
+
+  it("('a', 4) in [1, 2, ('a', 4)]", function () {
+    var code = "\n\
+    return ('a', 4) in [1, 2, ('a', 4)]";
+    expect(util.run(code)).toEqual(true);
+  });
+
+  it("'a' not in [1, 2, ('a', 4)]", function () {
+    var code = "\n\
+    return 'a' not in [1, 2, ('a', 4)]";
+    expect(util.run(code)).toEqual(true);
+  });
+
 });

@@ -128,4 +128,22 @@ describe("Tuples", function () {
     expect(util.run(code)).toEqual(11);
   });
 
+  it("'a' not in (1, 2, ['a', 4])", function () {
+    var code = "\n\
+    return 'a' not in (1, 2, ['a', 4])";
+    expect(util.run(code)).toEqual(true);
+  });
+
+  it("2 in (1, 2, ['a', 4])", function () {
+    var code = "\n\
+    return 2 in (1, 2, ['a', 4])";
+    expect(util.run(code)).toEqual(true);
+  });
+
+  it("(1,) in (1, 2, ['a', 4], (1,))", function () {
+    var code = "\n\
+    return (1,) in (1, 2, ['a', 4], (1,))";
+    expect(util.run(code)).toEqual(true);
+  });
+
 });
