@@ -112,11 +112,6 @@ Keywords:
 Built-ins:
 >bin() bytearray() bytes() callable() classmethod() compile() complex() delattr() dir() divmod() eval() exec() format() frozenset() getattr() globals() hasattr() hash() help() id() input() isinstance() issubclass() iter() locals() memoryview() next() object() open() property() set() setattr() slice() staticmethod() super() type() vars() zip() \__import__() 
 
-Advanced features:
-- Sequence operations
-- Regular expressions
-- Error types
-
 ## Testing
 
 ```sh
