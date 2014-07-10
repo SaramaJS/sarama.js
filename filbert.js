@@ -1191,6 +1191,16 @@
         return finishNode(node, "CallExpression");
       },
 
+      // E.g. pyRuntime.ops.add
+
+      createNodeOpsCallee: function (node, fnName) {
+        var runtimeId = this.createNodeSpan(node, node, "Identifier", { name: options.runtimeParamName });
+        var opsId = this.createNodeSpan(node, node, "Identifier", { name: "ops" });
+        var addId = this.createNodeSpan(node, node, "Identifier", { name: fnName });
+        var opsMember = this.createNodeSpan(node, node, "MemberExpression", { object: runtimeId, property: opsId, computed: false });
+        return this.createNodeSpan(node, node, "MemberExpression", { object: opsMember, property: addId, computed: false });
+      },
+
       // Used to convert 'id = init' to 'var id = init'
 
       createVarDeclFromId: function (refNode, id, init) {
@@ -1766,7 +1776,17 @@
       next();
       node.right = parseMaybeTuple(noIn);
       checkLVal(left);
+
+      if (node.operator === '+=') {
+        var right = nc.createNodeSpan(node.right, node.right, "CallExpression");
+        right.callee = nc.createNodeOpsCallee(right, "add");
+        right.arguments = [left, node.right];
+        node.right = right;
+        node.operator = '=';
+      }
+
       if (left.type === "Identifier" && !scope.exists(left.name)) {
+        if (!node.operator || node.operator.length > 1) unexpected();
         scope.addVar(left.name);
         return nc.createVarDeclFromId(node.left, node.left, node.right);
       }
@@ -1829,6 +1849,12 @@
             var callExpr = nc.createNodeSpan(node, node, "CallExpression", { callee: memberExpr, arguments: [left] });
             exprNode = nc.createNodeSpan(node, node, "BinaryExpression", { left: callExpr, operator: op === _in ? ">=" : "<", right: zeroLit });
           } else raise(tokPos, "Expected 'not in' comparison operator");
+        } else if (op === _plusMin && val === '+') {
+          node.arguments = [left];
+          node.arguments.push(parseExprOp(parseMaybeUnary(noIn), prec, noIn));
+          finishNode(node, "CallExpression");
+          node.callee = nc.createNodeOpsCallee(node, "add");
+          exprNode = node;
         } else {
           if (op === _is) {
             if (eat(_not)) node.operator = "!==";
@@ -1961,11 +1987,11 @@
       next();
       if (tokType === _parenR) {
         // Empty tuple
-        var node = parseTuple(true);
+        var node = parseTuple(false);
         eat(_parenR);
         return node;
       }
-      var val = parseMaybeTuple(true);
+      var val = parseMaybeTuple(false);
       if (options.locations) {
         val.loc.start = tokStartLoc1;
         val.loc.end = tokEndLoc;
@@ -2007,7 +2033,7 @@
     next();
 
     if (!eat(_bracketR)) {
-      var expr = parseExprOps(true);
+      var expr = parseExprOps(false);
       if (tokType === _for || tokType === _if) {
 
         // List comprehension
@@ -2114,14 +2140,14 @@
       if (tokClose === _braceR) {
         key = parsePropertyName();
         expect(_colon);
-        value = parseExprOps(true);
+        value = parseExprOps(false);
       } else if (tokClose === _parenR) {
         var keyId = parseIdent(true);
         key = startNodeFrom(keyId);
         key.value = keyId.name;
         finishNode(key, "Literal");
         expect(_eq);
-        value = parseExprOps(true);
+        value = parseExprOps(false);
       } else unexpected();
       node.arguments.push(nc.createNodeSpan(key, value, "ArrayExpression", { elements: [key, value] }));
     }
@@ -2213,7 +2239,7 @@
       } else first = false;
 
       if (allowEmpty && tokType === _comma) elts.push(null);
-      else elts.push(parseExprOps(true));
+      else elts.push(parseExprOps(false));
     }
     return elts;
   }
@@ -2250,7 +2276,8 @@
     if (tokType === _comma) {
       var oldPos = tokPos; skipSpace();
       var newPos = tokPos; tokPos = oldPos;
-      if (newPos >= inputLen || input[newPos] === ';' || newline.test(input[newPos])) eat(_comma);
+      if (newPos >= inputLen || input[newPos] === ';' || input[newPos] === ')' || newline.test(input[newPos]))
+        eat(_comma);
     }
 
     while (eat(_comma)) {
@@ -2274,10 +2301,10 @@
 
     // Shim JavaScript objects that impersonate Python equivalents
 
-    // TODO: need a generic isSequence() or equivalent
     // TODO: use 'type' or isSequence instead of 'instanceof Array' to id these
 
     internal: {
+      isSeq: function (a) { return a && (a.type === "list" || a.type === "tuple"); },
       slice: function (obj, start, end, step) {
         if (step == null || step === 0) step = 1; // TODO: step === 0 is a runtime error
         if (start == null) {
@@ -2301,6 +2328,25 @@
         return ret;
       }
     },
+
+    ops: {
+      add: function (a, b) {
+        if (pythonRuntime.internal.isSeq(a) && pythonRuntime.internal.isSeq(b)) {
+          if (a.type !== b.type)
+            throw TypeError("can only concatenate " + a.type + " (not '" + b.type + "') to " + a.type);
+          var ret;
+          if (a.type === 'list') ret = new pythonRuntime.objects.list();
+          else if (a.type === 'tuple') ret = new pythonRuntime.objects.tuple();
+          if (ret) {
+            for (var i = 0; i < a.length; i++) ret.push(a[i]);
+            for (var i = 0; i < b.length; i++) ret.push(b[i]);
+            return ret;
+          }
+        }
+        return a + b;
+      }
+    },
+
     objects: {
       dict: function () {
         var obj = {};

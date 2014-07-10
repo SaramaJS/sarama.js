@@ -74,4 +74,45 @@ describe("Lists", function () {
     return transpose";
     expect(util.run(code)).toEqual([[1, 5, 9], [2, 6, 10], [3, 7, 11], [4, 8, 12]]);
   });
+
+  it("2 in [1, 2]", function () {
+    var code = "\n\
+    a = [1, 2]\n\
+    def f(x):\n\
+      return x\n\
+    return f(2 in a)";
+    expect(util.run(code)).toEqual(true);
+  });
+
+  it("2 in [1, 2]", function () {
+    var code = "\n\
+    a = [1, 2]\n\
+    def f(x):\n\
+      return x\n\
+    return f(2 in a)";
+    expect(util.run(code)).toEqual(true);
+  });
+
+  it("[1, 2] + [3]", function () {
+    var code = "\n\
+    return [1, 2] + [3]";
+    expect(util.run(code)).toEqual([1, 2, 3]);
+  });
+
+  it("a = a + [True, 0]", function () {
+    var code = "\n\
+    a = [45, 23, -4, 'hi']\n\
+    a = a + [True, 0]\n\
+    return a";
+    expect(util.run(code)).toEqual([45, 23, -4, 'hi', true, 0]);
+  });
+
+  it("a += [[1, 2], 3]", function () {
+    var code = "\n\
+    a = [0]\n\
+    a += [[1, 2], 3]\n\
+    return a";
+    expect(util.run(code)).toEqual([0, [1, 2], 3]);
+  });
+
 });

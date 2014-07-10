@@ -476,6 +476,14 @@
       next();
       node.right = parseMaybeTuple(noIn);
 
+      if (node.operator === '+=') {
+        var right = nc.createNodeSpan(node.right, node.right, "CallExpression");
+        right.callee = nc.createNodeOpsCallee(right, "add");
+        right.arguments = [left, node.right];
+        node.right = right;
+        node.operator = '=';
+      }
+
       if (left.type === "Identifier" && !scope.exists(left.name)) {
         scope.addVar(left.name);
         return nc.createVarDeclFromId(node.left, node.left, node.right);
@@ -526,6 +534,12 @@
             var callExpr = nc.createNodeSpan(node, node, "CallExpression", { callee: memberExpr, arguments: [left] });
             exprNode = nc.createNodeSpan(node, node, "BinaryExpression", { left: callExpr, operator: op === tt._in ? ">=" : "<", right: zeroLit });
           } else exprNode = dummyIdent();
+        } else if (op === tt.plusMin && val === '+') {
+          node.arguments = [left];
+          node.arguments.push(parseExprOp(parseMaybeUnary(noIn), prec, noIn));
+          finishNode(node, "CallExpression");
+          node.callee = nc.createNodeOpsCallee(node, "add");
+          exprNode = node;
         } else {
           if (op === tt._is) {
             if (eat(tt._not)) node.operator = "!==";
@@ -692,7 +706,7 @@
     next();
 
     if (!eat(tt.bracketR)) {
-      var expr = parseExprOps(true);
+      var expr = parseExprOps(false);
       if (token.type === tt._for || token.type === tt._if) {
 
         // List comprehension
@@ -798,14 +812,14 @@
       if (tokClose === tt.braceR) {
         key = parsePropertyName();
         expect(tt.colon);
-        value = parseExprOps(true);
+        value = parseExprOps(false);
       } else if (tokClose === tt.parenR) {
         var keyId = parseIdent(true);
         key = startNodeFrom(keyId);
         key.value = keyId.name;
         finishNode(key, "Literal");
         expect(tt.eq);
-        value = parseExprOps(true);
+        value = parseExprOps(false);
       }
       node.arguments.push(nc.createNodeSpan(key, value, "ArrayExpression", { elements: [key, value] }));
     }
@@ -876,7 +890,7 @@
   function parseExprList(close) {
     var elts = [];
     while (!eat(close) && !eat(tt.newline) && token.type !== tt.eof) {
-      var elt = parseExprOps(true);
+      var elt = parseExprOps(false);
       if (isDummy(elt)) {
         next();
       } else {
@@ -896,7 +910,8 @@
     if (token.type === tt.comma) {
       var pos = token.start + 1;
       while (isSpace(input.charCodeAt(pos))) ++pos;
-      if (pos >= inputLen || input[pos] === ';' || isNewline(input.charCodeAt(pos))) eat(tt.comma);
+      if (pos >= inputLen || input[pos] === ';' || input[pos] === ')' || isNewline(input.charCodeAt(pos)))
+        eat(tt.comma);
     }
 
     while (eat(tt.comma)) {

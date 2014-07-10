@@ -258,7 +258,6 @@ describe("Source Locations", function () {
         "body": [
           {
             "type": "VariableDeclaration",
-
             "loc": {
               "start": {
                 "line": 1,
@@ -273,7 +272,6 @@ describe("Source Locations", function () {
             "declarations": [
               {
                 "type": "VariableDeclarator",
-    
                 "loc": {
                   "start": {
                     "line": 1,
@@ -426,7 +424,6 @@ describe("Source Locations", function () {
                     ],
                     "callee": {
                       "type": "MemberExpression",
-          
                       "loc": {
                         "start": {
                           "line": 3,
@@ -439,7 +436,6 @@ describe("Source Locations", function () {
                       },
                       "object": {
                         "type": "MemberExpression",
-            
                         "loc": {
                           "start": {
                             "line": 3,
@@ -452,7 +448,6 @@ describe("Source Locations", function () {
                         },
                         "object": {
                           "type": "Identifier",
-              
                           "loc": {
                             "start": {
                               "line": 3,
@@ -467,7 +462,6 @@ describe("Source Locations", function () {
                         },
                         "property": {
                           "type": "Identifier",
-              
                           "loc": {
                             "start": {
                               "line": 3,
@@ -524,7 +518,7 @@ describe("Source Locations", function () {
                         "column": 7
                       }
                     },
-                    "operator": "+=",
+                    "operator": "=",
                     "left": {
                       "type": "Identifier",
                       "loc": {
@@ -540,7 +534,7 @@ describe("Source Locations", function () {
                       "name": "x"
                     },
                     "right": {
-                      "type": "Literal",
+                      "type": "CallExpression",
                       "loc": {
                         "start": {
                           "line": 4,
@@ -551,8 +545,107 @@ describe("Source Locations", function () {
                           "column": 7
                         }
                       },
-                      "value": 1,
-                      "raw": "1"
+                      "callee": {
+                        "type": "MemberExpression",
+                        "loc": {
+                          "start": {
+                            "line": 4,
+                            "column": 6
+                          },
+                          "end": {
+                            "line": 4,
+                            "column": 7
+                          }
+                        },
+                        "object": {
+                          "type": "MemberExpression",
+                          "loc": {
+                            "start": {
+                              "line": 4,
+                              "column": 6
+                            },
+                            "end": {
+                              "line": 4,
+                              "column": 7
+                            }
+                          },
+                          "object": {
+                            "type": "Identifier",
+                            "loc": {
+                              "start": {
+                                "line": 4,
+                                "column": 6
+                              },
+                              "end": {
+                                "line": 4,
+                                "column": 7
+                              }
+                            },
+                            "name": "__pythonRuntime"
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "loc": {
+                              "start": {
+                                "line": 4,
+                                "column": 6
+                              },
+                              "end": {
+                                "line": 4,
+                                "column": 7
+                              }
+                            },
+                            "name": "ops"
+                          },
+                          "computed": false
+                        },
+                        "property": {
+                          "type": "Identifier",
+                          "loc": {
+                            "start": {
+                              "line": 4,
+                              "column": 6
+                            },
+                            "end": {
+                              "line": 4,
+                              "column": 7
+                            }
+                          },
+                          "name": "add"
+                        },
+                        "computed": false
+                      },
+                      "arguments": [
+                        {
+                          "type": "Identifier",
+                          "loc": {
+                            "start": {
+                              "line": 4,
+                              "column": 1
+                            },
+                            "end": {
+                              "line": 4,
+                              "column": 2
+                            }
+                          },
+                          "name": "x"
+                        },
+                        {
+                          "type": "Literal",
+                          "loc": {
+                            "start": {
+                              "line": 4,
+                              "column": 6
+                            },
+                            "end": {
+                              "line": 4,
+                              "column": 7
+                            }
+                          },
+                          "value": 1,
+                          "raw": "1"
+                        }
+                      ]
                     }
                   }
                 }
@@ -2581,7 +2674,6 @@ describe("Source Locations", function () {
               "body": [
                 {
                   "type": "VariableDeclaration",
-      
                   "range": [
                     16,
                     17
@@ -2590,7 +2682,6 @@ describe("Source Locations", function () {
                   "declarations": [
                     {
                       "type": "VariableDeclarator",
-          
                       "range": [
                         16,
                         17
@@ -2604,27 +2695,68 @@ describe("Source Locations", function () {
                         "name": "r"
                       },
                       "init": {
-                        "type": "BinaryExpression",
+                        "type": "CallExpression",
                         "range": [
                           20,
                           25
                         ],
-                        "operator": "+",
-                        "left": {
-                          "type": "Identifier",
+                        "arguments": [
+                          {
+                            "type": "Identifier",
+                            "range": [
+                              20,
+                              21
+                            ],
+                            "name": "a"
+                          },
+                          {
+                            "type": "Identifier",
+                            "range": [
+                              24,
+                              25
+                            ],
+                            "name": "b"
+                          }
+                        ],
+                        "callee": {
+                          "type": "MemberExpression",
                           "range": [
                             20,
-                            21
-                          ],
-                          "name": "a"
-                        },
-                        "right": {
-                          "type": "Identifier",
-                          "range": [
-                            24,
                             25
                           ],
-                          "name": "b"
+                          "object": {
+                            "type": "MemberExpression",
+                            "range": [
+                              20,
+                              25
+                            ],
+                            "object": {
+                              "type": "Identifier",
+                              "range": [
+                                20,
+                                25
+                              ],
+                              "name": "__pythonRuntime"
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "range": [
+                                20,
+                                25
+                              ],
+                              "name": "ops"
+                            },
+                            "computed": false
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "range": [
+                              20,
+                              25
+                            ],
+                            "name": "add"
+                          },
+                          "computed": false
                         }
                       }
                     }

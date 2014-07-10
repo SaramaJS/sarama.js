@@ -82,4 +82,18 @@ describe("Tuples", function () {
     expect(util.run(code)).toEqual(3);
   });
 
+  it("(1,) + (2,)", function () {
+    var code = "\
+    return (1,) + (2,)";
+    expect(util.run(code)).toEqual([1, 2]);
+  });
+
+  it("a += (4, 5)", function () {
+    var code = "\
+    a = (1, 2, 3)\n\
+    a += (4, 5)\n\
+    return a";
+    expect(util.run(code)).toEqual([1, 2, 3, 4, 5]);
+  });
+
 });
