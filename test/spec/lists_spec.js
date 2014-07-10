@@ -115,4 +115,38 @@ describe("Lists", function () {
     expect(util.run(code)).toEqual([0, [1, 2], 3]);
   });
 
+  it("[0] * 2", function () {
+    var code = "\n\
+    return [0] * 2";
+    expect(util.run(code)).toEqual([0, 0]);
+  });
+
+  it("[4] * 0", function () {
+    var code = "\n\
+    return [4] * 0";
+    expect(util.run(code)).toEqual([]);
+  });
+
+  it("[7] * -3", function () {
+    var code = "\n\
+    return [7] * -3";
+    expect(util.run(code)).toEqual([]);
+  });
+
+  it("[8] *= 4", function () {
+    var code = "\n\
+    a = [8]\n\
+    a *= 4\n\
+    return a";
+    expect(util.run(code)).toEqual([8, 8, 8, 8]);
+  });
+
+  it("['hi'] *= 2", function () {
+    var code = "\n\
+    a = ['hi']\n\
+    a *= 2\n\
+    return a";
+    expect(util.run(code)).toEqual(['hi', 'hi']);
+  });
+
 });

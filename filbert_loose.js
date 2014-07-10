@@ -476,9 +476,9 @@
       next();
       node.right = parseMaybeTuple(noIn);
 
-      if (node.operator === '+=') {
+      if (node.operator === '+=' || node.operator === '*=') {
         var right = nc.createNodeSpan(node.right, node.right, "CallExpression");
-        right.callee = nc.createNodeOpsCallee(right, "add");
+        right.callee = nc.createNodeOpsCallee(right, node.operator === '+=' ? "add" : "multiply");
         right.arguments = [left, node.right];
         node.right = right;
         node.operator = '=';
@@ -534,11 +534,11 @@
             var callExpr = nc.createNodeSpan(node, node, "CallExpression", { callee: memberExpr, arguments: [left] });
             exprNode = nc.createNodeSpan(node, node, "BinaryExpression", { left: callExpr, operator: op === tt._in ? ">=" : "<", right: zeroLit });
           } else exprNode = dummyIdent();
-        } else if (op === tt.plusMin && val === '+') {
+        } else if (op === tt.plusMin && val === '+' || op === tt.multiplyModulo && val === '*') {
           node.arguments = [left];
           node.arguments.push(parseExprOp(parseMaybeUnary(noIn), prec, noIn));
           finishNode(node, "CallExpression");
-          node.callee = nc.createNodeOpsCallee(node, "add");
+          node.callee = nc.createNodeOpsCallee(node, op === tt.plusMin ? "add" : "multiply");
           exprNode = node;
         } else {
           if (op === tt._is) {

@@ -411,7 +411,7 @@
                       num: _num, regexp: _regexp, string: _string,
                       newline: _newline, indent: _indent, dedent: _dedent,
                       exponentiation: _exponentiation, floorDiv: _floorDiv, plusMin: _plusMin,
-                      posNegNot: _posNegNot
+                      posNegNot: _posNegNot, multiplyModulo: _multiplyModulo
   };
   for (var kw in keywordTypes) exports.tokTypes["_" + kw] = keywordTypes[kw];
 
@@ -1777,9 +1777,9 @@
       node.right = parseMaybeTuple(noIn);
       checkLVal(left);
 
-      if (node.operator === '+=') {
+      if (node.operator === '+=' || node.operator === '*=') {
         var right = nc.createNodeSpan(node.right, node.right, "CallExpression");
-        right.callee = nc.createNodeOpsCallee(right, "add");
+        right.callee = nc.createNodeOpsCallee(right, node.operator === '+=' ? "add" : "multiply");
         right.arguments = [left, node.right];
         node.right = right;
         node.operator = '=';
@@ -1849,11 +1849,11 @@
             var callExpr = nc.createNodeSpan(node, node, "CallExpression", { callee: memberExpr, arguments: [left] });
             exprNode = nc.createNodeSpan(node, node, "BinaryExpression", { left: callExpr, operator: op === _in ? ">=" : "<", right: zeroLit });
           } else raise(tokPos, "Expected 'not in' comparison operator");
-        } else if (op === _plusMin && val === '+') {
+        } else if (op === _plusMin && val === '+' || op === _multiplyModulo && val === '*') {
           node.arguments = [left];
           node.arguments.push(parseExprOp(parseMaybeUnary(noIn), prec, noIn));
           finishNode(node, "CallExpression");
-          node.callee = nc.createNodeOpsCallee(node, "add");
+          node.callee = nc.createNodeOpsCallee(node, op === _plusMin ? "add" : "multiply");
           exprNode = node;
         } else {
           if (op === _is) {
@@ -2344,6 +2344,30 @@
           }
         }
         return a + b;
+      },
+      multiply: function (a, b) {
+        // TODO: non-sequence operand must be an integer
+        if (pythonRuntime.internal.isSeq(a) && !isNaN(parseInt(b))) {
+          var ret;
+          if (a.type === 'list') ret = new pythonRuntime.objects.list();
+          else if (a.type === 'tuple') ret = new pythonRuntime.objects.tuple();
+          if (ret) {
+            for (var i = 0; i < b; i++)
+              for (var j = 0; j < a.length; j++) ret.push(a[j]);
+            return ret;
+          }
+        }
+        else if (pythonRuntime.internal.isSeq(b) && !isNaN(parseInt(a))) {
+          var ret;
+          if (b.type === 'list') ret = new pythonRuntime.objects.list();
+          else if (b.type === 'tuple') ret = new pythonRuntime.objects.tuple();
+          if (ret) {
+            for (var i = 0; i < a; i++)
+              for (var j = 0; j < b.length; j++) ret.push(b[j]);
+            return ret;
+          }
+        }
+        return a * b;
       }
     },
 
