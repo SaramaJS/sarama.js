@@ -1919,8 +1919,11 @@
       else expr = parseExpression();
       if (!isSlice && eat(_colon)) isSlice = true;
       if (isSlice) return parseSlice(node, base, expr, noCalls);
+      var subscriptCall = nc.createNodeSpan(expr, expr, "CallExpression");
+      subscriptCall.callee = nc.createNodeOpsCallee(expr, "subscriptIndex");
+      subscriptCall.arguments = [base, expr];
       node.object = base;
-      node.property = expr;
+      node.property = subscriptCall;
       node.computed = true;
       expect(_bracketR);
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
@@ -2377,6 +2380,10 @@
           }
         }
         return a * b;
+      },
+      subscriptIndex: function (o, i) {
+        if (pythonRuntime.internal.isSeq(o) && i < 0) return o.length + i;
+        return i;
       }
     },
 

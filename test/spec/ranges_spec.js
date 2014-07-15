@@ -2931,7 +2931,6 @@ describe("Source Locations", function () {
         "body": [
           {
             "type": "VariableDeclaration",
-
             "range": [
               0,
               1
@@ -2940,7 +2939,6 @@ describe("Source Locations", function () {
             "declarations": [
               {
                 "type": "VariableDeclarator",
-    
                 "range": [
                   0,
                   1
@@ -2962,7 +2960,6 @@ describe("Source Locations", function () {
                   "arguments": [
                     {
                       "type": "ArrayExpression",
-          
                       "range": [
                         5,
                         17
@@ -2990,7 +2987,6 @@ describe("Source Locations", function () {
                     },
                     {
                       "type": "ArrayExpression",
-          
                       "range": [
                         19,
                         31
@@ -3019,21 +3015,18 @@ describe("Source Locations", function () {
                   ],
                   "callee": {
                     "type": "MemberExpression",
-        
                     "range": [
                       4,
                       32
                     ],
                     "object": {
                       "type": "MemberExpression",
-          
                       "range": [
                         4,
                         32
                       ],
                       "object": {
                         "type": "Identifier",
-            
                         "range": [
                           4,
                           32
@@ -3042,7 +3035,6 @@ describe("Source Locations", function () {
                       },
                       "property": {
                         "type": "Identifier",
-            
                         "range": [
                           4,
                           32
@@ -3053,7 +3045,6 @@ describe("Source Locations", function () {
                     },
                     "property": {
                       "type": "Identifier",
-          
                       "range": [
                         4,
                         32
@@ -3094,34 +3085,88 @@ describe("Source Locations", function () {
                     "name": "d"
                   },
                   "property": {
-                    "type": "Literal",
+                    "type": "CallExpression",
                     "range": [
                       41,
                       45
                     ],
-                    "value": "p1",
-                    "raw": "'p1'"
+                    "callee": {
+                      "type": "MemberExpression",
+                      "range": [
+                        41,
+                        45
+                      ],
+                      "object": {
+                        "type": "MemberExpression",
+                        "range": [
+                          41,
+                          45
+                        ],
+                        "object": {
+                          "type": "Identifier",
+                          "range": [
+                            41,
+                            45
+                          ],
+                          "name": "__pythonRuntime"
+                        },
+                        "property": {
+                          "type": "Identifier",
+                          "range": [
+                            41,
+                            45
+                          ],
+                          "name": "ops"
+                        },
+                        "computed": false
+                      },
+                      "property": {
+                        "type": "Identifier",
+                        "range": [
+                          41,
+                          45
+                        ],
+                        "name": "subscriptIndex"
+                      },
+                      "computed": false
+                    },
+                    "arguments": [
+                      {
+                        "type": "Identifier",
+                        "range": [
+                          39,
+                          40
+                        ],
+                        "name": "d"
+                      },
+                      {
+                        "type": "Literal",
+                        "range": [
+                          41,
+                          45
+                        ],
+                        "value": "p1",
+                        "raw": "'p1'"
+                      }
+                    ]
                   },
                   "computed": true
                 }
               ],
               "callee": {
                 "type": "MemberExpression",
-    
                 "range": [
                   33,
                   38
                 ],
                 "object": {
                   "type": "MemberExpression",
-      
                   "range": [
                     33,
                     38
                   ],
                   "object": {
                     "type": "Identifier",
-        
                     "range": [
                       33,
                       38
@@ -3130,7 +3175,6 @@ describe("Source Locations", function () {
                   },
                   "property": {
                     "type": "Identifier",
-        
                     "range": [
                       33,
                       38

@@ -173,4 +173,11 @@ describe("Lists", function () {
     expect(util.run(code)).toEqual(true);
   });
 
+  it("l[-3]", function () {
+    var code = "\n\
+    l = [1, 2, 3]\n\
+    return l[-3]";
+    expect(util.run(code)).toEqual(1);
+  });
+
 });

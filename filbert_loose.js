@@ -602,8 +602,11 @@
       else expr = parseExpression();
       if (!isSlice && eat(tt.colon)) isSlice = true;
       if (isSlice) return parseSlice(node, base, expr, noCalls);
+      var subscriptCall = nc.createNodeSpan(expr, expr, "CallExpression");
+      subscriptCall.callee = nc.createNodeOpsCallee(expr, "subscriptIndex");
+      subscriptCall.arguments = [base, expr];
       node.object = base;
-      node.property = expr;
+      node.property = subscriptCall;
       node.computed = true;
       expect(tt.bracketR);
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);

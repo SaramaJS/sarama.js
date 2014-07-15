@@ -146,4 +146,11 @@ describe("Tuples", function () {
     expect(util.run(code)).toEqual(true);
   });
 
+  it("t[-1]", function () {
+    var code = "\n\
+    t = (1, 2, 3)\n\
+    return t[-1]";
+    expect(util.run(code)).toEqual(3);
+  });
+
 });
