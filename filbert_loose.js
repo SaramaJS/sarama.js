@@ -611,7 +611,14 @@
       expect(tt.bracketR);
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (!noCalls && eat(tt.parenL)) {
-      node.arguments = parseExprList(tt.parenR, false);
+      if (scope.isUserFunction(base.name)) {
+        // Unpack parameters into JavaScript-friendly parameters, further processed at runtime
+        var createParamsCall = nc.createNodeSpan(node, node, "CallExpression");
+        createParamsCall.callee = nc.createNodeUtilsCallee(node, "createParamsObj");
+        createParamsCall.arguments = parseParamsList();
+        node.arguments = [createParamsCall];
+      } else node.arguments = parseExprList(tt.parenR, false);
+      
       if (scope.isNewObj(base.name)) finishNode(node, "NewExpression");
       else finishNode(node, "CallExpression");
       if (filbert.pythonRuntime.functions[base.name]) {
@@ -859,13 +866,30 @@
   }
 
   function parseFunction(node) {
+    var suffix = newAstIdCount++;
     node.id = parseIdent();
     node.params = [];
+
+    // Parse parameters
+
+    var formals = [];     // In order, maybe with default value
+    var argsId = null;    // *args
+    var kwargsId = null;  // **kwargs
     var first = true;
     expect(tt.parenL);
     while (!eat(tt.parenR) && token.type !== tt.eof) {
       if (!first) expect(tt.comma); else first = false;
-      node.params.push(parseIdent());
+      if (token.value === '*') {
+        next(); argsId = parseIdent();
+      } else if (token.value === '**') {
+        next(); kwargsId = parseIdent();
+      } else {
+        var paramId = parseIdent();
+        if (eat(tt.eq))
+          formals.push({ id: paramId, expr: parseExprOps(false) });
+        else
+          formals.push({ id: paramId, expr: null });
+      }
     }
     expect(tt.colon);
 
@@ -873,11 +897,63 @@
 
     // If class method, remove class instance var from params and save for 'this' replacement
     if (scope.isParentClass()) {
-      var selfId = node.params.shift();
-      scope.setThisReplace(selfId.name);
+      var selfId = formals.shift();
+      scope.setThisReplace(selfId.id.name);
     }
 
-    node.body = parseSuite();
+    var body = parseSuite();
+    node.body = nc.createNodeSpan(body, body, "BlockStatement", { body: [] });
+
+    // Add runtime parameter processing
+
+    if (formals.length > 0 || argsId || kwargsId) {
+      node.body.body.push(nc.createNodeParamsCheck(node.id, suffix));
+      node.body.body.push(nc.createVarDeclFromId(node.id,
+        nc.createNodeSpan(node.id, node.id, "Identifier", { name: '__formalsIndex' + suffix }),
+        nc.createNodeSpan(node.id, node.id, "Literal", { value: 0 })));
+      node.body.body.push(nc.createVarDeclFromId(node.id,
+        nc.createNodeSpan(node.id, node.id, "Identifier", { name: '__args' + suffix }),
+        nc.createNodeSpan(node.id, node.id, "Identifier", { name: 'arguments' })));
+    }
+    if (formals.length > 0) {
+      node.body.body.push(nc.createNodeGetParamFn(node.id, suffix));
+      for (var i = 0; i < formals.length; i++) {
+        var __getParamCall = nc.createNodeSpan(formals[i].id, formals[i].id, "CallExpression", {
+          callee: nc.createNodeSpan(formals[i].id, formals[i].id, "Identifier", { name: '__getParam' + suffix }),
+          arguments: [nc.createNodeSpan(formals[i].id, formals[i].id, "Literal", { value: formals[i].id.name })]
+        });
+        if (formals[i].expr) __getParamCall.arguments.push(formals[i].expr);
+        node.body.body.push(nc.createVarDeclFromId(formals[i].id, formals[i].id, __getParamCall));
+      }
+    }
+    var refNode = argsId || kwargsId;
+    if (refNode) {
+      if (argsId) {
+        var argsAssign = nc.createVarDeclFromId(argsId, argsId, nc.createNodeSpan(argsId, argsId, "ArrayExpression", { elements: [] }));
+        node.body.body.push(argsAssign);
+      }
+      if (kwargsId) {
+        var kwargsAssign = nc.createVarDeclFromId(kwargsId, kwargsId, nc.createNodeSpan(kwargsId, kwargsId, "ObjectExpression", { properties: [] }));
+        node.body.body.push(kwargsAssign);
+      }
+      var argsIf = nc.createNodeSpan(refNode, refNode, "IfStatement", {
+        test: nc.createNodeSpan(refNode, refNode, "Identifier", { name: '__params' + suffix }),
+        consequent: nc.createNodeSpan(refNode, refNode, "BlockStatement", { body: [] })
+      })
+      if (argsId) {
+        argsIf.consequent.body.push(nc.createNodeArgsWhileConsequent(argsId, suffix));
+        argsIf.alternate = nc.createNodeArgsAlternate(argsId);
+      }
+      if (kwargsId) {
+        argsIf.consequent.body.push(nc.createNodeSpan(kwargsId, kwargsId, "ExpressionStatement", {
+          expression: nc.createNodeSpan(kwargsId, kwargsId, "AssignmentExpression", {
+            operator: '=', left: kwargsId, right: nc.createNodeMembIds(kwargsId, '__params' + suffix, 'keywords'),
+          })
+        }));
+      }
+      node.body.body.push(argsIf);
+    }
+    node.body.body.push(nc.createNodeFnBodyIife(body));
 
     // If class method, replace with prototype function literals
     var retNode;
@@ -908,6 +984,26 @@
         elts.push(elt);
       }
       while (eat(tt.comma)) {}
+    }
+    return elts;
+  }
+
+  function parseParamsList() {
+    var elts = [], first = true;
+    while (!eat(tt.parenR) && !eat(tt.newline) && token.type !== tt.eof) {
+      if (!first) expect(tt.comma);
+      else first = false;
+      var expr = parseExprOps(false);
+      if (eat(tt.eq)) {
+        var right = parseExprOps(false);
+        var kwId = nc.createNodeSpan(expr, right, "Identifier", { name: "__kwp" });
+        var kwLit = nc.createNodeSpan(expr, right, "Literal", { value: true });
+        var left = nc.createNodeSpan(expr, right, "ObjectExpression", { properties: [] });
+        left.properties.push({ type: "Property", key: expr, value: right, kind: "init" });
+        left.properties.push({ type: "Property", key: kwId, value: kwLit, kind: "init" });
+        expr = left;
+      }
+      elts.push(expr);
     }
     return elts;
   }

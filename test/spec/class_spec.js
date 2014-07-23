@@ -302,4 +302,38 @@ describe("Class", function () {
     expect(util.run(code)).toBe(123);
   });
 
+  // TODO: Identify calls to user-defined class methods
+  //it("default arguments", function () {
+  //  var code = "\
+  //  class MyClass():\n\
+  //    def f(self, x, y=5, z=8, *a, **b):\n\
+  //        return x + y + z + sum(a) + sum([b[k] for k in b])\n\
+  //  x = MyClass()\n\
+  //  return x.f(1)\n\
+  //  ";
+  //  expect(util.run(code)).toEqual(14);
+  //});
+
+  //it("keyword arguments", function () {
+  //  var code = "\
+  //  class MyClass():\n\
+  //    def f(self, x, y=5, z=8, *a, **b):\n\
+  //        return x + y + z + sum(a) + sum([b[k] for k in b])\n\
+  //  x = MyClass()\n\
+  //  return x.f(2, z=1, y=9)\n\
+  //  ";
+  //  expect(util.run(code)).toEqual(12);
+  //});
+
+  //it("*args and **kwargs", function () {
+  //  var code = "\
+  //  class MyClass():\n\
+  //    def f(self, x, y=5, z=8, *a, **b):\n\
+  //        return x + y + z + sum(a) + sum([b[k] for k in b])\n\
+  //  x = MyClass()\n\
+  //  return x.f(1, 2, 3, 4, 5, a=10, b=100)\n\
+  //  ";
+  //  expect(util.run(code)).toEqual(125);
+  //});
+
 });

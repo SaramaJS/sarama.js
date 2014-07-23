@@ -230,4 +230,45 @@ describe("Basics", function () {
     expect(err.message).toEqual("Unexpected token");
   });
 
+  it("default arguments", function () {
+    var code = "\
+    def f(x, y=5, z=7):\n\
+      return x + y + z\n\
+    return f(1)";
+    expect(util.run(code)).toEqual(13);
+  });
+
+  it("keyword arguments", function () {
+    var code = "\
+    def f(x, y=5, z=7):\n\
+      return x + y + z\n\
+    return f(1, z=2, y=50)";
+    expect(util.run(code)).toEqual(53);
+  });
+
+  it("*args", function () {
+    var code = "\
+    def f(x, y=5, z=7, *a):\n\
+      return x + y + z + sum(a)\n\
+    return f(1, 2, 50, 5, 6)";
+    expect(util.run(code)).toEqual(64);
+  });
+
+  it("**kwargs", function () {
+    var code = "\
+    def f(x, y=5, z=7, **a):\n\
+      return x + y + z + sum([a[k] for k in a])\n\
+    return f(1, z=2, y=50, a=5, b=16)";
+    expect(util.run(code)).toEqual(74);
+  });
+  
+  it("*args and **kwargs", function () {
+    var code = "\
+    def f(x, y=5, z=8, *a, **b):\n\
+        return x + y + z + sum(a) + sum([b[k] for k in b])\n\
+    return f(1, 2, 3, 4, 5, a=10, b=100)\n\
+    ";
+    expect(util.run(code)).toEqual(125);
+  });
+
 });

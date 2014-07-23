@@ -288,6 +288,15 @@
     addVar: function (id) { this.current().map[id] = 'v'; },
     exists: function (id) { return this.current().map.hasOwnProperty(id); },
     isClass: function () { return this.current().type === 'c'; },
+    isUserFunction: function(name) {
+      // Loose match (i.e. order ignored)
+      // TODO: does not identify user-defined class methods
+      for (var i = this.namespaces.length - 1; i >= 0; i--)
+        for (var key in this.namespaces[i].map)
+          if (key === name && this.namespaces[i].map[key] === 'f')
+            return true;
+      return false;
+    },
     isParentClass: function() { return this.current(1).type === 'c'; },
     isNewObj: function (id) {
       for (var i = this.namespaces.length - 1; i >= 0; i--)
@@ -1180,6 +1189,79 @@
         return this.finishNodeFrom(endNode, node, type);
       },
 
+      // while (__formalsIndex < __params.formals.length) {
+      //   <argsId>.push(__params.formals[__formalsIndex++]); }
+      createNodeArgsWhileConsequent: function (argsId, s) {
+        var __paramsFormals = this.createNodeMembIds(argsId, '__params' + s, 'formals');
+        var __formalsIndexId = this.createNodeSpan(argsId, argsId, "Identifier", { name: '__formalsIndex' + s });
+        return this.createNodeSpan(argsId, argsId, "WhileStatement", {
+          test: this.createNodeSpan(argsId, argsId, "BinaryExpression", {
+            operator: '<', left: __formalsIndexId,
+            right: this.createNodeSpan(argsId, argsId, "MemberExpression", {
+              computed: false, object: __paramsFormals,
+              property: this.createNodeSpan(argsId, argsId, "Identifier", { name: 'length' })
+            })
+          }),
+          body: this.createNodeSpan(argsId, argsId, "BlockStatement", {
+            body: [this.createNodeSpan(argsId, argsId, "ExpressionStatement", {
+              expression: this.createNodeSpan(argsId, argsId, "CallExpression", {
+                callee: this.createNodeMembIds(argsId, argsId.name, 'push'),
+                arguments: [this.createNodeSpan(argsId, argsId, "MemberExpression", {
+                  computed: true, object: __paramsFormals,
+                  property: this.createNodeSpan(argsId, argsId, "UpdateExpression", {
+                    operator: '++', prefix: false, argument: __formalsIndexId
+                  })
+                })]
+              })
+            })]
+          })
+        });
+      },
+
+      // { while (__formalsIndex < __args.length) {
+      //   <argsId>.push(__args[__formalsIndex++]); }}
+      createNodeArgsAlternate: function (argsId, s) {
+        var __args = '__args' + s;
+        var __formalsIndexId = this.createNodeSpan(argsId, argsId, "Identifier", { name: '__formalsIndex' + s });
+        return this.createNodeSpan(argsId, argsId, "BlockStatement", {
+          body: [this.createNodeSpan(argsId, argsId, "WhileStatement", {
+            test: this.createNodeSpan(argsId, argsId, "BinaryExpression", {
+              operator: '<', left: __formalsIndexId,
+              right: this.createNodeMembIds(argsId, __args, 'length')
+            }),
+            body: this.createNodeSpan(argsId, argsId, "BlockStatement", {
+              body: [this.createNodeSpan(argsId, argsId, "ExpressionStatement", {
+                expression: this.createNodeSpan(argsId, argsId, "CallExpression", {
+                  callee: this.createNodeMembIds(argsId, argsId.name, 'push'),
+                  arguments: [this.createNodeSpan(argsId, argsId, "MemberExpression", {
+                    computed: true,
+                    object: this.createNodeSpan(argsId, argsId, "Identifier", { name: __args }),
+                    property: this.createNodeSpan(argsId, argsId, "UpdateExpression", {
+                      operator: '++', prefix: false, argument: __formalsIndexId
+                    })
+                  })]
+                })
+              })]
+            })
+          })]
+        });
+      },
+
+      // return (function() {<body>}).call(this);
+      createNodeFnBodyIife: function (body) {
+        var iifeBody = this.createNodeSpan(body, body, "FunctionExpression", {
+          params: [], defaults: [], body: body, generator: false, expression: false
+        });
+        var iifeCall = this.createNodeSpan(body, body, "CallExpression", {
+          callee: this.createNodeSpan(body, body, "MemberExpression", {
+            computed: false, object: iifeBody,
+            property: this.createNodeSpan(body, body, "Identifier", { name: 'call' })
+          }),
+          arguments: [this.createNodeSpan(body, body, "ThisExpression")]
+        });
+        return this.createNodeSpan(body, body, "ReturnStatement", { argument: iifeCall });
+      },
+
       // E.g. Math.pow(2, 3)
 
       createNodeMemberCall: function (node, object, property, args) {
@@ -1191,11 +1273,172 @@
         return finishNode(node, "CallExpression");
       },
 
+      // o.p
+      createNodeMembIds: function(r, o, p) {
+        return this.createNodeSpan(r, r, "MemberExpression", {
+          computed: false,
+          object: this.createNodeSpan(r, r, "Identifier", { name: o }),
+          property: this.createNodeSpan(r, r, "Identifier", { name: p })
+        })
+      },
+
+      // o[p]
+      createNodeMembIdLit: function(r, o, p) {
+        return this.createNodeSpan(r, r, "MemberExpression", {
+          computed: true,
+          object: this.createNodeSpan(r, r, "Identifier", { name: o }),
+          property: this.createNodeSpan(r, r, "Literal", { value: p })
+        })
+      },
+
       // E.g. pyRuntime.ops.add
 
       createNodeOpsCallee: function (node, fnName) {
         var runtimeId = this.createNodeSpan(node, node, "Identifier", { name: options.runtimeParamName });
         var opsId = this.createNodeSpan(node, node, "Identifier", { name: "ops" });
+        var addId = this.createNodeSpan(node, node, "Identifier", { name: fnName });
+        var opsMember = this.createNodeSpan(node, node, "MemberExpression", { object: runtimeId, property: opsId, computed: false });
+        return this.createNodeSpan(node, node, "MemberExpression", { object: opsMember, property: addId, computed: false });
+      },
+
+      // var __params = arguments.length === 1 && arguments[0].formals && arguments[0].keywords ? arguments[0] : null;
+      createNodeParamsCheck: function (r, s) {
+        var __paramsId = this.createNodeSpan(r, r, "Identifier", { name: '__params' + s });
+        var arguments0 = this.createNodeMembIdLit(r, 'arguments', 0);
+        var checks = this.createNodeSpan(r, r, "ConditionalExpression", {
+          test: this.createNodeSpan(r, r, "LogicalExpression", {
+            operator: '&&',
+            left: this.createNodeSpan(r, r, "LogicalExpression", {
+              operator: '&&',
+              left: this.createNodeSpan(r, r, "BinaryExpression", {
+                operator: '===',
+                left: this.createNodeMembIds(r, 'arguments', 'length'),
+                right: this.createNodeSpan(r, r, "Literal", { value: 1 })
+              }),
+              right: this.createNodeSpan(r, r, "MemberExpression", {
+                computed: false, object: arguments0,
+                property: this.createNodeSpan(r, r, "Identifier", { name: 'formals' }),
+              })
+            }),
+            right: this.createNodeSpan(r, r, "MemberExpression", {
+              computed: false, object: arguments0,
+              property: this.createNodeSpan(r, r, "Identifier", { name: 'keywords' }),
+            })
+          }),
+          consequent: arguments0,
+          alternate: this.createNodeSpan(r, r, "Literal", { value: null })
+        });
+        return this.createVarDeclFromId(r, __paramsId, checks);
+      },
+
+      // function __getParam(v, d) {
+      //   var r = d;
+      //   if (__params) {
+      //     if (__formalsIndex < __params.formals.length) {
+      //       r = __params.formals[__formalsIndex++];
+      //     } else if (v in __params.keywords) {
+      //       r = __params.keywords[v];
+      //       delete __params.keywords[v];
+      //     }
+      //   } else if (__formalsIndex < __args.length) {
+      //     r = __args[__formalsIndex++];
+      //   }
+      //   return r;
+      // }
+      createNodeGetParamFn: function (r, s) {
+        var dId = this.createNodeSpan(r, r, "Identifier", { name: 'd' });
+        var vId = this.createNodeSpan(r, r, "Identifier", { name: 'v' });
+        var rId = this.createNodeSpan(r, r, "Identifier", { name: 'r' });
+        var __formalsIndexId = this.createNodeSpan(r, r, "Identifier", { name: '__formalsIndex' + s });
+        var __params = '__params' + s;
+        var __getParam = '__getParam' + s;
+        var __args = '__args' + s;
+        var __paramsFormals = this.createNodeMembIds(r, __params, 'formals');
+        var __paramsKeywords = this.createNodeMembIds(r, __params, 'keywords')
+        var __paramsKeywordsV = this.createNodeSpan(r, r, "MemberExpression", { computed: true, property: vId, object: __paramsKeywords });
+        return this.createNodeSpan(r, r, "FunctionDeclaration", {
+          id: this.createNodeSpan(r, r, "Identifier", { name: __getParam }),
+          params: [vId, dId],
+          defaults: [],
+          body: this.createNodeSpan(r, r, "BlockStatement", {
+            body: [this.createVarDeclFromId(r, rId, dId),
+              this.createNodeSpan(r, r, "IfStatement", {
+                test: this.createNodeSpan(r, r, "Identifier", { name: __params }),
+                consequent: this.createNodeSpan(r, r, "BlockStatement", {
+                  body: [this.createNodeSpan(r, r, "IfStatement", {
+                    test: this.createNodeSpan(r, r, "BinaryExpression", {
+                      operator: '<', left: __formalsIndexId,
+                      right: this.createNodeSpan(r, r, "MemberExpression", {
+                        computed: false, object: __paramsFormals,
+                        property: this.createNodeSpan(r, r, "Identifier", { name: 'length' })
+                      })
+                    }),
+                    consequent: this.createNodeSpan(r, r, "BlockStatement", {
+                      body: [this.createNodeSpan(r, r, "ExpressionStatement", {
+                        expression: this.createNodeSpan(r, r, "AssignmentExpression", {
+                          operator: '=', left: rId,
+                          right: this.createNodeSpan(r, r, "MemberExpression", {
+                            computed: true, object: __paramsFormals,
+                            property: this.createNodeSpan(r, r, "UpdateExpression", {
+                              operator: '++', argument: __formalsIndexId, prefix: false
+                            })
+                          })
+                        })
+                      })]
+                    }),
+                    alternate: this.createNodeSpan(r, r, "IfStatement", {
+                      test: this.createNodeSpan(r, r, "BinaryExpression", {
+                        operator: 'in', left: vId, right: __paramsKeywords,
+                      }),
+                      consequent: this.createNodeSpan(r, r, "BlockStatement", {
+                        body: [this.createNodeSpan(r, r, "ExpressionStatement", {
+                          expression: this.createNodeSpan(r, r, "AssignmentExpression", {
+                            operator: '=', left: rId, right: __paramsKeywordsV
+                          })
+                        }),
+                        this.createNodeSpan(r, r, "ExpressionStatement", {
+                          expression: this.createNodeSpan(r, r, "UnaryExpression", {
+                            operator: 'delete', prefix: true, argument: __paramsKeywordsV
+                          })
+                        })]
+                      }),
+                      alternate: null
+                    })
+                  })]
+                }),
+                alternate: this.createNodeSpan(r, r, "IfStatement", {
+                  test: this.createNodeSpan(r, r, "BinaryExpression", {
+                    operator: '<', left: __formalsIndexId,
+                    right: this.createNodeMembIds(r, __args, 'length'),
+                  }),
+                  consequent: this.createNodeSpan(r, r, "BlockStatement", {
+                    body: [this.createNodeSpan(r, r, "ExpressionStatement", {
+                      expression: this.createNodeSpan(r, r, "AssignmentExpression", {
+                        operator: '=', left: rId,
+                        right: this.createNodeSpan(r, r, "MemberExpression", {
+                          computed: true,
+                          object: this.createNodeSpan(r, r, "Identifier", { name: __args }),
+                          property: this.createNodeSpan(r, r, "UpdateExpression", {
+                            operator: '++', argument: __formalsIndexId, prefix: false
+                          })
+                        })
+                      })
+                    })]
+                  }),
+                  alternate: null
+                })
+              }),
+              this.createNodeSpan(r, r, "ReturnStatement", { argument: rId })]
+          }),
+          rest: null, generator: false, expression: false
+        });
+      },
+
+      // E.g. pyRuntime.utils.add
+
+      createNodeUtilsCallee: function (node, fnName) {
+        var runtimeId = this.createNodeSpan(node, node, "Identifier", { name: options.runtimeParamName });
+        var opsId = this.createNodeSpan(node, node, "Identifier", { name: "utils" });
         var addId = this.createNodeSpan(node, node, "Identifier", { name: fnName });
         var opsMember = this.createNodeSpan(node, node, "MemberExpression", { object: runtimeId, property: opsId, computed: false });
         return this.createNodeSpan(node, node, "MemberExpression", { object: opsMember, property: addId, computed: false });
@@ -1903,6 +2146,7 @@
       var id = parseIdent(true);
       if (pythonRuntime.imports[base.name] && pythonRuntime.imports[base.name][id.name]) {
         // Calling a Python import function
+        // TODO: Unpack parameters into JavaScript-friendly parameters
         var runtimeId = nc.createNodeSpan(base, base, "Identifier", { name: options.runtimeParamName });
         var importsId = nc.createNodeSpan(base, base, "Identifier", { name: "imports" });
         var runtimeMember = nc.createNodeSpan(base, base, "MemberExpression", { object: runtimeId, property: importsId, computed: false });
@@ -1928,11 +2172,18 @@
       expect(_bracketR);
       return parseSubscripts(finishNode(node, "MemberExpression"), noCalls);
     } else if (!noCalls && eat(_parenL)) {
-      node.arguments = parseExprList(_parenR, false);
+      if (scope.isUserFunction(base.name)) {
+        // Unpack parameters into JavaScript-friendly parameters, further processed at runtime
+        var createParamsCall = nc.createNodeSpan(node, node, "CallExpression");
+        createParamsCall.callee = nc.createNodeUtilsCallee(node, "createParamsObj");
+        createParamsCall.arguments = parseParamsList();
+        node.arguments = [createParamsCall];
+      } else node.arguments = parseExprList(_parenR, false);
       if (scope.isNewObj(base.name)) finishNode(node, "NewExpression");
       else finishNode(node, "CallExpression");
       if (pythonRuntime.functions[base.name]) {
         // Calling a Python built-in function
+        // TODO: Unpack parameters into JavaScript-friendly parameters
         if (base.type !== "Identifier") unexpected();
         var runtimeId = nc.createNodeSpan(base, base, "Identifier", { name: options.runtimeParamName });
         var functionsId = nc.createNodeSpan(base, base, "Identifier", { name: "functions" });
@@ -2180,41 +2431,149 @@
   }
 
   function parseFunction(node) {
+    // TODO: The node creation utilities used here are tightly coupled (e.g. variable names)
+
+    var suffix = newAstIdCount++;
     node.id = parseIdent();
     node.params = [];
+
+    // Parse parameters
+
+    var formals = [];     // In order, maybe with default value
+    var argsId = null;    // *args
+    var kwargsId = null;  // **kwargs
+    var defaultsFound = false;
     var first = true;
     expect(_parenL);
     while (!eat(_parenR)) {
       if (!first) expect(_comma); else first = false;
-      node.params.push(parseIdent());
+      if (tokVal === '*') {
+        if (kwargsId) raise(tokPos, "invalid syntax");
+        next(); argsId = parseIdent();
+      } else if (tokVal === '**') {
+        next(); kwargsId = parseIdent();
+      } else {
+        if (kwargsId) raise(tokPos, "invalid syntax");
+        var paramId = parseIdent();
+        if (eat(_eq)) {
+          formals.push({ id: paramId, expr: parseExprOps(false) });
+          defaultsFound = true;
+        } else {
+          if (defaultsFound) raise(tokPos, "non-default argument follows default argument");
+          if (argsId) raise(tokPos, "missing required keyword-only argument");
+          formals.push({ id: paramId, expr: null });
+        }
+      }
     }
     expect(_colon);
 
     // Start a new scope with regard to the `inFunction`
     // flag (restore them to their old value afterwards).
+    // `inFunction` used to throw syntax error for stray `return`
     var oldInFunc = inFunction = true;
 
     scope.startFn(node.id.name);
 
     // If class method, remove class instance var from params and save for 'this' replacement
     if (scope.isParentClass()) {
-      var selfId = node.params.shift();
-      scope.setThisReplace(selfId.name);
+      var selfId = formals.shift();
+      scope.setThisReplace(selfId.id.name);
     }
 
-    node.body = parseSuite();
+    var body = parseSuite();
+    node.body = nc.createNodeSpan(body, body, "BlockStatement", { body: [] });
+
+    // Add runtime parameter processing
+    // The caller may pass a complex parameter object as a single parameter like this:
+    // {formals:[<expr>, <expr>, ...], keywords:{<id>:<expr>, <id>:<expr>, ...}}
+
+    if (formals.length > 0 || argsId || kwargsId) {
+      // var __params = arguments.length === 1 && arguments[0].formals && arguments[0].keywords ? arguments[0] : null;
+      node.body.body.push(nc.createNodeParamsCheck(node.id, suffix));
+
+      // var __formalsIndex = 0;
+      node.body.body.push(nc.createVarDeclFromId(node.id,
+        nc.createNodeSpan(node.id, node.id, "Identifier", { name: '__formalsIndex' + suffix }),
+        nc.createNodeSpan(node.id, node.id, "Literal", { value: 0 })));
+
+      // var __args = arguments;
+      node.body.body.push(nc.createVarDeclFromId(node.id,
+        nc.createNodeSpan(node.id, node.id, "Identifier", { name: '__args' + suffix }),
+        nc.createNodeSpan(node.id, node.id, "Identifier", { name: 'arguments' })));
+    }
+
+    if (formals.length > 0) {
+      // function __getParam(v, d) {
+      //   var r = d;
+      //   if (__params) {
+      //     if (__formalsIndex < __params.formals.length) {
+      //       r = __params.formals[__formalsIndex++];
+      //     } else if (v in __params.keywords) {
+      //       r = __params.keywords[v];
+      //       delete __params.keywords[v];
+      //     }
+      //   } else if (__formalsIndex < __args.length) {
+      //     r = __args[__formalsIndex++];
+      //   }
+      //   return r;
+      // }
+      node.body.body.push(nc.createNodeGetParamFn(node.id, suffix));
+
+      for (var i = 0; i < formals.length; i++) {
+        // var <param> = __getParam('<param>', <optional default>);
+        var __getParamCall = nc.createNodeSpan(formals[i].id, formals[i].id, "CallExpression", {
+          callee: nc.createNodeSpan(formals[i].id, formals[i].id, "Identifier", { name: '__getParam' + suffix }),
+          arguments: [nc.createNodeSpan(formals[i].id, formals[i].id, "Literal", { value: formals[i].id.name })]
+        });
+        if (formals[i].expr) __getParamCall.arguments.push(formals[i].expr);
+        node.body.body.push(nc.createVarDeclFromId(formals[i].id, formals[i].id, __getParamCall));
+      }
+    }
+    
+    var refNode = argsId || kwargsId;
+    if (refNode) {
+      if (argsId) {
+        // var <args> = [];
+        var argsAssign = nc.createVarDeclFromId(argsId, argsId, nc.createNodeSpan(argsId, argsId, "ArrayExpression", { elements: [] }));
+        node.body.body.push(argsAssign);
+      }
+      if (kwargsId) {
+        // var <kwargs> = {};
+        var kwargsAssign = nc.createVarDeclFromId(kwargsId, kwargsId, nc.createNodeSpan(kwargsId, kwargsId, "ObjectExpression", { properties: [] }));
+        node.body.body.push(kwargsAssign);
+      }
+      // if (__params) {}
+      var argsIf = nc.createNodeSpan(refNode, refNode, "IfStatement", {
+        test: nc.createNodeSpan(refNode, refNode, "Identifier", { name: '__params' + suffix }),
+        consequent: nc.createNodeSpan(refNode, refNode, "BlockStatement", { body: [] })})
+      if (argsId) {
+        // while (__formalsIndex < __params.formals.length) {
+        //   <argsId>.push(__params.formals[__formalsIndex++]); }
+        argsIf.consequent.body.push(nc.createNodeArgsWhileConsequent(argsId, suffix));
+        // { while (__formalsIndex < __args.length) {
+        //   <argsId>.push(__args[__formalsIndex++]); }}
+        argsIf.alternate = nc.createNodeArgsAlternate(argsId, suffix);
+      }
+      if (kwargsId) {
+        // <kwargs> = __params.keywords
+        argsIf.consequent.body.push(nc.createNodeSpan(kwargsId, kwargsId, "ExpressionStatement", {
+          expression: nc.createNodeSpan(kwargsId, kwargsId, "AssignmentExpression", {
+            operator: '=', left: kwargsId, right: nc.createNodeMembIds(kwargsId, '__params' + suffix, 'keywords'),
+          })
+        }));
+      }
+      node.body.body.push(argsIf);
+    }
+
+    // Convert original body to 'return (function() {<body>}).call(this);'
+    node.body.body.push(nc.createNodeFnBodyIife(body));
 
     inFunction = oldInFunc;
 
-    // Verify that argument names
-    // are not repeated, and it does not try to bind the words `eval`
-    // or `arguments`.
-    for (var i = node.id ? -1 : 0; i < node.params.length; ++i) {
-      var id = i < 0 ? node.id : node.params[i];
-      if (isStrictBadIdWord(id.name))
-        raise(id.start, "Defining '" + id.name + "' in strict mode");
-      if (i >= 0) for (var j = 0; j < i; ++j) if (id.name === node.params[j].name)
-        raise(id.start, "Argument name clash");
+    // Verify that argument names are not repeated
+    for (var i = 0; i < formals.length; ++i) {
+      for (var j = 0; j < i; ++j) if (formals[i].id.name === formals[j].id.name)
+        raise(formals[i].id.start, "Argument name clash");
     }
 
     // If class method, replace with prototype function literals
@@ -2252,6 +2611,28 @@
 
       if (allowEmpty && tokType === _comma) elts.push(null);
       else elts.push(parseExprOps(false));
+    }
+    return elts;
+  }
+
+  function parseParamsList() {
+    // In: expr, expr, ..., id=expr, id=expr, ...
+    // Out: expr, expr, ..., {id:expr, __kwp:true}, {id:expr, __kwp:true}, ...
+    var elts = [], first = true;
+    while (!eat(_parenR)) {
+      if (!first) expect(_comma);
+      else first = false;
+      var expr = parseExprOps(false);
+      if (eat(_eq)) {
+        var right = parseExprOps(false);
+        var kwId = nc.createNodeSpan(expr, right, "Identifier", {name:"__kwp"});
+        var kwLit = nc.createNodeSpan(expr, right, "Literal", {value:true});
+        var left = nc.createNodeSpan(expr, right, "ObjectExpression", { properties: [] });
+        left.properties.push({ type: "Property", key: expr, value: right, kind: "init" });
+        left.properties.push({ type: "Property", key: kwId, value: kwLit, kind: "init" });
+        expr = left;
+      }
+      elts.push(expr);
     }
     return elts;
   }
@@ -2316,6 +2697,7 @@
     // TODO: use 'type' or isSequence instead of 'instanceof Array' to id these
 
     internal: {
+      // Only used within runtime
       isSeq: function (a) { return a && (a.type === "list" || a.type === "tuple"); },
       slice: function (obj, start, end, step) {
         if (step == null || step === 0) step = 1; // TODO: step === 0 is a runtime error
@@ -2328,16 +2710,32 @@
           else end = obj.length;
         } else if (end < 0) end += obj.length;
 
-        var ret = [], tmp, i;
+        var ret = new pythonRuntime.objects.list(), tmp, i;
         if (step < 0) {
           tmp = obj.slice(end + 1, start + 1);
-          for (i = tmp.length - 1; i >= 0; i += step) ret.push(tmp[i]);
+          for (i = tmp.length - 1; i >= 0; i += step) ret.append(tmp[i]);
         } else {
           tmp = obj.slice(start, end);
           if (step === 1) ret = tmp;
-          else for (i = 0; i < tmp.length; i += step) ret.push(tmp[i]);
+          else for (i = 0; i < tmp.length; i += step) ret.append(tmp[i]);
         }
         return ret;
+      }
+    },
+
+    utils: {
+      createParamsObj: function () {
+        // In: expr, expr, ..., {id:expr, __kwp:true}, {id:expr, __kwp:true}, ...
+        // Out: {formals:[expr, expr, ...], keywords:{id:expr, id:expr, ...}}
+        var params = { formals: new pythonRuntime.objects.list(), keywords: new pythonRuntime.objects.dict() };
+        for (var i = 0; i < arguments.length; i++) {
+          if (arguments[i].__kwp === true) {
+            for (var k in arguments[i])
+              if (k !== '__kwp') params.keywords[k] = arguments[i][k];
+          }
+          else params.formals.push(arguments[i]);
+        }
+        return params;
       }
     },
 
@@ -2399,8 +2797,8 @@
         Object.defineProperty(obj, "items",
         {
           value: function () {
-            var items = [];
-            for (var k in this) items.push(new pythonRuntime.objects.tuple(k, this[k]));
+            var items = new pythonRuntime.objects.list();
+            for (var k in this) items.append(new pythonRuntime.objects.tuple(k, this[k]));
             return items;
           },
           enumerable: false
@@ -2451,8 +2849,8 @@
         Object.defineProperty(obj, "values",
         {
           value: function () {
-            var values = [];
-            for (var key in this) values.push(this[key]);
+            var values = new pythonRuntime.objects.list();
+            for (var key in this) values.append(this[key]);
             return values;
           },
           enumerable: false

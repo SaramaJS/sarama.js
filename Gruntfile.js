@@ -29,7 +29,7 @@ module.exports = function (grunt) {
         extensions: 'js',
         specNameMatcher: 'spec',
         jUnit: {
-          report: true,
+          report: false, // TODO: Failed to execute "jasmine.executeSpecsInFolder": TypeError: undefined is not a function
           savePath: "./build/reports/jasmine/",
           useDotNotation: true,
           consolidate: true
