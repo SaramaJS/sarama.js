@@ -180,4 +180,10 @@ describe("Lists", function () {
     expect(util.run(code)).toEqual(1);
   });
 
+  it("'a' in [45, 'a', False]", function () {
+    var code = "\n\
+    return 'a' in [45, 'a', False]";
+    expect(util.run(code)).toEqual(true);
+  });
+
 });

@@ -536,11 +536,8 @@
           if (op === tt._in || eat(tt._in)) {
             right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
             finishNode(node);
-            var zeroLit = nc.createNodeSpan(node, node, "Literal", { value: 0 });
-            var indexOfLit = nc.createNodeSpan(node, node, "Literal", { name: "indexOf" });
-            var memberExpr = nc.createNodeSpan(node, node, "MemberExpression", { object: right, property: indexOfLit, computed: false });
-            var callExpr = nc.createNodeSpan(node, node, "CallExpression", { callee: memberExpr, arguments: [left] });
-            exprNode = nc.createNodeSpan(node, node, "BinaryExpression", { left: callExpr, operator: op === tt._in ? ">=" : "<", right: zeroLit });
+            var notLit = nc.createNodeSpan(node, node, "Literal", { value: op === tt._not });
+            exprNode = nc.createNodeRuntimeCall(node, 'ops', 'in', [left, right, notLit]);
           } else exprNode = dummyIdent();
         } else if (op === tt.plusMin && val === '+' || op === tt.multiplyModulo && val === '*') {
           node.arguments = [left];
@@ -613,9 +610,7 @@
     } else if (!noCalls && eat(tt.parenL)) {
       if (scope.isUserFunction(base.name)) {
         // Unpack parameters into JavaScript-friendly parameters, further processed at runtime
-        var createParamsCall = nc.createNodeSpan(node, node, "CallExpression");
-        createParamsCall.callee = nc.createNodeUtilsCallee(node, "createParamsObj");
-        createParamsCall.arguments = parseParamsList();
+        var createParamsCall = nc.createNodeRuntimeCall(node, 'utils', 'createParamsObj', parseParamsList());
         node.arguments = [createParamsCall];
       } else node.arguments = parseExprList(tt.parenR, false);
       

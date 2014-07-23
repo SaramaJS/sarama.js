@@ -1436,12 +1436,15 @@
 
       // E.g. pyRuntime.utils.add
 
-      createNodeUtilsCallee: function (node, fnName) {
-        var runtimeId = this.createNodeSpan(node, node, "Identifier", { name: options.runtimeParamName });
-        var opsId = this.createNodeSpan(node, node, "Identifier", { name: "utils" });
-        var addId = this.createNodeSpan(node, node, "Identifier", { name: fnName });
-        var opsMember = this.createNodeSpan(node, node, "MemberExpression", { object: runtimeId, property: opsId, computed: false });
-        return this.createNodeSpan(node, node, "MemberExpression", { object: opsMember, property: addId, computed: false });
+      createNodeRuntimeCall: function (r, mod, fn, args) {
+        return this.createNodeSpan(r, r, "CallExpression", {
+          callee: this.createNodeSpan(r, r, "MemberExpression", {
+            computed: false,
+            object: this.createNodeMembIds(r, options.runtimeParamName,  mod),
+            property: this.createNodeSpan(r, r, "Identifier", { name: fn })
+          }),
+          arguments: args
+        });
       },
 
       // Used to convert 'id = init' to 'var id = init'
@@ -2094,11 +2097,8 @@
           if (op === _in || eat(_in)) {
             right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
             finishNode(node);
-            var zeroLit = nc.createNodeSpan(node, node, "Literal", { value: 0 });
-            var indexOfLit = nc.createNodeSpan(node, node, "Literal", { name: "indexOf" });
-            var memberExpr = nc.createNodeSpan(node, node, "MemberExpression", { object: right, property: indexOfLit, computed: false });
-            var callExpr = nc.createNodeSpan(node, node, "CallExpression", { callee: memberExpr, arguments: [left] });
-            exprNode = nc.createNodeSpan(node, node, "BinaryExpression", { left: callExpr, operator: op === _in ? ">=" : "<", right: zeroLit });
+            var notLit = nc.createNodeSpan(node, node, "Literal", { value: op === _not });
+            exprNode = nc.createNodeRuntimeCall(node, 'ops', 'in', [left, right, notLit]);
           } else raise(tokPos, "Expected 'not in' comparison operator");
         } else if (op === _plusMin && val === '+' || op === _multiplyModulo && val === '*') {
           node.arguments = [left];
@@ -2174,9 +2174,7 @@
     } else if (!noCalls && eat(_parenL)) {
       if (scope.isUserFunction(base.name)) {
         // Unpack parameters into JavaScript-friendly parameters, further processed at runtime
-        var createParamsCall = nc.createNodeSpan(node, node, "CallExpression");
-        createParamsCall.callee = nc.createNodeUtilsCallee(node, "createParamsObj");
-        createParamsCall.arguments = parseParamsList();
+        var createParamsCall = nc.createNodeRuntimeCall(node, 'utils', 'createParamsObj', parseParamsList());
         node.arguments = [createParamsCall];
       } else node.arguments = parseExprList(_parenR, false);
       if (scope.isNewObj(base.name)) finishNode(node, "NewExpression");
@@ -2754,6 +2752,10 @@
           }
         }
         return a + b;
+      },
+      in: function (a, b, n) {
+        var r = b.hasOwnProperty('indexOf') ? b.indexOf(a) >= 0 : a in b;
+        return n ? !r : r;
       },
       multiply: function (a, b) {
         // TODO: non-sequence operand must be an integer

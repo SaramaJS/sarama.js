@@ -153,4 +153,11 @@ describe("Tuples", function () {
     expect(util.run(code)).toEqual(3);
   });
 
+  it("-23 not in (-23, 45, 'a', False)", function () {
+    var code = "\n\
+    return -23 not in (-23, 45, 'a', False)";
+    expect(util.run(code)).toEqual(false);
+  });
+
+
 });

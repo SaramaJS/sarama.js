@@ -5850,66 +5850,77 @@ describe("Source Locations", function () {
               6
             ],
             "expression": {
-              "type": "BinaryExpression",
-  
+              "type": "CallExpression",
               "range": [
                 0,
                 6
               ],
-              "left": {
-                "type": "CallExpression",
-    
+              "callee": {
+                "type": "MemberExpression",
                 "range": [
                   0,
                   6
                 ],
-                "callee": {
+                "computed": false,
+                "object": {
                   "type": "MemberExpression",
-      
                   "range": [
                     0,
                     6
                   ],
+                  "computed": false,
                   "object": {
                     "type": "Identifier",
                     "range": [
-                      5,
-                      6
-                    ],
-                    "name": "y"
-                  },
-                  "property": {
-                    "type": "Literal",
-        
-                    "range": [
                       0,
                       6
                     ],
-                    "name": "indexOf"
+                    "name": "__pythonRuntime"
                   },
-                  "computed": false
-                },
-                "arguments": [
-                  {
+                  "property": {
                     "type": "Identifier",
                     "range": [
                       0,
-                      1
+                      6
                     ],
-                    "name": "x"
+                    "name": "ops"
                   }
-                ]
+                },
+                "property": {
+                  "type": "Identifier",
+                  "range": [
+                    0,
+                    6
+                  ],
+                  "name": "in"
+                }
               },
-              "operator": ">=",
-              "right": {
-                "type": "Literal",
-    
-                "range": [
-                  0,
-                  6
-                ],
-                "value": 0
-              }
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "range": [
+                    0,
+                    1
+                  ],
+                  "name": "x"
+                },
+                {
+                  "type": "Identifier",
+                  "range": [
+                    5,
+                    6
+                  ],
+                  "name": "y"
+                },
+                {
+                  "type": "Literal",
+                  "range": [
+                    0,
+                    6
+                  ],
+                  "value": false
+                }
+              ]
             }
           }
         ]
@@ -5936,66 +5947,77 @@ describe("Source Locations", function () {
               10
             ],
             "expression": {
-              "type": "BinaryExpression",
-  
+              "type": "CallExpression",
               "range": [
                 0,
                 10
               ],
-              "left": {
-                "type": "CallExpression",
-    
+              "callee": {
+                "type": "MemberExpression",
                 "range": [
                   0,
                   10
                 ],
-                "callee": {
+                "computed": false,
+                "object": {
                   "type": "MemberExpression",
-      
                   "range": [
                     0,
                     10
                   ],
+                  "computed": false,
                   "object": {
                     "type": "Identifier",
                     "range": [
-                      9,
-                      10
-                    ],
-                    "name": "y"
-                  },
-                  "property": {
-                    "type": "Literal",
-        
-                    "range": [
                       0,
                       10
                     ],
-                    "name": "indexOf"
+                    "name": "__pythonRuntime"
                   },
-                  "computed": false
-                },
-                "arguments": [
-                  {
+                  "property": {
                     "type": "Identifier",
                     "range": [
                       0,
-                      1
+                      10
                     ],
-                    "name": "x"
+                    "name": "ops"
                   }
-                ]
+                },
+                "property": {
+                  "type": "Identifier",
+                  "range": [
+                    0,
+                    10
+                  ],
+                  "name": "in"
+                }
               },
-              "operator": "<",
-              "right": {
-                "type": "Literal",
-    
-                "range": [
-                  0,
-                  10
-                ],
-                "value": 0
-              }
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "range": [
+                    0,
+                    1
+                  ],
+                  "name": "x"
+                },
+                {
+                  "type": "Identifier",
+                  "range": [
+                    9,
+                    10
+                  ],
+                  "name": "y"
+                },
+                {
+                  "type": "Literal",
+                  "range": [
+                    0,
+                    10
+                  ],
+                  "value": true
+                }
+              ]
             }
           }
         ]

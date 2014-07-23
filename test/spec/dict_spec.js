@@ -116,4 +116,18 @@ describe("Dictionary", function () {
     ";
     expect(util.run(code)).toEqual([1, 2]);
   });
+
+  it("'p' in {'p':7}", function () {
+    var code = "\
+    return 'p' in {'p':7}\n\
+    ";
+    expect(util.run(code)).toEqual(true);
+  });
+
+  it("'p' not in {'p':7}", function () {
+    var code = "\
+    return 'p' not in {'p':7}\n\
+    ";
+    expect(util.run(code)).toEqual(false);
+  });
 });
