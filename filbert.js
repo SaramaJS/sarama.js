@@ -2714,7 +2714,7 @@
           for (i = tmp.length - 1; i >= 0; i += step) ret.append(tmp[i]);
         } else {
           tmp = obj.slice(start, end);
-          if (step === 1) ret = tmp;
+          if (step === 1) ret = pythonRuntime.utils.createList(tmp);
           else for (i = 0; i < tmp.length; i += step) ret.append(tmp[i]);
         }
         return ret;
@@ -2734,6 +2734,14 @@
           else params.formals.push(arguments[i]);
         }
         return params;
+      },
+      createList: function () {
+        var ret = new pythonRuntime.objects.list();
+        if (arguments.length === 1 && arguments[0] instanceof Array)
+          for (var i in arguments[0]) ret.push(arguments[0][i]);
+        else
+          for (var i in arguments) ret.push(arguments[i]);
+        return ret;
       }
     },
 
@@ -2794,6 +2802,11 @@
         Object.defineProperty(obj, "type",
         {
           get: function () { return 'dict';},
+          enumerable: false
+        });
+        Object.defineProperty(obj, "isPython",
+        {
+          get: function () { return true; },
           enumerable: false
         });
         Object.defineProperty(obj, "items",
@@ -2865,6 +2878,11 @@
         Object.defineProperty(arr, "type",
         {
           get: function () { return 'list'; },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "isPython",
+        {
+          get: function () { return true; },
           enumerable: false
         });
         Object.defineProperty(arr, "append",
@@ -2967,7 +2985,7 @@
           value: function (start, end, step) {
             return pythonRuntime.internal.slice(this, start, end, step);
           },
-          enumerable : false
+          enumerable: false
         });
         Object.defineProperty(arr, "remove",
         {
@@ -2991,6 +3009,11 @@
         Object.defineProperty(arr, "type",
         {
           get: function () { return 'tuple'; },
+          enumerable: false
+        });
+        Object.defineProperty(arr, "isPython",
+        {
+          get: function () { return true; },
           enumerable: false
         });
         Object.defineProperty(arr, "count",

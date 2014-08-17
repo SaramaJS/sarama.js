@@ -455,4 +455,20 @@ describe("Runtime library tests", function () {
     expect(util.run(code)).toEqual(true);
   });
 
+  it("createList(4, 3, 'mahalo', 8998)", function () {
+    var code = "\n\
+    return __pythonRuntime.utils.createList(4, 3, 'mahalo', 8998)";
+    var list = util.run(code)
+    expect(list.isPython).toBe(true);
+    expect(list).toEqual([4, 3, 'mahalo', 8998]);
+  });
+
+  it("createList(['a', 'zoo', True, 45])", function () {
+    var code = "\n\
+    return __pythonRuntime.utils.createList(['a', 'zoo', True, 45])";
+    var list = util.run(code)
+    expect(list.isPython).toBe(true);
+    expect(list).toEqual(['a', 'zoo', true, 45]);
+  });
+
 });
