@@ -471,4 +471,13 @@ describe("Runtime library tests", function () {
     expect(list).toEqual(['a', 'zoo', true, 45]);
   });
 
+  it("createDict({'p1': 45, 'p2': False, 'p3': 'Bob'})", function () {
+    var code = "\n\
+    return __pythonRuntime.utils.createDict({'p1': 45, 'p2': False, 'p3': 'Bob'})";
+    var list = util.run(code)
+    expect(list.isPython).toBe(true);
+    expect(list).toEqual({'p1': 45, 'p2': false, 'p3': 'Bob'});
+  });
+
+
 });

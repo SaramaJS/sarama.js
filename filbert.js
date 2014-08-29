@@ -2722,6 +2722,14 @@
     },
 
     utils: {
+      createDict: function () {
+        var ret = new pythonRuntime.objects.dict();
+        if (arguments.length === 1 && arguments[0] instanceof Object)
+          for (var k in arguments[0]) ret[k] = arguments[0][k];
+        else
+          throw TypeError("createDict expects a single JavaScript object")
+        return ret;
+      },
       createParamsObj: function () {
         // In: expr, expr, ..., {id:expr, __kwp:true}, {id:expr, __kwp:true}, ...
         // Out: {formals:[expr, expr, ...], keywords:{id:expr, id:expr, ...}}
