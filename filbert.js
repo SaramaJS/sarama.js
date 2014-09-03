@@ -2207,7 +2207,7 @@
     expect(_bracketR);
 
     node.arguments = [start, end, step];
-    var sliceId = nc.createNodeFrom(base, "Identifier", { name: "pySlice" });
+    var sliceId = nc.createNodeFrom(base, "Identifier", { name: "_pySlice" });
     var memberExpr = nc.createNodeSpan(base, base, "MemberExpression", { object: base, property: sliceId, computed: false });
     node.callee = memberExpr;
     return parseSubscripts(finishNode(node, "CallExpression"), noCalls);
@@ -2696,7 +2696,7 @@
 
     internal: {
       // Only used within runtime
-      isSeq: function (a) { return a && (a.type === "list" || a.type === "tuple"); },
+      isSeq: function (a) { return a && (a._type === "list" || a._type === "tuple"); },
       slice: function (obj, start, end, step) {
         if (step == null || step === 0) step = 1; // TODO: step === 0 is a runtime error
         if (start == null) {
@@ -2756,11 +2756,11 @@
     ops: {
       add: function (a, b) {
         if (pythonRuntime.internal.isSeq(a) && pythonRuntime.internal.isSeq(b)) {
-          if (a.type !== b.type)
-            throw TypeError("can only concatenate " + a.type + " (not '" + b.type + "') to " + a.type);
+          if (a._type !== b._type)
+            throw TypeError("can only concatenate " + a._type + " (not '" + b._type + "') to " + a._type);
           var ret;
-          if (a.type === 'list') ret = new pythonRuntime.objects.list();
-          else if (a.type === 'tuple') ret = new pythonRuntime.objects.tuple();
+          if (a._type === 'list') ret = new pythonRuntime.objects.list();
+          else if (a._type === 'tuple') ret = new pythonRuntime.objects.tuple();
           if (ret) {
             for (var i = 0; i < a.length; i++) ret.push(a[i]);
             for (var i = 0; i < b.length; i++) ret.push(b[i]);
@@ -2777,8 +2777,8 @@
         // TODO: non-sequence operand must be an integer
         if (pythonRuntime.internal.isSeq(a) && !isNaN(parseInt(b))) {
           var ret;
-          if (a.type === 'list') ret = new pythonRuntime.objects.list();
-          else if (a.type === 'tuple') ret = new pythonRuntime.objects.tuple();
+          if (a._type === 'list') ret = new pythonRuntime.objects.list();
+          else if (a._type === 'tuple') ret = new pythonRuntime.objects.tuple();
           if (ret) {
             for (var i = 0; i < b; i++)
               for (var j = 0; j < a.length; j++) ret.push(a[j]);
@@ -2787,8 +2787,8 @@
         }
         else if (pythonRuntime.internal.isSeq(b) && !isNaN(parseInt(a))) {
           var ret;
-          if (b.type === 'list') ret = new pythonRuntime.objects.list();
-          else if (b.type === 'tuple') ret = new pythonRuntime.objects.tuple();
+          if (b._type === 'list') ret = new pythonRuntime.objects.list();
+          else if (b._type === 'tuple') ret = new pythonRuntime.objects.tuple();
           if (ret) {
             for (var i = 0; i < a; i++)
               for (var j = 0; j < b.length; j++) ret.push(b[j]);
@@ -2807,12 +2807,12 @@
       dict: function () {
         var obj = {};
         for (var i in arguments) obj[arguments[i][0]] = arguments[i][1];
-        Object.defineProperty(obj, "type",
+        Object.defineProperty(obj, "_type",
         {
           get: function () { return 'dict';},
           enumerable: false
         });
-        Object.defineProperty(obj, "isPython",
+        Object.defineProperty(obj, "_isPython",
         {
           get: function () { return true; },
           enumerable: false
@@ -2883,12 +2883,12 @@
       list: function () {
         var arr = [];
         arr.push.apply(arr, arguments);
-        Object.defineProperty(arr, "type",
+        Object.defineProperty(arr, "_type",
         {
           get: function () { return 'list'; },
           enumerable: false
         });
-        Object.defineProperty(arr, "isPython",
+        Object.defineProperty(arr, "_isPython",
         {
           get: function () { return true; },
           enumerable: false
@@ -2988,7 +2988,7 @@
           },
           enumerable: false
         });
-        Object.defineProperty(arr, "pySlice",
+        Object.defineProperty(arr, "_pySlice",
         {
           value: function (start, end, step) {
             return pythonRuntime.internal.slice(this, start, end, step);
@@ -3014,12 +3014,12 @@
       tuple: function () {
         var arr = [];
         arr.push.apply(arr, arguments);
-        Object.defineProperty(arr, "type",
+        Object.defineProperty(arr, "_type",
         {
           get: function () { return 'tuple'; },
           enumerable: false
         });
-        Object.defineProperty(arr, "isPython",
+        Object.defineProperty(arr, "_isPython",
         {
           get: function () { return true; },
           enumerable: false
@@ -3073,7 +3073,7 @@
           },
           enumerable: false
         });
-        Object.defineProperty(arr, "pySlice",
+        Object.defineProperty(arr, "_pySlice",
         {
           value: function (start, end, step) { 
             return pythonRuntime.internal.slice(this, start, end, step);
