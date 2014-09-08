@@ -442,7 +442,7 @@ describe("Runtime library tests", function () {
   it("tuple((1, 2, 3))", function () {
     var code = "\
     t = tuple((1, 2, 3))\n\
-    return t.type == 'tuple'\
+    return t._type == 'tuple'\
     ";
     expect(util.run(code)).toEqual(true);
   });
@@ -450,7 +450,7 @@ describe("Runtime library tests", function () {
   it("tuple([1, 223, 3])", function () {
     var code = "\
     t = tuple([1, 223, 3])\n\
-    return t.type == 'tuple'\
+    return t._type == 'tuple'\
     ";
     expect(util.run(code)).toEqual(true);
   });
@@ -458,25 +458,34 @@ describe("Runtime library tests", function () {
   it("createList(4, 3, 'mahalo', 8998)", function () {
     var code = "\n\
     return __pythonRuntime.utils.createList(4, 3, 'mahalo', 8998)";
-    var list = util.run(code)
-    expect(list.isPython).toBe(true);
+    var list = util.run(code);
+    expect(list._isPython).toBe(true);
     expect(list).toEqual([4, 3, 'mahalo', 8998]);
   });
 
   it("createList(['a', 'zoo', True, 45])", function () {
     var code = "\n\
     return __pythonRuntime.utils.createList(['a', 'zoo', True, 45])";
-    var list = util.run(code)
-    expect(list.isPython).toBe(true);
+    var list = util.run(code);
+    expect(list._isPython).toBe(true);
     expect(list).toEqual(['a', 'zoo', true, 45]);
   });
 
   it("createDict({'p1': 45, 'p2': False, 'p3': 'Bob'})", function () {
     var code = "\n\
     return __pythonRuntime.utils.createDict({'p1': 45, 'p2': False, 'p3': 'Bob'})";
-    var list = util.run(code)
-    expect(list.isPython).toBe(true);
-    expect(list).toEqual({'p1': 45, 'p2': false, 'p3': 'Bob'});
+    var dict = util.run(code);
+    expect(dict._isPython).toBe(true);
+    expect(dict).toEqual({'p1': 45, 'p2': false, 'p3': 'Bob'});
+  });
+
+  it("createDict({'type': 'merino wool'})", function () {
+    var code = "\n\
+    return __pythonRuntime.utils.createDict({'type': 'merino wool'})";
+    var dict = util.run(code);
+    expect(dict._type).toBe('dict');
+    expect(dict.type).toBe('merino wool');
+    expect(dict).toEqual({'type': 'merino wool'});
   });
 
 

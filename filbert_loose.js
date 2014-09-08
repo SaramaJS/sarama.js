@@ -642,7 +642,7 @@
     expect(tt.bracketR);
 
     node.arguments = [start, end, step];
-    var sliceId = nc.createNodeFrom(base, "Identifier", { name: "pySlice" });
+    var sliceId = nc.createNodeFrom(base, "Identifier", { name: "_pySlice" });
     var memberExpr = nc.createNodeSpan(base, base, "MemberExpression", { object: base, property: sliceId, computed: false });
     node.callee = memberExpr;
     return parseSubscripts(finishNode(node, "CallExpression"), noCalls);
