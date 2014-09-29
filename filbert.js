@@ -3002,6 +3002,19 @@
           },
           enumerable: false
         });
+        Object.defineProperty(arr, "sort",
+        {
+          value: function() {
+            for(var i = 0; i < this.length; i++) {
+              if(typeof this[i] !== 'number' || !isFinite(this[i])) {
+                  Array.sort(this);
+                  return;
+              }
+            }
+            Array.sort(this, function(a, b) { return a - b; });
+          },
+          enumerable: false
+        });
         Object.defineProperty(arr, "toString",
         {
           value: function () {
