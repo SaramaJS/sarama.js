@@ -3004,14 +3004,29 @@
         });
         Object.defineProperty(arr, "sort",
         {
-          value: function() {
-            for(var i = 0; i < this.length; i++) {
-              if(typeof this[i] !== 'number' || !isFinite(this[i])) {
-                  Array.sort(this);
-                  return;
-              }
+          value: function(x, reverse) {
+            var arr2 = this.slice(0);
+            if(typeof x != 'undefined') {
+              arr2.sort(x);
+              for(var i in this) this[i] = arr2[i];
+              if(reverse)
+                this.reverse();
             }
-            Array.sort(this, function(a, b) { return a - b; });
+            else {
+              for(var i in this) {
+                if(typeof this[i] !== 'number' || !isFinite(this[i])) {
+                  arr2.sort();
+                  for (var j in this) this[j] = arr2[j];
+                  if(reverse)
+                    this.reverse();
+                  return;
+                }
+              }
+              arr2.sort(function(a, b) { return a - b; });
+              for(var i in this) this[i] = arr2[i];
+              if(reverse)
+                this.reverse();
+            }
           },
           enumerable: false
         });
@@ -3271,7 +3286,7 @@
       sorted: function (iterable, key, reverse) {
         var ret = new pythonRuntime.objects.list();
         for (var i in iterable) ret.push(iterable[i]);
-        ret = key ? ret.sort(key) : ret.sort();
+        if(key) ret.sort(key); else ret.sort();
         if (reverse) ret.reverse();
         return ret;
       },
