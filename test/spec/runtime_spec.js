@@ -402,7 +402,8 @@ describe("Runtime library tests", function () {
 
   it("sorted([2, 1])", function () {
     var code = "\
-    return sorted([2, 1])\n\
+    a = [2, 1]\n\
+    return sorted(a)\n\
     ";
     expect(util.run(code)).toEqual([1, 2]);
   });
@@ -411,7 +412,8 @@ describe("Runtime library tests", function () {
     var code = "\
     def cmp(x):\n\
       return -x\n\
-    return sorted([2, 1], cmp)\n\
+    a = [2, 1]\n\
+    return sorted(a, cmp)\n\
     ";
     expect(util.run(code)).toEqual([2, 1]);
   });
@@ -420,7 +422,8 @@ describe("Runtime library tests", function () {
     var code = "\
     def cmp(x):\n\
       return -x\n\
-    return sorted([2, 1], cmp, True)\n\
+    a = [2, 1]\n\
+    return sorted(a, cmp, True)\n\
     ";
     expect(util.run(code)).toEqual([1, 2]);
   });

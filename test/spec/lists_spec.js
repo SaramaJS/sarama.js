@@ -172,7 +172,6 @@ describe("Lists", function () {
     return 'a' not in [1, 2, ('a', 4)]";
     expect(util.run(code)).toEqual(true);
   });
-
   it("l[-3]", function () {
     var code = "\n\
     l = [1, 2, 3]\n\
@@ -186,4 +185,39 @@ describe("Lists", function () {
     expect(util.run(code)).toEqual(true);
   });
 
+  it("[100, 1, 0, 22, 33, 5, 55].sort()", function () {
+    var code = "\n\
+    a = [100, 1, 0, 22, 33, 5, 55]\n\
+    a.sort()\n\
+    return a";
+    expect(util.run(code)).toEqual([0, 1, 5, 22, 33, 55, 100]);
+  });
+
+  it("[100, 1, 0, 22, 33, 5, 55].sort(mykey)", function () {
+    var code = "\n\
+    a = [100, 1, 0, 22, 33, 5, 55]\n\
+    def mykey(x):\n\
+      return -x\n\
+    a.sort(mykey)\n\
+    return a";
+    expect(util.run(code)).toEqual([100, 55, 33, 22, 5, 1, 0]);
+  });
+
+  it("[100, 1, 0, 22, 33, 5, 55].sort(mykey, True)", function () {
+    var code = "\n\
+    a = [100, 1, 0, 22, 33, 5, 55]\n\
+    def mykey(x):\n\
+      return -x\n\
+    a.sort(mykey, True)\n\
+    return a";
+    expect(util.run(code)).toEqual([0, 1, 5, 22, 33, 55, 100]);
+  });
+
+  it("['100', '1', '0', '22', '33', '5', '55'].sort()", function () {
+    var code = "\n\
+    a = ['100', '1', '0', '22', '33', '5', '55']\n\
+    a.sort()\n\
+    return a";
+    expect(util.run(code)).toEqual(['0', '1', '100', '22', '33', '5', '55']);
+  });
 });
