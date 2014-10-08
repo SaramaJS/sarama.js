@@ -3006,27 +3006,40 @@
         {
           value: function(x, reverse) {
             var arr2 = this.slice(0);
-            if(typeof x != 'undefined') {
-              arr2.sort(x);
-              for(var i in this) this[i] = arr2[i];
-              if(reverse)
-                this.reverse();
+            var apply_key = function(a, numerical) {
+              var arr3 = arr2.map(x);
+              // construct a dict that maps the array before and after the map
+              var mapping = {}
+              for(var i in arr3) mapping[arr3[i]] = arr2[i];
+              if(numerical)
+                arr3.sort(function(a, b) { return a - b; });
+              else
+                arr3.sort()
+              for(var i in a) a[i] = mapping[arr3[i]];
             }
-            else {
-              for(var i in this) {
-                if(typeof this[i] !== 'number' || !isFinite(this[i])) {
+            for(var i in this) {
+              if(typeof this[i] !== 'number' || !isFinite(this[i])) {
+                if(typeof x != 'undefined') {
+                  apply_key(this, false);
+                }
+                else {
                   arr2.sort();
                   for (var j in this) this[j] = arr2[j];
-                  if(reverse)
-                    this.reverse();
-                  return;
                 }
+                if(reverse)
+                  this.reverse();
+                return;
               }
+            }
+            if(typeof x != 'undefined') {
+              apply_key(this, true);
+            }
+            else {
               arr2.sort(function(a, b) { return a - b; });
               for(var i in this) this[i] = arr2[i];
-              if(reverse)
-                this.reverse();
             }
+            if(reverse)
+              this.reverse();
           },
           enumerable: false
         });
