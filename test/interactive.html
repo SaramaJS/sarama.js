@@ -27,11 +27,13 @@
         }
 
         var parseFn = filbert.parse;
+        var ranges = false;
+        var locations = false;
         function compile() {
             try {
                 outputText.value = "";
                 var code = pythonText.value;
-                var ast = parseFn(code);
+                var ast = parseFn(code, { locations: locations, ranges: ranges });
                 astText.value = JSON.stringify(ast, null, 2);
             }
             catch (e) {
@@ -55,6 +57,15 @@
             else parseFn = filbert.parse;
             compile();
         }
+        
+        function updateLocations(checked) {
+          locations = checked;
+          compile();
+        }
+        function updateRanges(checked) {
+          ranges = checked;
+          compile();
+        }
     </script>
 </head>
 <body>
@@ -62,6 +73,8 @@
         <option value="normal">filbert.js</option>
         <option value="loose">filbert_loose.js</option>
     </select>
+    <input type="checkbox" value="locations" onClick="updateLocations(this.checked)">locations</input>
+    <input type="checkbox" value="ranges" onClick="updateRanges(this.checked)">ranges</input>
     </div>
     <textarea id='pythonText' style='border: 1px solid black; width:49%; height:30%;' onkeyup="inputChange()">print('Type your Python code in the first box.')</textarea>
     <textarea id='jsText' style='border: 1px solid blue; width: 49%; height: 30%; ' readonly='true'></textarea>
