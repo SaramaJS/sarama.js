@@ -117,6 +117,28 @@ describe("Basics", function () {
     expect(util.run(code)).toBe(8);
   });
 
+  it("while loop", function () {
+    var code = "\
+    data = [4, 2, 65, 7]\n\
+    total = 0\n\
+    i = 0\n\
+    while total < 60:\n\
+      total += data[i]\n\
+      i += 1\n\
+    return total\n\
+    ";
+    expect(util.run(code)).toBe(71);
+  });
+
+  it("while loop single line", function () {
+    var code = "\
+    total = 0\n\
+    while total < 5: total += 1\n\
+    return total\n\
+    ";
+    expect(util.run(code)).toBe(5);
+  });
+
   it("for loop", function () {
     var code = "\
     data = [4, 2, 65, 7]\n\

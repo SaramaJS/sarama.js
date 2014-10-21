@@ -1949,7 +1949,8 @@
     var node = startNode();
     node.body = [];
     if (eat(_newline)) {
-      eat(_indent);
+      if (tokType !== _indent) raise(tokStart, "Unexpected indent");
+      expect(_indent);
       while (!eat(_dedent) && !eat(_eof)) {
         var stmt = parseStatement();
         if (stmt) node.body.push(stmt);
