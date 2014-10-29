@@ -4,7 +4,8 @@ var util = require('./util.js');
 
 describe("Errors", function () {
 
-  it("Indent error while block", function () {
+  xit("Indent error while block", function () {
+    // NOTE: Currently supporting empty Suite blocks
     var code = "\
 while True:\n\
 break\n\
@@ -20,7 +21,8 @@ break\n\
     expect(error.loc).toEqual({line: 2, column: 0});
   });
 
-  it("Indent error if block", function () {
+  xit("Indent error if block", function () {
+    // NOTE: Currently supporting empty Suite blocks
     var code = "\
 if True:\n\
 x = 5\n\

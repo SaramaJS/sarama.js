@@ -1946,16 +1946,18 @@
   // Will replace parseBlock eventually
 
   function parseSuite() {
+    // NOTE: This is not strictly valid Python for this to be an empty block
     var node = startNode();
     node.body = [];
     if (eat(_newline)) {
-      if (tokType !== _indent) raise(tokStart, "Unexpected indent");
-      expect(_indent);
-      while (!eat(_dedent) && !eat(_eof)) {
-        var stmt = parseStatement();
-        if (stmt) node.body.push(stmt);
+      if (tokType === _indent) {
+        expect(_indent);
+        while (!eat(_dedent) && !eat(_eof)) {
+          var stmt = parseStatement();
+          if (stmt) node.body.push(stmt);
+        }
       }
-    } else {
+    } else if (tokType !== _eof) {
       node.body.push(parseStatement());
       next();
     }
