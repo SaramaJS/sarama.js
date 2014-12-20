@@ -13,7 +13,12 @@ Check out the [demo page](https://rawgit.com/differentmatt/filbert/master/test/i
 
 ## Want to contribute?
 
-Great!  Feel free to [submit a pull request](https://help.github.com/articles/using-pull-requests), file some [GitHub issues](https://github.com/differentmatt/filbert/issues), or [email Matt](mailto:mattlott@gmail.com)
+Thank you, we really appreciate you taking the time to help!
+
+Filbert is under active development at <https://github.com/differentmatt/filbert>.
+Please [submit pull requests](https://help.github.com/articles/using-pull-requests)
+or file [GitHub issues](https://github.com/differentmatt/filbert/issues) to
+that repository. You can also [email Matt](mailto:mattlott@gmail.com).
 
 ## Installation
 
@@ -71,8 +76,8 @@ references to a '\__pythonRuntime' object).
 **tokenize**`(input, options)` exports a primitive interface to
 Filbert's tokenizer. The function takes an input string and options
 similar to `parse`, and returns a function that can be called repeatedly
-to read a single token, and returns a `{start, end, type, value}` object 
-(with added `startLoc` and `endLoc` properties when the `locations` option 
+to read a single token, and returns a `{start, end, type, value}` object
+(with added `startLoc` and `endLoc` properties when the `locations` option
 is enabled). This object will be reused (updated) for each token, so you
 can't count on it staying stable.
 
@@ -110,7 +115,7 @@ Keywords:
 >as assert del except finally from import global lambda nonlocal raise try with yield
 
 Built-ins:
->bin() bytearray() bytes() callable() classmethod() compile() complex() delattr() dir() divmod() eval() exec() format() frozenset() getattr() globals() hasattr() hash() help() id() input() isinstance() issubclass() iter() locals() memoryview() next() object() open() property() set() setattr() slice() staticmethod() super() type() vars() zip() \__import__() 
+>bin() bytearray() bytes() callable() classmethod() compile() complex() delattr() dir() divmod() eval() exec() format() frozenset() getattr() globals() hasattr() hash() help() id() input() isinstance() issubclass() iter() locals() memoryview() next() object() open() property() set() setattr() slice() staticmethod() super() type() vars() zip() \__import__()
 
 ## Testing
 
