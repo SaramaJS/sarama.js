@@ -2829,7 +2829,7 @@
         // Out: {formals:[expr, expr, ...], keywords:{id:expr, id:expr, ...}}
         var params = { formals: new pythonRuntime.objects.list(), keywords: new pythonRuntime.objects.dict() };
         for (var i = 0; i < arguments.length; i++) {
-          if (arguments[i].__kwp === true) {
+          if (arguments[i] && arguments[i].__kwp === true) {
             for (var k in arguments[i])
               if (k !== '__kwp') params.keywords[k] = arguments[i][k];
           }

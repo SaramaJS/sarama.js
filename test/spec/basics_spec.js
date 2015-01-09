@@ -293,4 +293,21 @@ describe("Basics", function () {
     expect(util.run(code)).toEqual(125);
   });
 
+  it("None function param", function () {
+    var code = "\
+    def is_sandyak(enemy):\n\
+      return False\n\
+    def is_soldier(enemy):\n\
+      if enemy and not is_sandyak(enemy):\n\
+        return True\n\
+      return False\n\
+    enemy = None\n\
+    if is_soldier(enemy):\n\
+      print('Let us flee.')\n\
+      return True\n\
+    return False\n\
+    ";
+    expect(util.run(code)).toEqual(false);
+  });
+  
 });
