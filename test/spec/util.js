@@ -24,3 +24,17 @@ exports.run = function (code) {
     return e;
   }
 }
+
+exports.runInEnv = function (code, env) {
+    var lines = code.split(/\r\n|[\n\r\u2028\u2029]/g);
+    for (var i in lines) lines[i] = "  " + lines[i];
+    var indentedCode = lines.join("\n");
+    var fbody = parse(code)
+    var code = escodegen.generate(fbody).split(/\n/)
+    for ( var idx in env ) {
+      code.unshift('var ' + idx + ' = ' + JSON.stringify(env[idx]) + ';' );
+    }
+    code[code.length - 1] = "return " + code[code.length - 1];
+    var fxn = new Function(filbert.defaultOptions.runtimeParamName, code.join('\n'));
+    return fxn.call(null, filbert.pythonRuntime);
+}

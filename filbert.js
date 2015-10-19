@@ -2721,6 +2721,9 @@
           else for (i = 0; i < tmp.length; i += step) ret.append(tmp[i]);
         }
         return ret;
+      },
+      isJSArray: Array.isArray || function(obj) {
+        return toString.call(obj) === '[object Array]';
       }
     },
 
@@ -3094,6 +3097,8 @@
       },
       subscriptIndex: function (o, i) {
         if (pythonRuntime.internal.isSeq(o) && i < 0) return o.length + i;
+        if (pythonRuntime.internal.isJSArray(o) && i < 0 ) return o.length + i;
+        if ( typeof o === "string" && i < 0 ) return o.length + i;
         return i;
       }
     },
