@@ -3239,6 +3239,9 @@
       chr: function(i) {
         return String.fromCharCode(i); // TODO: Error code for not 0 <= i <= 1114111
       },
+      divmod: function(a, b) {
+        return pythonRuntime.objects.tuple(Math.floor(a/b), a%b);
+      },
       enumerate: function(iterable, start) {
         start = start || 0;
         var ret = new pythonRuntime.objects.list();
