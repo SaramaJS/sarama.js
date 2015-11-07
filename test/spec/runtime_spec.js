@@ -138,6 +138,13 @@ describe("Runtime library tests", function () {
     expect(util.run(code)).toEqual('a');
   });
 
+  it("divmod(17, 6)", function () {
+    var code = "\
+    return str(divmod(17, 6))
+    ";
+    expect(util.run(code)).toEqual('(2, 5)');
+  });
+
   it("enumerate(seq)", function () {
     var code = "\
     seasons = ['Spring', 'Summer', 'Fall', 'Winter']\n\
