@@ -960,13 +960,27 @@
 
   function readString(quote) {
     tokPos++;
+    var ch = input.charCodeAt(tokPos);
+    var tripleQuoted = false;
+    if (ch === quote && input.charCodeAt(tokPos+1) === quote) {
+      tripleQuoted = true;
+      tokPos += 2;
+    }
     var out = "";
     for (;;) {
       if (tokPos >= inputLen) raise(tokStart, "Unterminated string constant");
       var ch = input.charCodeAt(tokPos);
       if (ch === quote) {
-        ++tokPos;
-        return finishToken(_string, out);
+        if (tripleQuoted) {
+          if (input.charCodeAt(tokPos+1) === quote &&
+              input.charCodeAt(tokPos+2) === quote) {
+            tokPos += 3;
+            return finishToken(_string, out);
+          }
+        } else {
+          ++tokPos;
+          return finishToken(_string, out);
+        }
       }
       if (ch === 92) { // '\'
         ch = input.charCodeAt(++tokPos);
@@ -1006,7 +1020,13 @@
           }
         }
       } else {
-        if (ch === 13 || ch === 10 || ch === 8232 || ch === 8233) raise(tokStart, "Unterminated string constant");
+        if (ch === 13 || ch === 10 || ch === 8232 || ch === 8233) {
+          if (tripleQuoted) {
+            ++tokPos;
+            if (ch === 13 && input.charCodeAt(tokPos) == 10) ++tokPos;
+            if (options.location) { tokLineStart = tokPos; ++tokCurLine; }
+          } else raise(tokStart, "Unterminated string constant");
+        }
         out += String.fromCharCode(ch); // '\'
         ++tokPos;
       }
