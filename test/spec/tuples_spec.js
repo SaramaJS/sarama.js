@@ -159,5 +159,14 @@ describe("Tuples", function () {
     expect(util.run(code)).toEqual(false);
   });
 
+  it("Multiline literal", function () {
+    var code = "\n\
+    return (\n\
+      1,\n\
+      2,\n\
+      3\n\
+    )";
+    expect(util.run(code)).toEqual([1,2,3]);
+  });
 
 });

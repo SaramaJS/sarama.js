@@ -140,8 +140,7 @@ describe("Runtime library tests", function () {
 
   it("divmod(17, 6)", function () {
     var code = "\
-    return str(divmod(17, 6))
-    ";
+    return str(divmod(17, 6))";
     expect(util.run(code)).toEqual('(2, 5)');
   });
 
