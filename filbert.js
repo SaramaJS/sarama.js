@@ -198,10 +198,11 @@
   var lastStart, lastEnd, lastEndLoc;
 
   // This is the parser's state. `inFunction` is used to reject
-  // `return` statements outside of functions, and `strict`
-  // indicates whether strict mode is on.
+  // `return` statements outside of functions, `strict` indicates
+  // whether strict mode is on, and `bracketNesting` tracks the level
+  // of nesting within brackets for implicit lint continuation.
 
-  var inFunction, strict;
+  var inFunction, strict, bracketNesting;
 
   // This function is used to raise exceptions on parse errors. It
   // takes an offset integer (into the current `input`) to indicate
@@ -554,6 +555,8 @@
     tokEnd = tokPos;
     if (options.locations) tokEndLoc = new Position;
     tokType = type;
+    if (type === _parenL || type === _braceL || type === _bracketL) ++bracketNesting;
+    if (type === _parenR || type === _braceR || type === _bracketR) --bracketNesting;
     if (type !== _newline) skipSpace();
     tokVal = val;
     tokRegexpAllowed = type.beforeExpr;
@@ -584,6 +587,11 @@
       var ch = input.charCodeAt(tokPos);
       if (ch === 35) skipLineComment();
       else if (isSpace(ch)) ++tokPos;
+      else if (bracketNesting > 0 && isNewline(ch)) {
+        if (ch === 13 && input.charCodeAt(tokPos+1) == 10) ++tokPos;
+        if (options.location) { tokLineStart = tokPos; ++tokCurLine; }
+        ++tokPos;
+      }
       else break;
     }
   }
@@ -593,6 +601,14 @@
       ch === 9 || ch === 11 || ch === 12 ||
       ch === 160 || // '\xa0'
       ch >= 5760 && nonASCIIwhitespace.test(String.fromCharCode(ch))) {
+      return true;
+    }
+    return false;
+  }
+
+  function isNewline(ch) {
+    if (ch === 10 || ch === 13 ||
+      ch === 8232 || ch === 8233) {
       return true;
     }
     return false;
@@ -1785,6 +1801,7 @@
     lastStart = lastEnd = tokPos;
     if (options.locations) lastEndLoc = new Position;
     inFunction = strict = null;
+    bracketNesting = 0;
     readToken();
     var node = program || startNode();
     if (!program) node.body = [];
