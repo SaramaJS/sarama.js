@@ -564,7 +564,7 @@
 
   function skipLine() {
     var ch = input.charCodeAt(++tokPos);
-    while (tokPos < inputLen && ch !== 10 && ch !== 13 && ch !== 8232 && ch !== 8233) {
+    while (tokPos < inputLen && !isNewline(ch)) {
       ++tokPos;
       ch = input.charCodeAt(tokPos);
     }
@@ -698,7 +698,7 @@
       if (isSpace(ch)) {
         indent += String.fromCharCode(ch);
         ++indentPos;
-      } else if (ch === 13 || ch === 10 || ch === 8232 || ch === 8233) { // newline
+      } else if (isNewline(ch)) { // newline
         indent = "";
         if (ch === 13 && input.charCodeAt(indentPos + 1) === 10) ++indentPos;
         ++indentPos;
@@ -1020,7 +1020,7 @@
           }
         }
       } else {
-        if (ch === 13 || ch === 10 || ch === 8232 || ch === 8233) {
+        if (isNewline(ch)) {
           if (tripleQuoted) {
             out += String.fromCharCode(ch);
             ++tokPos;
