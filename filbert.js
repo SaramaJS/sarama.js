@@ -1022,13 +1022,18 @@
       } else {
         if (ch === 13 || ch === 10 || ch === 8232 || ch === 8233) {
           if (tripleQuoted) {
+            out += String.fromCharCode(ch);
             ++tokPos;
-            if (ch === 13 && input.charCodeAt(tokPos) == 10) ++tokPos;
+            if (ch === 13 && input.charCodeAt(tokPos) == 10) {
+              ++tokPos;
+              out += "\n";
+            }
             if (options.location) { tokLineStart = tokPos; ++tokCurLine; }
           } else raise(tokStart, "Unterminated string constant");
+        } else {
+          out += String.fromCharCode(ch); // '\'
+          ++tokPos;
         }
-        out += String.fromCharCode(ch); // '\'
-        ++tokPos;
       }
     }
   }
