@@ -598,7 +598,8 @@
       }
       else if (isSpace(ch)) ++tokPos;
       else if (bracketNesting > 0 && isNewline(ch)) {
-        if (ch === 13 && input.charCodeAt(tokPos+1) === 10) tokPos += 2;
+        if (ch === 13 && input.charCodeAt(tokPos+1) === 10) ++tokPos;
+        ++tokPos;
         if (options.location) { tokLineStart = tokPos; ++tokCurLine; }
       }
       else break;
