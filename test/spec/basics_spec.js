@@ -309,5 +309,13 @@ describe("Basics", function () {
     ";
     expect(util.run(code)).toEqual(false);
   });
+
+  it("Explicit line continuation", function () {
+    var code = "\
+    return 1+\\\n\
+    2\\\n\
+    +3";
+    expect(util.run(code)).toBe(6);
+  })
   
 });
