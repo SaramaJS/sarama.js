@@ -588,9 +588,8 @@
       if (ch === 35) skipLineComment();
       else if (isSpace(ch)) ++tokPos;
       else if (bracketNesting > 0 && isNewline(ch)) {
-        if (ch === 13 && input.charCodeAt(tokPos+1) == 10) ++tokPos;
+        if (ch === 13 && input.charCodeAt(tokPos+1) === 10) tokPos += 2;
         if (options.location) { tokLineStart = tokPos; ++tokCurLine; }
-        ++tokPos;
       }
       else break;
     }
@@ -1024,7 +1023,7 @@
           if (tripleQuoted) {
             out += String.fromCharCode(ch);
             ++tokPos;
-            if (ch === 13 && input.charCodeAt(tokPos) == 10) {
+            if (ch === 13 && input.charCodeAt(tokPos) === 10) {
               ++tokPos;
               out += "\n";
             }
