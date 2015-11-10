@@ -586,6 +586,16 @@
     while (tokPos < inputLen) {
       var ch = input.charCodeAt(tokPos);
       if (ch === 35) skipLineComment();
+      else if (ch === 92) {
+        ++tokPos;
+        if (isNewline(input.charCodeAt(tokPos))) {
+          if (input.charCodeAt(tokPos) === 13 && input.charCodeAt(tokPos+1) === 10) ++tokPos;
+          ++tokPos;
+          if (options.location) { tokLineStart = tokPos; ++tokCurLine; }
+        } else {
+          raise(tokPos, "Unexpected character after line continuation character");
+        }
+      }
       else if (isSpace(ch)) ++tokPos;
       else if (bracketNesting > 0 && isNewline(ch)) {
         if (ch === 13 && input.charCodeAt(tokPos+1) === 10) tokPos += 2;
