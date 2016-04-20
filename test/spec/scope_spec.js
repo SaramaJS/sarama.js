@@ -90,4 +90,13 @@ describe("Scope", function () {
     ";
     expect(util.run(code)).toEqual('global');
   });
+  it("dont clobber func params", function () {
+    var code = "\
+    def foo(x):\n\
+      x += 10\n\
+      return x\n\
+    return foo(7)\n\
+    ";
+    expect(util.run(code)).toEqual(17);
+  });
 });
