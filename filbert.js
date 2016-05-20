@@ -2707,74 +2707,6 @@
     return node;
   }
 
-  function PythonDict() {
-
-  }
-
-  Object.defineProperties(PythonDict.prototype, {
-    "_type": {
-      get: function () { return 'dict';},
-      enumerable: false
-    },
-    "_isPython": {
-      get: function () { return true; },
-      enumerable: false
-    },
-    "items": {
-      value: function () {
-        var items = new pythonRuntime.objects.list();
-        for (var k in this) items.append(new pythonRuntime.objects.tuple(k, this[k]));
-        return items;
-      },
-      enumerable: false
-    },
-    "length": {
-      get: function () {
-        return Object.keys(this).length;
-      },
-      enumerable: false
-    },
-    "clear": {
-      value: function () {
-        for (var i in this) delete this[i];
-      },
-      enumerable: false
-    },
-    "get": {
-      value: function (key, def) {
-        if (key in this) return this[key];
-        else if (def !== undefined) return def;
-        return null;
-      },
-      enumerable: false
-    },
-    "keys": {
-      value: function () {
-        return Object.keys(this);
-      },
-      enumerable: false
-    },
-    "pop": {
-      value: function (key, def) {
-        var value;
-        if (key in this) {
-          value = this[key];
-          delete this[key];
-        } else if (def !== undefined) value = def;
-        else return new Error("KeyError");
-        return value;
-      },
-      enumerable: false
-    }, "values": {
-      value: function () {
-        var values = new pythonRuntime.objects.list();
-        for (var key in this) values.append(this[key]);
-        return values;
-      },
-      enumerable: false
-    }
-  });
-
   // ## Python runtime library
 
   var pythonRuntime = exports.pythonRuntime = {
@@ -2839,6 +2771,10 @@
         Object.defineProperties(list, pythonRuntime.utils.listPropertyDescriptor);
         return list;
       },
+      convertToDict: function (dict) {
+        Object.defineProperties(dict, pythonRuntime.utils.dictPropertyDescriptor);
+        return dict;
+      }, 
       listPropertyDescriptor: {
           "_type": {
             get: function () { return 'list'; },
@@ -2999,9 +2935,71 @@
         else
           for (var i in arguments) ret.push(arguments[i]);
         return ret;
+      },
+      dictPropertyDescriptor: {
+        "_type": {
+          get: function () { return 'dict';},
+          enumerable: false
+        },
+        "_isPython": {
+          get: function () { return true; },
+          enumerable: false
+        },
+        "items": {
+          value: function () {
+            var items = new pythonRuntime.objects.list();
+            for (var k in this) items.append(new pythonRuntime.objects.tuple(k, this[k]));
+            return items;
+          },
+          enumerable: false
+        },
+        "length": {
+          get: function () {
+            return Object.keys(this).length;
+          },
+          enumerable: false
+        },
+        "clear": {
+          value: function () {
+            for (var i in this) delete this[i];
+          },
+          enumerable: false
+        },
+        "get": {
+          value: function (key, def) {
+            if (key in this) return this[key];
+            else if (def !== undefined) return def;
+            return null;
+          },
+          enumerable: false
+        },
+        "keys": {
+          value: function () {
+            return Object.keys(this);
+          },
+          enumerable: false
+        },
+        "pop": {
+          value: function (key, def) {
+            var value;
+            if (key in this) {
+              value = this[key];
+              delete this[key];
+            } else if (def !== undefined) value = def;
+            else return new Error("KeyError");
+            return value;
+          },
+          enumerable: false
+        }, "values": {
+          value: function () {
+            var values = new pythonRuntime.objects.list();
+            for (var key in this) values.append(this[key]);
+            return values;
+          },
+          enumerable: false
+        }
       }
     },
-
     ops: {
       add: function (a, b) {
         if (typeof a === 'object' && pythonRuntime.internal.isSeq(a) && pythonRuntime.internal.isSeq(b)) {
@@ -3351,5 +3349,10 @@
     }
   };
 
+  function PythonDict() {
+
+  }
+
+  Object.defineProperties(PythonDict.prototype, pythonRuntime.utils.dictPropertyDescriptor);
 
 });
