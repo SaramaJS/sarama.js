@@ -2047,8 +2047,8 @@
             exprNode = nc.createNodeRuntimeCall(node, 'ops', 'in', [left, right, notLit]);
           } else raise(tokPos, "Expected 'not in' comparison operator");
         } else if (op === _plusMin && val === '+' || op === _multiplyModulo && val === '*') {
-          node.arguments = [left];
-          node.arguments.push(parseExprOp(parseMaybeUnary(noIn), prec, noIn));
+          right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
+          node.arguments = [left, right];
           finishNode(node, "CallExpression");
           node.callee = nc.createNodeOpsCallee(node, op === _plusMin ? "add" : "multiply");
           exprNode = node;
@@ -2467,6 +2467,7 @@
     var __hasParams = nc.createNodeSpan(r, r, "Identifier", { name: '__hasParams' + suffix });
     var __params = nc.createNodeSpan(node.id, node.id, "Identifier", { name: '__params' + suffix });
     var __realArgCount = nc.createNodeSpan(node.id, node.id, "Identifier", { name: '__realArgCount' + suffix });
+    var paramHandler = [];
 
     if (formals.length > 0 || argsId || kwargsId) {
       var argumentsLen = nc.createNodeSpan(r, r, "BinaryExpression", {
@@ -2509,7 +2510,7 @@
         }),
         alternate: nc.createNodeSpan(r, r, "ObjectExpression", { properties: [] })
       });
-      node.body.body.push(nc.createGeneratedVarDeclFromId(r, __params, setParams));
+      paramHandler.push(nc.createGeneratedVarDeclFromId(r, __params, setParams));
 
       // var __realArgCount = arguments.length - __params0 ? 0 : 1;
       var setRealArgCount = (nc.createGeneratedVarDeclFromId(node.id,
@@ -2526,7 +2527,7 @@
         })
       ));
 
-      node.body.body.push(setRealArgCount);
+      paramHandler.push(setRealArgCount);
     }
 
     // Verify that argument names are not repeated
@@ -2535,9 +2536,10 @@
       for (var j = 0; j < i; ++j) if (formals[i].id.name === formals[j].id.name)
         raise(formals[i].id.start, "Argument name clash");
     }
-
-
+    var fastModePossible = true;
+    
     for ( i = 0; i < formals.length; ++i) {
+      if ( formals[i].expr ) fastModePossible = false;
       var argName = nc.createNodeSpan(node.id, node.id, "Identifier", { name: formals[i].id.name });
       var argNameStr = nc.createNodeSpan(node.id, node.id, "Literal", { value: formals[i].id.name });
       var argSet = nc.createNodeSpan(node.id, node.id, "AssignmentExpression", {
@@ -2559,7 +2561,18 @@
         consequent: nc.createNodeSpan(node.id, node.id, "ExpressionStatement", { expression: argSet })
       });
 
-      node.body.body.push(argCheck);
+      paramHandler.push(argCheck);
+    }
+
+    if ( paramHandler.length  > 0 ) {
+      if ( fastModePossible ) {
+            node.body.body.push(nc.createNodeSpan(node.id, node.id, "IfStatement", {
+          test: __hasParams,
+          consequent: nc.createNodeSpan(node.id, node.id, "BlockStatement", {body: paramHandler})
+        }));
+      } else {
+        Array.prototype.push.apply(node.body.body, paramHandler);
+      }
     }
 
     if (argsId) {
