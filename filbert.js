@@ -2243,6 +2243,9 @@
     case _indent:
       raise(tokStart, "Unexpected indent");
 
+    case _else:
+      raise(tokPos, '`else` needs to line up with its `if`.');
+
     default:
       unexpected();
     }
