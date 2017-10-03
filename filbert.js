@@ -362,6 +362,7 @@ var _is = { keyword: "is", prec: 4, beforeExpr: true };
 // Map keyword names to token types.
 
 var keywordTypes = {
+  "assert": _assert,
   "dict": _dict,
   "False": _false, "None": _none, "True": _true, "and": _and, "as": _as,
   "break": _break, "class": _class, "continue": _continue, "def": _def, "del": _del,
