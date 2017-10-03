@@ -55,4 +55,40 @@ if True:\n\
     expect(error.loc).toEqual({line: 3, column: 2});
   });
 
+  it("else with no colon", function () {
+    var code = "\
+if False:\n\
+  x = 5\n\
+else\n\
+  x = 7\n\
+";
+    var error;
+    try {
+      util.parse(code);
+    } catch (e) {
+      error = e;
+    }
+    expect(error.message).toEqual("Unexpected token");
+    expect(error.pos).toEqual(22);
+    expect(error.loc).toEqual({line: 3, column: 4});
+  });
+
+  it("JS-style else if", function () {
+    var code = "\
+if False:\n\
+  x = 5\n\
+else if True:\n\
+  x = 7\n\
+";
+    var error;
+    try {
+      util.parse(code);
+    } catch (e) {
+      error = e;
+    }
+    expect(error.message).toEqual("Unexpected token");
+    expect(error.pos).toEqual(23);
+    expect(error.loc).toEqual({line: 3, column: 5});
+  });
+
 });

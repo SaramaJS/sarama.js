@@ -46,13 +46,13 @@ describe("Basics", function () {
 
   it("with indent, if elif else, else", function () {
     var code = "\
-    x = -0\n\
-    if x == 2:\n\
-      return '2'\n\
-    elif x == 4:\n\
-      return '4'\n\
-    else:\n\
-      return 'else'\n\
+x = -0\n\
+if x == 2:\n\
+  return '2'\n\
+elif x == 4:\n\
+  return '4'\n\
+else  :\n\
+  return 'else'\n\
     ";
     expect(util.run(code)).toBe('else');
   });

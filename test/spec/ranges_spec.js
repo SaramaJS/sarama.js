@@ -661,7 +661,7 @@ describe("Source Locations", function () {
     it("class with inheritance", function () {
       var code = "class ParentClass:\n  data = 5\n  def f(self):\n    return 'hello world'\nclass MyClass(ParentClass):\n  def __init__(self, s):\n    self.str = s\nx = MyClass('test')\nprint(x.f())\nprint(x.str)";
       var ast = util.parse(code, { locations: true });
-      var expected =
+      var expected = 
       {
         "type": "Program",
         "loc": {
@@ -937,129 +937,28 @@ describe("Source Locations", function () {
                           "type": "ReturnStatement",
                           "loc": {
                             "start": {
-                              "line": 3,
-                              "column": 14
+                              "line": 4,
+                              "column": 4
                             },
                             "end": {
-                              "line": 5,
-                              "column": 0
+                              "line": 4,
+                              "column": 24
                             }
                           },
                           "argument": {
-                            "type": "CallExpression",
+                            "type": "Literal",
                             "loc": {
                               "start": {
-                                "line": 3,
-                                "column": 14
+                                "line": 4,
+                                "column": 11
                               },
                               "end": {
-                                "line": 5,
-                                "column": 0
+                                "line": 4,
+                                "column": 24
                               }
                             },
-                            "callee": {
-                              "type": "MemberExpression",
-                              "loc": {
-                                "start": {
-                                  "line": 3,
-                                  "column": 14
-                                },
-                                "end": {
-                                  "line": 5,
-                                  "column": 0
-                                }
-                              },
-                              "computed": false,
-                              "object": {
-                                "type": "FunctionExpression",
-                                "loc": {
-                                  "start": {
-                                    "line": 3,
-                                    "column": 14
-                                  },
-                                  "end": {
-                                    "line": 5,
-                                    "column": 0
-                                  }
-                                },
-                                "params": [],
-                                "defaults": [],
-                                "body": {
-                                  "type": "BlockStatement",
-                                  "loc": {
-                                    "start": {
-                                      "line": 3,
-                                      "column": 14
-                                    },
-                                    "end": {
-                                      "line": 5,
-                                      "column": 0
-                                    }
-                                  },
-                                  "body": [
-                                    {
-                                      "type": "ReturnStatement",
-                                      "loc": {
-                                        "start": {
-                                          "line": 4,
-                                          "column": 4
-                                        },
-                                        "end": {
-                                          "line": 4,
-                                          "column": 24
-                                        }
-                                      },
-                                      "argument": {
-                                        "type": "Literal",
-                                        "loc": {
-                                          "start": {
-                                            "line": 4,
-                                            "column": 11
-                                          },
-                                          "end": {
-                                            "line": 4,
-                                            "column": 24
-                                          }
-                                        },
-                                        "value": "hello world",
-                                        "raw": "'hello world'"
-                                      }
-                                    }
-                                  ]
-                                },
-                                "generator": false,
-                                "expression": false
-                              },
-                              "property": {
-                                "type": "Identifier",
-                                "loc": {
-                                  "start": {
-                                    "line": 3,
-                                    "column": 14
-                                  },
-                                  "end": {
-                                    "line": 5,
-                                    "column": 0
-                                  }
-                                },
-                                "name": "call"
-                              }
-                            },
-                            "arguments": [
-                              {
-                                "type": "ThisExpression",
-                                "loc": {
-                                  "start": {
-                                    "line": 3,
-                                    "column": 14
-                                  },
-                                  "end": {
-                                    "line": 5,
-                                    "column": 0
-                                  }
-                                }
-                              }
-                            ]
+                            "value": "hello world",
+                            "raw": "'hello world'"
                           }
                         }
                       ]
@@ -1109,7 +1008,22 @@ describe("Source Locations", function () {
                   },
                   "name": "MyClass"
                 },
-                "params": [],
+                "params": [
+                  {
+                    "type": "Identifier",
+                    "loc": {
+                      "start": {
+                        "line": 6,
+                        "column": 21
+                      },
+                      "end": {
+                        "line": 6,
+                        "column": 22
+                      }
+                    },
+                    "name": "s"
+                  }
+                ],
                 "body": {
                   "type": "BlockStatement",
                   "loc": {
@@ -1244,10 +1158,10 @@ describe("Source Locations", function () {
                                 "column": 14
                               }
                             },
-                            "name": "__params1"
+                            "name": "__hasParams1"
                           },
                           "init": {
-                            "type": "ConditionalExpression",
+                            "type": "LogicalExpression",
                             "loc": {
                               "start": {
                                 "line": 6,
@@ -1258,7 +1172,8 @@ describe("Source Locations", function () {
                                 "column": 14
                               }
                             },
-                            "test": {
+                            "operator": "&&",
+                            "left": {
                               "type": "LogicalExpression",
                               "loc": {
                                 "start": {
@@ -1272,7 +1187,7 @@ describe("Source Locations", function () {
                               },
                               "operator": "&&",
                               "left": {
-                                "type": "LogicalExpression",
+                                "type": "BinaryExpression",
                                 "loc": {
                                   "start": {
                                     "line": 6,
@@ -1283,8 +1198,92 @@ describe("Source Locations", function () {
                                     "column": 14
                                   }
                                 },
-                                "operator": "&&",
+                                "operator": ">",
                                 "left": {
+                                  "type": "MemberExpression",
+                                  "loc": {
+                                    "start": {
+                                      "line": 6,
+                                      "column": 6
+                                    },
+                                    "end": {
+                                      "line": 6,
+                                      "column": 14
+                                    }
+                                  },
+                                  "computed": false,
+                                  "object": {
+                                    "type": "Identifier",
+                                    "loc": {
+                                      "start": {
+                                        "line": 6,
+                                        "column": 6
+                                      },
+                                      "end": {
+                                        "line": 6,
+                                        "column": 14
+                                      }
+                                    },
+                                    "name": "arguments"
+                                  },
+                                  "property": {
+                                    "type": "Identifier",
+                                    "loc": {
+                                      "start": {
+                                        "line": 6,
+                                        "column": 6
+                                      },
+                                      "end": {
+                                        "line": 6,
+                                        "column": 14
+                                      }
+                                    },
+                                    "name": "length"
+                                  }
+                                },
+                                "right": {
+                                  "type": "Literal",
+                                  "loc": {
+                                    "start": {
+                                      "line": 6,
+                                      "column": 6
+                                    },
+                                    "end": {
+                                      "line": 6,
+                                      "column": 14
+                                    }
+                                  },
+                                  "value": 0
+                                }
+                              },
+                              "right": {
+                                "type": "MemberExpression",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "computed": true,
+                                "object": {
+                                  "type": "Identifier",
+                                  "loc": {
+                                    "start": {
+                                      "line": 6,
+                                      "column": 6
+                                    },
+                                    "end": {
+                                      "line": 6,
+                                      "column": 14
+                                    }
+                                  },
+                                  "name": "arguments"
+                                },
+                                "property": {
                                   "type": "BinaryExpression",
                                   "loc": {
                                     "start": {
@@ -1296,7 +1295,7 @@ describe("Source Locations", function () {
                                       "column": 14
                                     }
                                   },
-                                  "operator": "===",
+                                  "operator": "-",
                                   "left": {
                                     "type": "MemberExpression",
                                     "loc": {
@@ -1353,9 +1352,37 @@ describe("Source Locations", function () {
                                     },
                                     "value": 1
                                   }
+                                }
+                              }
+                            },
+                            "right": {
+                              "type": "MemberExpression",
+                              "loc": {
+                                "start": {
+                                  "line": 6,
+                                  "column": 6
                                 },
-                                "right": {
-                                  "type": "MemberExpression",
+                                "end": {
+                                  "line": 6,
+                                  "column": 14
+                                }
+                              },
+                              "computed": false,
+                              "object": {
+                                "type": "MemberExpression",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "computed": true,
+                                "object": {
+                                  "type": "Identifier",
                                   "loc": {
                                     "start": {
                                       "line": 6,
@@ -1366,8 +1393,22 @@ describe("Source Locations", function () {
                                       "column": 14
                                     }
                                   },
-                                  "computed": false,
-                                  "object": {
+                                  "name": "arguments"
+                                },
+                                "property": {
+                                  "type": "BinaryExpression",
+                                  "loc": {
+                                    "start": {
+                                      "line": 6,
+                                      "column": 6
+                                    },
+                                    "end": {
+                                      "line": 6,
+                                      "column": 14
+                                    }
+                                  },
+                                  "operator": "-",
+                                  "left": {
                                     "type": "MemberExpression",
                                     "loc": {
                                       "start": {
@@ -1379,7 +1420,7 @@ describe("Source Locations", function () {
                                         "column": 14
                                       }
                                     },
-                                    "computed": true,
+                                    "computed": false,
                                     "object": {
                                       "type": "Identifier",
                                       "loc": {
@@ -1395,7 +1436,7 @@ describe("Source Locations", function () {
                                       "name": "arguments"
                                     },
                                     "property": {
-                                      "type": "Literal",
+                                      "type": "Identifier",
                                       "loc": {
                                         "start": {
                                           "line": 6,
@@ -1406,66 +1447,10 @@ describe("Source Locations", function () {
                                           "column": 14
                                         }
                                       },
-                                      "value": 0
+                                      "name": "length"
                                     }
                                   },
-                                  "property": {
-                                    "type": "Identifier",
-                                    "loc": {
-                                      "start": {
-                                        "line": 6,
-                                        "column": 6
-                                      },
-                                      "end": {
-                                        "line": 6,
-                                        "column": 14
-                                      }
-                                    },
-                                    "name": "formals"
-                                  }
-                                }
-                              },
-                              "right": {
-                                "type": "MemberExpression",
-                                "loc": {
-                                  "start": {
-                                    "line": 6,
-                                    "column": 6
-                                  },
-                                  "end": {
-                                    "line": 6,
-                                    "column": 14
-                                  }
-                                },
-                                "computed": false,
-                                "object": {
-                                  "type": "MemberExpression",
-                                  "loc": {
-                                    "start": {
-                                      "line": 6,
-                                      "column": 6
-                                    },
-                                    "end": {
-                                      "line": 6,
-                                      "column": 14
-                                    }
-                                  },
-                                  "computed": true,
-                                  "object": {
-                                    "type": "Identifier",
-                                    "loc": {
-                                      "start": {
-                                        "line": 6,
-                                        "column": 6
-                                      },
-                                      "end": {
-                                        "line": 6,
-                                        "column": 14
-                                      }
-                                    },
-                                    "name": "arguments"
-                                  },
-                                  "property": {
+                                  "right": {
                                     "type": "Literal",
                                     "loc": {
                                       "start": {
@@ -1477,39 +1462,11 @@ describe("Source Locations", function () {
                                         "column": 14
                                       }
                                     },
-                                    "value": 0
+                                    "value": 1
                                   }
-                                },
-                                "property": {
-                                  "type": "Identifier",
-                                  "loc": {
-                                    "start": {
-                                      "line": 6,
-                                      "column": 6
-                                    },
-                                    "end": {
-                                      "line": 6,
-                                      "column": 14
-                                    }
-                                  },
-                                  "name": "keywords"
-                                }
-                              }
-                            },
-                            "consequent": {
-                              "type": "MemberExpression",
-                              "loc": {
-                                "start": {
-                                  "line": 6,
-                                  "column": 6
-                                },
-                                "end": {
-                                  "line": 6,
-                                  "column": 14
                                 }
                               },
-                              "computed": true,
-                              "object": {
+                              "property": {
                                 "type": "Identifier",
                                 "loc": {
                                   "start": {
@@ -1521,227 +1478,42 @@ describe("Source Locations", function () {
                                     "column": 14
                                   }
                                 },
-                                "name": "arguments"
-                              },
-                              "property": {
-                                "type": "Literal",
-                                "loc": {
-                                  "start": {
-                                    "line": 6,
-                                    "column": 6
-                                  },
-                                  "end": {
-                                    "line": 6,
-                                    "column": 14
-                                  }
-                                },
-                                "value": 0
+                                "name": "keywords"
                               }
-                            },
-                            "alternate": {
-                              "type": "Literal",
-                              "loc": {
-                                "start": {
-                                  "line": 6,
-                                  "column": 6
-                                },
-                                "end": {
-                                  "line": 6,
-                                  "column": 14
-                                }
-                              },
-                              "value": null
                             }
                           }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "VariableDeclaration",
-                      "loc": {
-                        "start": {
-                          "line": 6,
-                          "column": 6
-                        },
-                        "end": {
-                          "line": 6,
-                          "column": 14
-                        }
-                      },
-                      "kind": "var",
-                      "declarations": [
-                        {
-                          "type": "VariableDeclarator",
-                          "loc": {
-                            "start": {
-                              "line": 6,
-                              "column": 6
-                            },
-                            "end": {
-                              "line": 6,
-                              "column": 14
-                            }
-                          },
-                          "id": {
-                            "type": "Identifier",
-                            "loc": {
-                              "start": {
-                                "line": 6,
-                                "column": 6
-                              },
-                              "end": {
-                                "line": 6,
-                                "column": 14
-                              }
-                            },
-                            "name": "__formalsIndex1"
-                          },
-                          "init": {
-                            "type": "Literal",
-                            "loc": {
-                              "start": {
-                                "line": 6,
-                                "column": 6
-                              },
-                              "end": {
-                                "line": 6,
-                                "column": 14
-                              }
-                            },
-                            "value": 0
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "VariableDeclaration",
-                      "loc": {
-                        "start": {
-                          "line": 6,
-                          "column": 6
-                        },
-                        "end": {
-                          "line": 6,
-                          "column": 14
-                        }
-                      },
-                      "kind": "var",
-                      "declarations": [
-                        {
-                          "type": "VariableDeclarator",
-                          "loc": {
-                            "start": {
-                              "line": 6,
-                              "column": 6
-                            },
-                            "end": {
-                              "line": 6,
-                              "column": 14
-                            }
-                          },
-                          "id": {
-                            "type": "Identifier",
-                            "loc": {
-                              "start": {
-                                "line": 6,
-                                "column": 6
-                              },
-                              "end": {
-                                "line": 6,
-                                "column": 14
-                              }
-                            },
-                            "name": "__args1"
-                          },
-                          "init": {
-                            "type": "Identifier",
-                            "loc": {
-                              "start": {
-                                "line": 6,
-                                "column": 6
-                              },
-                              "end": {
-                                "line": 6,
-                                "column": 14
-                              }
-                            },
-                            "name": "arguments"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "FunctionDeclaration",
-                      "loc": {
-                        "start": {
-                          "line": 6,
-                          "column": 6
-                        },
-                        "end": {
-                          "line": 6,
-                          "column": 14
-                        }
-                      },
-                      "id": {
-                        "type": "Identifier",
-                        "loc": {
-                          "start": {
-                            "line": 6,
-                            "column": 6
-                          },
-                          "end": {
-                            "line": 6,
-                            "column": 14
-                          }
-                        },
-                        "name": "__getParam1"
-                      },
-                      "params": [
-                        {
-                          "type": "Identifier",
-                          "loc": {
-                            "start": {
-                              "line": 6,
-                              "column": 6
-                            },
-                            "end": {
-                              "line": 6,
-                              "column": 14
-                            }
-                          },
-                          "name": "v"
-                        },
-                        {
-                          "type": "Identifier",
-                          "loc": {
-                            "start": {
-                              "line": 6,
-                              "column": 6
-                            },
-                            "end": {
-                              "line": 6,
-                              "column": 14
-                            }
-                          },
-                          "name": "d"
                         }
                       ],
-                      "defaults": [],
-                      "body": {
-                        "type": "BlockStatement",
-                        "loc": {
-                          "start": {
-                            "line": 6,
-                            "column": 6
-                          },
-                          "end": {
-                            "line": 6,
-                            "column": 14
-                          }
+                      "userCode": false
+                    },
+                    {
+                      "type": "VariableDeclaration",
+                      "loc": {
+                        "start": {
+                          "line": 6,
+                          "column": 6
                         },
-                        "body": [
-                          {
-                            "type": "VariableDeclaration",
+                        "end": {
+                          "line": 6,
+                          "column": 14
+                        }
+                      },
+                      "kind": "var",
+                      "declarations": [
+                        {
+                          "type": "VariableDeclarator",
+                          "loc": {
+                            "start": {
+                              "line": 6,
+                              "column": 6
+                            },
+                            "end": {
+                              "line": 6,
+                              "column": 14
+                            }
+                          },
+                          "id": {
+                            "type": "Identifier",
                             "loc": {
                               "start": {
                                 "line": 6,
@@ -1752,53 +1524,10 @@ describe("Source Locations", function () {
                                 "column": 14
                               }
                             },
-                            "kind": "var",
-                            "declarations": [
-                              {
-                                "type": "VariableDeclarator",
-                                "loc": {
-                                  "start": {
-                                    "line": 6,
-                                    "column": 6
-                                  },
-                                  "end": {
-                                    "line": 6,
-                                    "column": 14
-                                  }
-                                },
-                                "id": {
-                                  "type": "Identifier",
-                                  "loc": {
-                                    "start": {
-                                      "line": 6,
-                                      "column": 6
-                                    },
-                                    "end": {
-                                      "line": 6,
-                                      "column": 14
-                                    }
-                                  },
-                                  "name": "r"
-                                },
-                                "init": {
-                                  "type": "Identifier",
-                                  "loc": {
-                                    "start": {
-                                      "line": 6,
-                                      "column": 6
-                                    },
-                                    "end": {
-                                      "line": 6,
-                                      "column": 14
-                                    }
-                                  },
-                                  "name": "d"
-                                }
-                              }
-                            ]
+                            "name": "__params1"
                           },
-                          {
-                            "type": "IfStatement",
+                          "init": {
+                            "type": "ConditionalExpression",
                             "loc": {
                               "start": {
                                 "line": 6,
@@ -1821,10 +1550,10 @@ describe("Source Locations", function () {
                                   "column": 14
                                 }
                               },
-                              "name": "__params1"
+                              "name": "__hasParams1"
                             },
                             "consequent": {
-                              "type": "BlockStatement",
+                              "type": "MemberExpression",
                               "loc": {
                                 "start": {
                                   "line": 6,
@@ -1835,583 +1564,9 @@ describe("Source Locations", function () {
                                   "column": 14
                                 }
                               },
-                              "body": [
-                                {
-                                  "type": "IfStatement",
-                                  "loc": {
-                                    "start": {
-                                      "line": 6,
-                                      "column": 6
-                                    },
-                                    "end": {
-                                      "line": 6,
-                                      "column": 14
-                                    }
-                                  },
-                                  "test": {
-                                    "type": "BinaryExpression",
-                                    "loc": {
-                                      "start": {
-                                        "line": 6,
-                                        "column": 6
-                                      },
-                                      "end": {
-                                        "line": 6,
-                                        "column": 14
-                                      }
-                                    },
-                                    "operator": "<",
-                                    "left": {
-                                      "type": "Identifier",
-                                      "loc": {
-                                        "start": {
-                                          "line": 6,
-                                          "column": 6
-                                        },
-                                        "end": {
-                                          "line": 6,
-                                          "column": 14
-                                        }
-                                      },
-                                      "name": "__formalsIndex1"
-                                    },
-                                    "right": {
-                                      "type": "MemberExpression",
-                                      "loc": {
-                                        "start": {
-                                          "line": 6,
-                                          "column": 6
-                                        },
-                                        "end": {
-                                          "line": 6,
-                                          "column": 14
-                                        }
-                                      },
-                                      "computed": false,
-                                      "object": {
-                                        "type": "MemberExpression",
-                                        "loc": {
-                                          "start": {
-                                            "line": 6,
-                                            "column": 6
-                                          },
-                                          "end": {
-                                            "line": 6,
-                                            "column": 14
-                                          }
-                                        },
-                                        "computed": false,
-                                        "object": {
-                                          "type": "Identifier",
-                                          "loc": {
-                                            "start": {
-                                              "line": 6,
-                                              "column": 6
-                                            },
-                                            "end": {
-                                              "line": 6,
-                                              "column": 14
-                                            }
-                                          },
-                                          "name": "__params1"
-                                        },
-                                        "property": {
-                                          "type": "Identifier",
-                                          "loc": {
-                                            "start": {
-                                              "line": 6,
-                                              "column": 6
-                                            },
-                                            "end": {
-                                              "line": 6,
-                                              "column": 14
-                                            }
-                                          },
-                                          "name": "formals"
-                                        }
-                                      },
-                                      "property": {
-                                        "type": "Identifier",
-                                        "loc": {
-                                          "start": {
-                                            "line": 6,
-                                            "column": 6
-                                          },
-                                          "end": {
-                                            "line": 6,
-                                            "column": 14
-                                          }
-                                        },
-                                        "name": "length"
-                                      }
-                                    }
-                                  },
-                                  "consequent": {
-                                    "type": "BlockStatement",
-                                    "loc": {
-                                      "start": {
-                                        "line": 6,
-                                        "column": 6
-                                      },
-                                      "end": {
-                                        "line": 6,
-                                        "column": 14
-                                      }
-                                    },
-                                    "body": [
-                                      {
-                                        "type": "ExpressionStatement",
-                                        "loc": {
-                                          "start": {
-                                            "line": 6,
-                                            "column": 6
-                                          },
-                                          "end": {
-                                            "line": 6,
-                                            "column": 14
-                                          }
-                                        },
-                                        "expression": {
-                                          "type": "AssignmentExpression",
-                                          "loc": {
-                                            "start": {
-                                              "line": 6,
-                                              "column": 6
-                                            },
-                                            "end": {
-                                              "line": 6,
-                                              "column": 14
-                                            }
-                                          },
-                                          "operator": "=",
-                                          "left": {
-                                            "type": "Identifier",
-                                            "loc": {
-                                              "start": {
-                                                "line": 6,
-                                                "column": 6
-                                              },
-                                              "end": {
-                                                "line": 6,
-                                                "column": 14
-                                              }
-                                            },
-                                            "name": "r"
-                                          },
-                                          "right": {
-                                            "type": "MemberExpression",
-                                            "loc": {
-                                              "start": {
-                                                "line": 6,
-                                                "column": 6
-                                              },
-                                              "end": {
-                                                "line": 6,
-                                                "column": 14
-                                              }
-                                            },
-                                            "computed": true,
-                                            "object": {
-                                              "type": "MemberExpression",
-                                              "loc": {
-                                                "start": {
-                                                  "line": 6,
-                                                  "column": 6
-                                                },
-                                                "end": {
-                                                  "line": 6,
-                                                  "column": 14
-                                                }
-                                              },
-                                              "computed": false,
-                                              "object": {
-                                                "type": "Identifier",
-                                                "loc": {
-                                                  "start": {
-                                                    "line": 6,
-                                                    "column": 6
-                                                  },
-                                                  "end": {
-                                                    "line": 6,
-                                                    "column": 14
-                                                  }
-                                                },
-                                                "name": "__params1"
-                                              },
-                                              "property": {
-                                                "type": "Identifier",
-                                                "loc": {
-                                                  "start": {
-                                                    "line": 6,
-                                                    "column": 6
-                                                  },
-                                                  "end": {
-                                                    "line": 6,
-                                                    "column": 14
-                                                  }
-                                                },
-                                                "name": "formals"
-                                              }
-                                            },
-                                            "property": {
-                                              "type": "UpdateExpression",
-                                              "loc": {
-                                                "start": {
-                                                  "line": 6,
-                                                  "column": 6
-                                                },
-                                                "end": {
-                                                  "line": 6,
-                                                  "column": 14
-                                                }
-                                              },
-                                              "operator": "++",
-                                              "argument": {
-                                                "type": "Identifier",
-                                                "loc": {
-                                                  "start": {
-                                                    "line": 6,
-                                                    "column": 6
-                                                  },
-                                                  "end": {
-                                                    "line": 6,
-                                                    "column": 14
-                                                  }
-                                                },
-                                                "name": "__formalsIndex1"
-                                              },
-                                              "prefix": false
-                                            }
-                                          }
-                                        }
-                                      }
-                                    ]
-                                  },
-                                  "alternate": {
-                                    "type": "IfStatement",
-                                    "loc": {
-                                      "start": {
-                                        "line": 6,
-                                        "column": 6
-                                      },
-                                      "end": {
-                                        "line": 6,
-                                        "column": 14
-                                      }
-                                    },
-                                    "test": {
-                                      "type": "BinaryExpression",
-                                      "loc": {
-                                        "start": {
-                                          "line": 6,
-                                          "column": 6
-                                        },
-                                        "end": {
-                                          "line": 6,
-                                          "column": 14
-                                        }
-                                      },
-                                      "operator": "in",
-                                      "left": {
-                                        "type": "Identifier",
-                                        "loc": {
-                                          "start": {
-                                            "line": 6,
-                                            "column": 6
-                                          },
-                                          "end": {
-                                            "line": 6,
-                                            "column": 14
-                                          }
-                                        },
-                                        "name": "v"
-                                      },
-                                      "right": {
-                                        "type": "MemberExpression",
-                                        "loc": {
-                                          "start": {
-                                            "line": 6,
-                                            "column": 6
-                                          },
-                                          "end": {
-                                            "line": 6,
-                                            "column": 14
-                                          }
-                                        },
-                                        "computed": false,
-                                        "object": {
-                                          "type": "Identifier",
-                                          "loc": {
-                                            "start": {
-                                              "line": 6,
-                                              "column": 6
-                                            },
-                                            "end": {
-                                              "line": 6,
-                                              "column": 14
-                                            }
-                                          },
-                                          "name": "__params1"
-                                        },
-                                        "property": {
-                                          "type": "Identifier",
-                                          "loc": {
-                                            "start": {
-                                              "line": 6,
-                                              "column": 6
-                                            },
-                                            "end": {
-                                              "line": 6,
-                                              "column": 14
-                                            }
-                                          },
-                                          "name": "keywords"
-                                        }
-                                      }
-                                    },
-                                    "consequent": {
-                                      "type": "BlockStatement",
-                                      "loc": {
-                                        "start": {
-                                          "line": 6,
-                                          "column": 6
-                                        },
-                                        "end": {
-                                          "line": 6,
-                                          "column": 14
-                                        }
-                                      },
-                                      "body": [
-                                        {
-                                          "type": "ExpressionStatement",
-                                          "loc": {
-                                            "start": {
-                                              "line": 6,
-                                              "column": 6
-                                            },
-                                            "end": {
-                                              "line": 6,
-                                              "column": 14
-                                            }
-                                          },
-                                          "expression": {
-                                            "type": "AssignmentExpression",
-                                            "loc": {
-                                              "start": {
-                                                "line": 6,
-                                                "column": 6
-                                              },
-                                              "end": {
-                                                "line": 6,
-                                                "column": 14
-                                              }
-                                            },
-                                            "operator": "=",
-                                            "left": {
-                                              "type": "Identifier",
-                                              "loc": {
-                                                "start": {
-                                                  "line": 6,
-                                                  "column": 6
-                                                },
-                                                "end": {
-                                                  "line": 6,
-                                                  "column": 14
-                                                }
-                                              },
-                                              "name": "r"
-                                            },
-                                            "right": {
-                                              "type": "MemberExpression",
-                                              "loc": {
-                                                "start": {
-                                                  "line": 6,
-                                                  "column": 6
-                                                },
-                                                "end": {
-                                                  "line": 6,
-                                                  "column": 14
-                                                }
-                                              },
-                                              "computed": true,
-                                              "property": {
-                                                "type": "Identifier",
-                                                "loc": {
-                                                  "start": {
-                                                    "line": 6,
-                                                    "column": 6
-                                                  },
-                                                  "end": {
-                                                    "line": 6,
-                                                    "column": 14
-                                                  }
-                                                },
-                                                "name": "v"
-                                              },
-                                              "object": {
-                                                "type": "MemberExpression",
-                                                "loc": {
-                                                  "start": {
-                                                    "line": 6,
-                                                    "column": 6
-                                                  },
-                                                  "end": {
-                                                    "line": 6,
-                                                    "column": 14
-                                                  }
-                                                },
-                                                "computed": false,
-                                                "object": {
-                                                  "type": "Identifier",
-                                                  "loc": {
-                                                    "start": {
-                                                      "line": 6,
-                                                      "column": 6
-                                                    },
-                                                    "end": {
-                                                      "line": 6,
-                                                      "column": 14
-                                                    }
-                                                  },
-                                                  "name": "__params1"
-                                                },
-                                                "property": {
-                                                  "type": "Identifier",
-                                                  "loc": {
-                                                    "start": {
-                                                      "line": 6,
-                                                      "column": 6
-                                                    },
-                                                    "end": {
-                                                      "line": 6,
-                                                      "column": 14
-                                                    }
-                                                  },
-                                                  "name": "keywords"
-                                                }
-                                              }
-                                            }
-                                          }
-                                        },
-                                        {
-                                          "type": "ExpressionStatement",
-                                          "loc": {
-                                            "start": {
-                                              "line": 6,
-                                              "column": 6
-                                            },
-                                            "end": {
-                                              "line": 6,
-                                              "column": 14
-                                            }
-                                          },
-                                          "expression": {
-                                            "type": "UnaryExpression",
-                                            "loc": {
-                                              "start": {
-                                                "line": 6,
-                                                "column": 6
-                                              },
-                                              "end": {
-                                                "line": 6,
-                                                "column": 14
-                                              }
-                                            },
-                                            "operator": "delete",
-                                            "prefix": true,
-                                            "argument": {
-                                              "type": "MemberExpression",
-                                              "loc": {
-                                                "start": {
-                                                  "line": 6,
-                                                  "column": 6
-                                                },
-                                                "end": {
-                                                  "line": 6,
-                                                  "column": 14
-                                                }
-                                              },
-                                              "computed": true,
-                                              "property": {
-                                                "type": "Identifier",
-                                                "loc": {
-                                                  "start": {
-                                                    "line": 6,
-                                                    "column": 6
-                                                  },
-                                                  "end": {
-                                                    "line": 6,
-                                                    "column": 14
-                                                  }
-                                                },
-                                                "name": "v"
-                                              },
-                                              "object": {
-                                                "type": "MemberExpression",
-                                                "loc": {
-                                                  "start": {
-                                                    "line": 6,
-                                                    "column": 6
-                                                  },
-                                                  "end": {
-                                                    "line": 6,
-                                                    "column": 14
-                                                  }
-                                                },
-                                                "computed": false,
-                                                "object": {
-                                                  "type": "Identifier",
-                                                  "loc": {
-                                                    "start": {
-                                                      "line": 6,
-                                                      "column": 6
-                                                    },
-                                                    "end": {
-                                                      "line": 6,
-                                                      "column": 14
-                                                    }
-                                                  },
-                                                  "name": "__params1"
-                                                },
-                                                "property": {
-                                                  "type": "Identifier",
-                                                  "loc": {
-                                                    "start": {
-                                                      "line": 6,
-                                                      "column": 6
-                                                    },
-                                                    "end": {
-                                                      "line": 6,
-                                                      "column": 14
-                                                    }
-                                                  },
-                                                  "name": "keywords"
-                                                }
-                                              }
-                                            }
-                                          }
-                                        }
-                                      ]
-                                    },
-                                    "alternate": null
-                                  }
-                                }
-                              ]
-                            },
-                            "alternate": {
-                              "type": "IfStatement",
-                              "loc": {
-                                "start": {
-                                  "line": 6,
-                                  "column": 6
-                                },
-                                "end": {
-                                  "line": 6,
-                                  "column": 14
-                                }
-                              },
-                              "test": {
-                                "type": "BinaryExpression",
+                              "computed": false,
+                              "object": {
+                                "type": "MemberExpression",
                                 "loc": {
                                   "start": {
                                     "line": 6,
@@ -2422,8 +1577,8 @@ describe("Source Locations", function () {
                                     "column": 14
                                   }
                                 },
-                                "operator": "<",
-                                "left": {
+                                "computed": true,
+                                "object": {
                                   "type": "Identifier",
                                   "loc": {
                                     "start": {
@@ -2435,10 +1590,10 @@ describe("Source Locations", function () {
                                       "column": 14
                                     }
                                   },
-                                  "name": "__formalsIndex1"
+                                  "name": "arguments"
                                 },
-                                "right": {
-                                  "type": "MemberExpression",
+                                "property": {
+                                  "type": "BinaryExpression",
                                   "loc": {
                                     "start": {
                                       "line": 6,
@@ -2449,9 +1604,9 @@ describe("Source Locations", function () {
                                       "column": 14
                                     }
                                   },
-                                  "computed": false,
-                                  "object": {
-                                    "type": "Identifier",
+                                  "operator": "-",
+                                  "left": {
+                                    "type": "MemberExpression",
                                     "loc": {
                                       "start": {
                                         "line": 6,
@@ -2462,51 +1617,9 @@ describe("Source Locations", function () {
                                         "column": 14
                                       }
                                     },
-                                    "name": "__args1"
-                                  },
-                                  "property": {
-                                    "type": "Identifier",
-                                    "loc": {
-                                      "start": {
-                                        "line": 6,
-                                        "column": 6
-                                      },
-                                      "end": {
-                                        "line": 6,
-                                        "column": 14
-                                      }
-                                    },
-                                    "name": "length"
-                                  }
-                                }
-                              },
-                              "consequent": {
-                                "type": "BlockStatement",
-                                "loc": {
-                                  "start": {
-                                    "line": 6,
-                                    "column": 6
-                                  },
-                                  "end": {
-                                    "line": 6,
-                                    "column": 14
-                                  }
-                                },
-                                "body": [
-                                  {
-                                    "type": "ExpressionStatement",
-                                    "loc": {
-                                      "start": {
-                                        "line": 6,
-                                        "column": 6
-                                      },
-                                      "end": {
-                                        "line": 6,
-                                        "column": 14
-                                      }
-                                    },
-                                    "expression": {
-                                      "type": "AssignmentExpression",
+                                    "computed": false,
+                                    "object": {
+                                      "type": "Identifier",
                                       "loc": {
                                         "start": {
                                           "line": 6,
@@ -2517,87 +1630,101 @@ describe("Source Locations", function () {
                                           "column": 14
                                         }
                                       },
-                                      "operator": "=",
-                                      "left": {
-                                        "type": "Identifier",
-                                        "loc": {
-                                          "start": {
-                                            "line": 6,
-                                            "column": 6
-                                          },
-                                          "end": {
-                                            "line": 6,
-                                            "column": 14
-                                          }
+                                      "name": "arguments"
+                                    },
+                                    "property": {
+                                      "type": "Identifier",
+                                      "loc": {
+                                        "start": {
+                                          "line": 6,
+                                          "column": 6
                                         },
-                                        "name": "r"
-                                      },
-                                      "right": {
-                                        "type": "MemberExpression",
-                                        "loc": {
-                                          "start": {
-                                            "line": 6,
-                                            "column": 6
-                                          },
-                                          "end": {
-                                            "line": 6,
-                                            "column": 14
-                                          }
-                                        },
-                                        "computed": true,
-                                        "object": {
-                                          "type": "Identifier",
-                                          "loc": {
-                                            "start": {
-                                              "line": 6,
-                                              "column": 6
-                                            },
-                                            "end": {
-                                              "line": 6,
-                                              "column": 14
-                                            }
-                                          },
-                                          "name": "__args1"
-                                        },
-                                        "property": {
-                                          "type": "UpdateExpression",
-                                          "loc": {
-                                            "start": {
-                                              "line": 6,
-                                              "column": 6
-                                            },
-                                            "end": {
-                                              "line": 6,
-                                              "column": 14
-                                            }
-                                          },
-                                          "operator": "++",
-                                          "argument": {
-                                            "type": "Identifier",
-                                            "loc": {
-                                              "start": {
-                                                "line": 6,
-                                                "column": 6
-                                              },
-                                              "end": {
-                                                "line": 6,
-                                                "column": 14
-                                              }
-                                            },
-                                            "name": "__formalsIndex1"
-                                          },
-                                          "prefix": false
+                                        "end": {
+                                          "line": 6,
+                                          "column": 14
                                         }
-                                      }
+                                      },
+                                      "name": "length"
                                     }
+                                  },
+                                  "right": {
+                                    "type": "Literal",
+                                    "loc": {
+                                      "start": {
+                                        "line": 6,
+                                        "column": 6
+                                      },
+                                      "end": {
+                                        "line": 6,
+                                        "column": 14
+                                      }
+                                    },
+                                    "value": 1
                                   }
-                                ]
+                                }
                               },
-                              "alternate": null
+                              "property": {
+                                "type": "Identifier",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "name": "keywords"
+                              }
+                            },
+                            "alternate": {
+                              "type": "ObjectExpression",
+                              "loc": {
+                                "start": {
+                                  "line": 6,
+                                  "column": 6
+                                },
+                                "end": {
+                                  "line": 6,
+                                  "column": 14
+                                }
+                              },
+                              "properties": []
+                            }
+                          }
+                        }
+                      ],
+                      "userCode": false
+                    },
+                    {
+                      "type": "VariableDeclaration",
+                      "loc": {
+                        "start": {
+                          "line": 6,
+                          "column": 6
+                        },
+                        "end": {
+                          "line": 6,
+                          "column": 14
+                        }
+                      },
+                      "kind": "var",
+                      "declarations": [
+                        {
+                          "type": "VariableDeclarator",
+                          "loc": {
+                            "start": {
+                              "line": 6,
+                              "column": 6
+                            },
+                            "end": {
+                              "line": 6,
+                              "column": 14
                             }
                           },
-                          {
-                            "type": "ReturnStatement",
+                          "id": {
+                            "type": "Identifier",
                             "loc": {
                               "start": {
                                 "line": 6,
@@ -2608,7 +1735,310 @@ describe("Source Locations", function () {
                                 "column": 14
                               }
                             },
-                            "argument": {
+                            "name": "__realArgCount1"
+                          },
+                          "init": {
+                            "type": "BinaryExpression",
+                            "loc": {
+                              "start": {
+                                "line": 6,
+                                "column": 6
+                              },
+                              "end": {
+                                "line": 6,
+                                "column": 14
+                              }
+                            },
+                            "operator": "-",
+                            "left": {
+                              "type": "MemberExpression",
+                              "loc": {
+                                "start": {
+                                  "line": 6,
+                                  "column": 6
+                                },
+                                "end": {
+                                  "line": 6,
+                                  "column": 14
+                                }
+                              },
+                              "computed": false,
+                              "object": {
+                                "type": "Identifier",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "name": "arguments"
+                              },
+                              "property": {
+                                "type": "Identifier",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "name": "length"
+                              }
+                            },
+                            "right": {
+                              "type": "ConditionalExpression",
+                              "loc": {
+                                "start": {
+                                  "line": 6,
+                                  "column": 6
+                                },
+                                "end": {
+                                  "line": 6,
+                                  "column": 14
+                                }
+                              },
+                              "test": {
+                                "type": "Identifier",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "name": "__hasParams1"
+                              },
+                              "consequent": {
+                                "type": "Literal",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "value": 1
+                              },
+                              "alternate": {
+                                "type": "Literal",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "value": 0
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "userCode": false
+                    },
+                    {
+                      "type": "IfStatement",
+                      "loc": {
+                        "start": {
+                          "line": 6,
+                          "column": 6
+                        },
+                        "end": {
+                          "line": 6,
+                          "column": 14
+                        }
+                      },
+                      "test": {
+                        "type": "BinaryExpression",
+                        "loc": {
+                          "start": {
+                            "line": 6,
+                            "column": 6
+                          },
+                          "end": {
+                            "line": 6,
+                            "column": 14
+                          }
+                        },
+                        "operator": "<",
+                        "left": {
+                          "type": "Identifier",
+                          "loc": {
+                            "start": {
+                              "line": 6,
+                              "column": 6
+                            },
+                            "end": {
+                              "line": 6,
+                              "column": 14
+                            }
+                          },
+                          "name": "__realArgCount1"
+                        },
+                        "right": {
+                          "type": "Literal",
+                          "loc": {
+                            "start": {
+                              "line": 6,
+                              "column": 6
+                            },
+                            "end": {
+                              "line": 6,
+                              "column": 14
+                            }
+                          },
+                          "value": 1
+                        }
+                      },
+                      "consequent": {
+                        "type": "ExpressionStatement",
+                        "loc": {
+                          "start": {
+                            "line": 6,
+                            "column": 6
+                          },
+                          "end": {
+                            "line": 6,
+                            "column": 14
+                          }
+                        },
+                        "expression": {
+                          "type": "AssignmentExpression",
+                          "loc": {
+                            "start": {
+                              "line": 6,
+                              "column": 6
+                            },
+                            "end": {
+                              "line": 6,
+                              "column": 14
+                            }
+                          },
+                          "operator": "=",
+                          "left": {
+                            "type": "Identifier",
+                            "loc": {
+                              "start": {
+                                "line": 6,
+                                "column": 6
+                              },
+                              "end": {
+                                "line": 6,
+                                "column": 14
+                              }
+                            },
+                            "name": "s"
+                          },
+                          "right": {
+                            "type": "ConditionalExpression",
+                            "loc": {
+                              "start": {
+                                "line": 6,
+                                "column": 6
+                              },
+                              "end": {
+                                "line": 6,
+                                "column": 14
+                              }
+                            },
+                            "test": {
+                              "type": "BinaryExpression",
+                              "loc": {
+                                "start": {
+                                  "line": 6,
+                                  "column": 6
+                                },
+                                "end": {
+                                  "line": 6,
+                                  "column": 14
+                                }
+                              },
+                              "operator": "in",
+                              "left": {
+                                "type": "Literal",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "value": "s"
+                              },
+                              "right": {
+                                "type": "Identifier",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "name": "__params1"
+                              }
+                            },
+                            "consequent": {
+                              "type": "MemberExpression",
+                              "loc": {
+                                "start": {
+                                  "line": 6,
+                                  "column": 2
+                                },
+                                "end": null
+                              },
+                              "object": {
+                                "type": "Identifier",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "name": "__params1"
+                              },
+                              "property": {
+                                "type": "Literal",
+                                "loc": {
+                                  "start": {
+                                    "line": 6,
+                                    "column": 6
+                                  },
+                                  "end": {
+                                    "line": 6,
+                                    "column": 14
+                                  }
+                                },
+                                "value": "s"
+                              },
+                              "computed": true
+                            },
+                            "alternate": {
                               "type": "Identifier",
                               "loc": {
                                 "start": {
@@ -2620,282 +2050,92 @@ describe("Source Locations", function () {
                                   "column": 14
                                 }
                               },
-                              "name": "r"
+                              "name": "undefined"
                             }
                           }
-                        ]
-                      },
-                      "rest": null,
-                      "generator": false,
-                      "expression": false
+                        }
+                      }
                     },
                     {
-                      "type": "VariableDeclaration",
+                      "type": "ExpressionStatement",
                       "loc": {
                         "start": {
-                          "line": 6,
-                          "column": 21
+                          "line": 7,
+                          "column": 4
                         },
                         "end": {
-                          "line": 6,
-                          "column": 22
+                          "line": 7,
+                          "column": 16
                         }
                       },
-                      "kind": "var",
-                      "declarations": [
-                        {
-                          "type": "VariableDeclarator",
-                          "loc": {
-                            "start": {
-                              "line": 6,
-                              "column": 21
-                            },
-                            "end": {
-                              "line": 6,
-                              "column": 22
-                            }
-                          },
-                          "id": {
-                            "type": "Identifier",
-                            "loc": {
-                              "start": {
-                                "line": 6,
-                                "column": 21
-                              },
-                              "end": {
-                                "line": 6,
-                                "column": 22
-                              }
-                            },
-                            "name": "s"
-                          },
-                          "init": {
-                            "type": "CallExpression",
-                            "loc": {
-                              "start": {
-                                "line": 6,
-                                "column": 21
-                              },
-                              "end": {
-                                "line": 6,
-                                "column": 22
-                              }
-                            },
-                            "callee": {
-                              "type": "Identifier",
-                              "loc": {
-                                "start": {
-                                  "line": 6,
-                                  "column": 21
-                                },
-                                "end": {
-                                  "line": 6,
-                                  "column": 22
-                                }
-                              },
-                              "name": "__getParam1"
-                            },
-                            "arguments": [
-                              {
-                                "type": "Literal",
-                                "loc": {
-                                  "start": {
-                                    "line": 6,
-                                    "column": 21
-                                  },
-                                  "end": {
-                                    "line": 6,
-                                    "column": 22
-                                  }
-                                },
-                                "value": "s"
-                              }
-                            ]
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "ReturnStatement",
-                      "loc": {
-                        "start": {
-                          "line": 6,
-                          "column": 24
-                        },
-                        "end": {
-                          "line": 8,
-                          "column": 0
-                        }
-                      },
-                      "argument": {
-                        "type": "CallExpression",
+                      "expression": {
+                        "type": "AssignmentExpression",
                         "loc": {
                           "start": {
-                            "line": 6,
-                            "column": 24
+                            "line": 7,
+                            "column": 4
                           },
                           "end": {
-                            "line": 8,
-                            "column": 0
+                            "line": 7,
+                            "column": 16
                           }
                         },
-                        "callee": {
+                        "operator": "=",
+                        "left": {
                           "type": "MemberExpression",
                           "loc": {
                             "start": {
-                              "line": 6,
-                              "column": 24
+                              "line": 7,
+                              "column": 4
                             },
                             "end": {
-                              "line": 8,
-                              "column": 0
+                              "line": 7,
+                              "column": 12
                             }
                           },
-                          "computed": false,
                           "object": {
-                            "type": "FunctionExpression",
+                            "type": "ThisExpression",
                             "loc": {
                               "start": {
-                                "line": 6,
-                                "column": 24
+                                "line": 7,
+                                "column": 4
                               },
                               "end": {
-                                "line": 8,
-                                "column": 0
+                                "line": 7,
+                                "column": 8
                               }
-                            },
-                            "params": [],
-                            "defaults": [],
-                            "body": {
-                              "type": "BlockStatement",
-                              "loc": {
-                                "start": {
-                                  "line": 6,
-                                  "column": 24
-                                },
-                                "end": {
-                                  "line": 8,
-                                  "column": 0
-                                }
-                              },
-                              "body": [
-                                {
-                                  "type": "ExpressionStatement",
-                                  "loc": {
-                                    "start": {
-                                      "line": 7,
-                                      "column": 4
-                                    },
-                                    "end": {
-                                      "line": 7,
-                                      "column": 16
-                                    }
-                                  },
-                                  "expression": {
-                                    "type": "AssignmentExpression",
-                                    "loc": {
-                                      "start": {
-                                        "line": 7,
-                                        "column": 4
-                                      },
-                                      "end": {
-                                        "line": 7,
-                                        "column": 16
-                                      }
-                                    },
-                                    "operator": "=",
-                                    "left": {
-                                      "type": "MemberExpression",
-                                      "loc": {
-                                        "start": {
-                                          "line": 7,
-                                          "column": 4
-                                        },
-                                        "end": {
-                                          "line": 7,
-                                          "column": 12
-                                        }
-                                      },
-                                      "object": {
-                                        "type": "ThisExpression",
-                                        "loc": {
-                                          "start": {
-                                            "line": 7,
-                                            "column": 4
-                                          },
-                                          "end": {
-                                            "line": 7,
-                                            "column": 8
-                                          }
-                                        }
-                                      },
-                                      "property": {
-                                        "type": "Identifier",
-                                        "loc": {
-                                          "start": {
-                                            "line": 7,
-                                            "column": 9
-                                          },
-                                          "end": {
-                                            "line": 7,
-                                            "column": 12
-                                          }
-                                        },
-                                        "name": "str"
-                                      },
-                                      "computed": false
-                                    },
-                                    "right": {
-                                      "type": "Identifier",
-                                      "loc": {
-                                        "start": {
-                                          "line": 7,
-                                          "column": 15
-                                        },
-                                        "end": {
-                                          "line": 7,
-                                          "column": 16
-                                        }
-                                      },
-                                      "name": "s"
-                                    }
-                                  }
-                                }
-                              ]
-                            },
-                            "generator": false,
-                            "expression": false
+                            }
                           },
                           "property": {
                             "type": "Identifier",
                             "loc": {
                               "start": {
-                                "line": 6,
-                                "column": 24
+                                "line": 7,
+                                "column": 9
                               },
                               "end": {
-                                "line": 8,
-                                "column": 0
+                                "line": 7,
+                                "column": 12
                               }
                             },
-                            "name": "call"
-                          }
+                            "name": "str"
+                          },
+                          "computed": false
                         },
-                        "arguments": [
-                          {
-                            "type": "ThisExpression",
-                            "loc": {
-                              "start": {
-                                "line": 6,
-                                "column": 24
-                              },
-                              "end": {
-                                "line": 8,
-                                "column": 0
-                              }
+                        "right": {
+                          "type": "Identifier",
+                          "loc": {
+                            "start": {
+                              "line": 7,
+                              "column": 15
+                            },
+                            "end": {
+                              "line": 7,
+                              "column": 16
                             }
-                          }
-                        ]
+                          },
+                          "name": "s"
+                        }
                       }
                     }
                   ]
@@ -4295,21 +3535,21 @@ describe("Source Locations", function () {
     });
 
     it("function def", function () {
-      var code = "def add(a, b):\n	r = a + b\n return r\n";
+      var code = "def add(a, b):\n  r = a + b\n  return r\n";
       var ast = util.parse(code, { ranges: true });
       var expected =
       {
         "type": "Program",
         "range": [
           0,
-          36
+          38
         ],
         "body": [
           {
             "type": "FunctionDeclaration",
             "range": [
               0,
-              36
+              38
             ],
             "id": {
               "type": "Identifier",
@@ -4319,12 +3559,29 @@ describe("Source Locations", function () {
               ],
               "name": "add"
             },
-            "params": [],
+            "params": [
+              {
+                "type": "Identifier",
+                "range": [
+                  8,
+                  9
+                ],
+                "name": "a"
+              },
+              {
+                "type": "Identifier",
+                "range": [
+                  11,
+                  12
+                ],
+                "name": "b"
+              }
+            ],
             "body": {
               "type": "BlockStatement",
               "range": [
                 14,
-                36
+                38
               ],
               "body": [
                 {
@@ -4347,15 +3604,16 @@ describe("Source Locations", function () {
                           4,
                           7
                         ],
-                        "name": "__params0"
+                        "name": "__hasParams0"
                       },
                       "init": {
-                        "type": "ConditionalExpression",
+                        "type": "LogicalExpression",
                         "range": [
                           4,
                           7
                         ],
-                        "test": {
+                        "operator": "&&",
+                        "left": {
                           "type": "LogicalExpression",
                           "range": [
                             4,
@@ -4363,19 +3621,67 @@ describe("Source Locations", function () {
                           ],
                           "operator": "&&",
                           "left": {
-                            "type": "LogicalExpression",
+                            "type": "BinaryExpression",
                             "range": [
                               4,
                               7
                             ],
-                            "operator": "&&",
+                            "operator": ">",
                             "left": {
+                              "type": "MemberExpression",
+                              "range": [
+                                4,
+                                7
+                              ],
+                              "computed": false,
+                              "object": {
+                                "type": "Identifier",
+                                "range": [
+                                  4,
+                                  7
+                                ],
+                                "name": "arguments"
+                              },
+                              "property": {
+                                "type": "Identifier",
+                                "range": [
+                                  4,
+                                  7
+                                ],
+                                "name": "length"
+                              }
+                            },
+                            "right": {
+                              "type": "Literal",
+                              "range": [
+                                4,
+                                7
+                              ],
+                              "value": 0
+                            }
+                          },
+                          "right": {
+                            "type": "MemberExpression",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "computed": true,
+                            "object": {
+                              "type": "Identifier",
+                              "range": [
+                                4,
+                                7
+                              ],
+                              "name": "arguments"
+                            },
+                            "property": {
                               "type": "BinaryExpression",
                               "range": [
                                 4,
                                 7
                               ],
-                              "operator": "===",
+                              "operator": "-",
                               "left": {
                                 "type": "MemberExpression",
                                 "range": [
@@ -4408,21 +3714,45 @@ describe("Source Locations", function () {
                                 ],
                                 "value": 1
                               }
-                            },
-                            "right": {
-                              "type": "MemberExpression",
+                            }
+                          }
+                        },
+                        "right": {
+                          "type": "MemberExpression",
+                          "range": [
+                            4,
+                            7
+                          ],
+                          "computed": false,
+                          "object": {
+                            "type": "MemberExpression",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "computed": true,
+                            "object": {
+                              "type": "Identifier",
                               "range": [
                                 4,
                                 7
                               ],
-                              "computed": false,
-                              "object": {
+                              "name": "arguments"
+                            },
+                            "property": {
+                              "type": "BinaryExpression",
+                              "range": [
+                                4,
+                                7
+                              ],
+                              "operator": "-",
+                              "left": {
                                 "type": "MemberExpression",
                                 "range": [
                                   4,
                                   7
                                 ],
-                                "computed": true,
+                                "computed": false,
                                 "object": {
                                   "type": "Identifier",
                                   "range": [
@@ -4432,100 +3762,37 @@ describe("Source Locations", function () {
                                   "name": "arguments"
                                 },
                                 "property": {
-                                  "type": "Literal",
+                                  "type": "Identifier",
                                   "range": [
                                     4,
                                     7
                                   ],
-                                  "value": 0
+                                  "name": "length"
                                 }
                               },
-                              "property": {
-                                "type": "Identifier",
-                                "range": [
-                                  4,
-                                  7
-                                ],
-                                "name": "formals"
-                              }
-                            }
-                          },
-                          "right": {
-                            "type": "MemberExpression",
-                            "range": [
-                              4,
-                              7
-                            ],
-                            "computed": false,
-                            "object": {
-                              "type": "MemberExpression",
-                              "range": [
-                                4,
-                                7
-                              ],
-                              "computed": true,
-                              "object": {
-                                "type": "Identifier",
-                                "range": [
-                                  4,
-                                  7
-                                ],
-                                "name": "arguments"
-                              },
-                              "property": {
+                              "right": {
                                 "type": "Literal",
                                 "range": [
                                   4,
                                   7
                                 ],
-                                "value": 0
+                                "value": 1
                               }
-                            },
-                            "property": {
-                              "type": "Identifier",
-                              "range": [
-                                4,
-                                7
-                              ],
-                              "name": "keywords"
                             }
-                          }
-                        },
-                        "consequent": {
-                          "type": "MemberExpression",
-                          "range": [
-                            4,
-                            7
-                          ],
-                          "computed": true,
-                          "object": {
+                          },
+                          "property": {
                             "type": "Identifier",
                             "range": [
                               4,
                               7
                             ],
-                            "name": "arguments"
-                          },
-                          "property": {
-                            "type": "Literal",
-                            "range": [
-                              4,
-                              7
-                            ],
-                            "value": 0
+                            "name": "keywords"
                           }
-                        },
-                        "alternate": {
-                          "type": "Literal",
-                          "range": [
-                            4,
-                            7
-                          ],
-                          "value": null
                         }
                       }
                     }
-                  ]
+                  ],
+                  "userCode": false
                 },
                 {
                   "type": "VariableDeclaration",
@@ -4547,127 +3814,10 @@ describe("Source Locations", function () {
                           4,
                           7
                         ],
-                        "name": "__formalsIndex0"
+                        "name": "__params0"
                       },
                       "init": {
-                        "type": "Literal",
-                        "range": [
-                          4,
-                          7
-                        ],
-                        "value": 0
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "VariableDeclaration",
-                  "range": [
-                    4,
-                    7
-                  ],
-                  "kind": "var",
-                  "declarations": [
-                    {
-                      "type": "VariableDeclarator",
-                      "range": [
-                        4,
-                        7
-                      ],
-                      "id": {
-                        "type": "Identifier",
-                        "range": [
-                          4,
-                          7
-                        ],
-                        "name": "__args0"
-                      },
-                      "init": {
-                        "type": "Identifier",
-                        "range": [
-                          4,
-                          7
-                        ],
-                        "name": "arguments"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "FunctionDeclaration",
-                  "range": [
-                    4,
-                    7
-                  ],
-                  "id": {
-                    "type": "Identifier",
-                    "range": [
-                      4,
-                      7
-                    ],
-                    "name": "__getParam0"
-                  },
-                  "params": [
-                    {
-                      "type": "Identifier",
-                      "range": [
-                        4,
-                        7
-                      ],
-                      "name": "v"
-                    },
-                    {
-                      "type": "Identifier",
-                      "range": [
-                        4,
-                        7
-                      ],
-                      "name": "d"
-                    }
-                  ],
-                  "defaults": [],
-                  "body": {
-                    "type": "BlockStatement",
-                    "range": [
-                      4,
-                      7
-                    ],
-                    "body": [
-                      {
-                        "type": "VariableDeclaration",
-                        "range": [
-                          4,
-                          7
-                        ],
-                        "kind": "var",
-                        "declarations": [
-                          {
-                            "type": "VariableDeclarator",
-                            "range": [
-                              4,
-                              7
-                            ],
-                            "id": {
-                              "type": "Identifier",
-                              "range": [
-                                4,
-                                7
-                              ],
-                              "name": "r"
-                            },
-                            "init": {
-                              "type": "Identifier",
-                              "range": [
-                                4,
-                                7
-                              ],
-                              "name": "d"
-                            }
-                          }
-                        ]
-                      },
-                      {
-                        "type": "IfStatement",
+                        "type": "ConditionalExpression",
                         "range": [
                           4,
                           7
@@ -4678,568 +3828,507 @@ describe("Source Locations", function () {
                             4,
                             7
                           ],
-                          "name": "__params0"
+                          "name": "__hasParams0"
                         },
                         "consequent": {
-                          "type": "BlockStatement",
+                          "type": "MemberExpression",
                           "range": [
                             4,
                             7
                           ],
-                          "body": [
-                            {
-                              "type": "IfStatement",
-                              "range": [
-                                4,
-                                7
-                              ],
-                              "test": {
-                                "type": "BinaryExpression",
-                                "range": [
-                                  4,
-                                  7
-                                ],
-                                "operator": "<",
-                                "left": {
-                                  "type": "Identifier",
-                                  "range": [
-                                    4,
-                                    7
-                                  ],
-                                  "name": "__formalsIndex0"
-                                },
-                                "right": {
-                                  "type": "MemberExpression",
-                                  "range": [
-                                    4,
-                                    7
-                                  ],
-                                  "computed": false,
-                                  "object": {
-                                    "type": "MemberExpression",
-                                    "range": [
-                                      4,
-                                      7
-                                    ],
-                                    "computed": false,
-                                    "object": {
-                                      "type": "Identifier",
-                                      "range": [
-                                        4,
-                                        7
-                                      ],
-                                      "name": "__params0"
-                                    },
-                                    "property": {
-                                      "type": "Identifier",
-                                      "range": [
-                                        4,
-                                        7
-                                      ],
-                                      "name": "formals"
-                                    }
-                                  },
-                                  "property": {
-                                    "type": "Identifier",
-                                    "range": [
-                                      4,
-                                      7
-                                    ],
-                                    "name": "length"
-                                  }
-                                }
-                              },
-                              "consequent": {
-                                "type": "BlockStatement",
-                                "range": [
-                                  4,
-                                  7
-                                ],
-                                "body": [
-                                  {
-                                    "type": "ExpressionStatement",
-                                    "range": [
-                                      4,
-                                      7
-                                    ],
-                                    "expression": {
-                                      "type": "AssignmentExpression",
-                                      "range": [
-                                        4,
-                                        7
-                                      ],
-                                      "operator": "=",
-                                      "left": {
-                                        "type": "Identifier",
-                                        "range": [
-                                          4,
-                                          7
-                                        ],
-                                        "name": "r"
-                                      },
-                                      "right": {
-                                        "type": "MemberExpression",
-                                        "range": [
-                                          4,
-                                          7
-                                        ],
-                                        "computed": true,
-                                        "object": {
-                                          "type": "MemberExpression",
-                                          "range": [
-                                            4,
-                                            7
-                                          ],
-                                          "computed": false,
-                                          "object": {
-                                            "type": "Identifier",
-                                            "range": [
-                                              4,
-                                              7
-                                            ],
-                                            "name": "__params0"
-                                          },
-                                          "property": {
-                                            "type": "Identifier",
-                                            "range": [
-                                              4,
-                                              7
-                                            ],
-                                            "name": "formals"
-                                          }
-                                        },
-                                        "property": {
-                                          "type": "UpdateExpression",
-                                          "range": [
-                                            4,
-                                            7
-                                          ],
-                                          "operator": "++",
-                                          "argument": {
-                                            "type": "Identifier",
-                                            "range": [
-                                              4,
-                                              7
-                                            ],
-                                            "name": "__formalsIndex0"
-                                          },
-                                          "prefix": false
-                                        }
-                                      }
-                                    }
-                                  }
-                                ]
-                              },
-                              "alternate": {
-                                "type": "IfStatement",
-                                "range": [
-                                  4,
-                                  7
-                                ],
-                                "test": {
-                                  "type": "BinaryExpression",
-                                  "range": [
-                                    4,
-                                    7
-                                  ],
-                                  "operator": "in",
-                                  "left": {
-                                    "type": "Identifier",
-                                    "range": [
-                                      4,
-                                      7
-                                    ],
-                                    "name": "v"
-                                  },
-                                  "right": {
-                                    "type": "MemberExpression",
-                                    "range": [
-                                      4,
-                                      7
-                                    ],
-                                    "computed": false,
-                                    "object": {
-                                      "type": "Identifier",
-                                      "range": [
-                                        4,
-                                        7
-                                      ],
-                                      "name": "__params0"
-                                    },
-                                    "property": {
-                                      "type": "Identifier",
-                                      "range": [
-                                        4,
-                                        7
-                                      ],
-                                      "name": "keywords"
-                                    }
-                                  }
-                                },
-                                "consequent": {
-                                  "type": "BlockStatement",
-                                  "range": [
-                                    4,
-                                    7
-                                  ],
-                                  "body": [
-                                    {
-                                      "type": "ExpressionStatement",
-                                      "range": [
-                                        4,
-                                        7
-                                      ],
-                                      "expression": {
-                                        "type": "AssignmentExpression",
-                                        "range": [
-                                          4,
-                                          7
-                                        ],
-                                        "operator": "=",
-                                        "left": {
-                                          "type": "Identifier",
-                                          "range": [
-                                            4,
-                                            7
-                                          ],
-                                          "name": "r"
-                                        },
-                                        "right": {
-                                          "type": "MemberExpression",
-                                          "range": [
-                                            4,
-                                            7
-                                          ],
-                                          "computed": true,
-                                          "property": {
-                                            "type": "Identifier",
-                                            "range": [
-                                              4,
-                                              7
-                                            ],
-                                            "name": "v"
-                                          },
-                                          "object": {
-                                            "type": "MemberExpression",
-                                            "range": [
-                                              4,
-                                              7
-                                            ],
-                                            "computed": false,
-                                            "object": {
-                                              "type": "Identifier",
-                                              "range": [
-                                                4,
-                                                7
-                                              ],
-                                              "name": "__params0"
-                                            },
-                                            "property": {
-                                              "type": "Identifier",
-                                              "range": [
-                                                4,
-                                                7
-                                              ],
-                                              "name": "keywords"
-                                            }
-                                          }
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "type": "ExpressionStatement",
-                                      "range": [
-                                        4,
-                                        7
-                                      ],
-                                      "expression": {
-                                        "type": "UnaryExpression",
-                                        "range": [
-                                          4,
-                                          7
-                                        ],
-                                        "operator": "delete",
-                                        "prefix": true,
-                                        "argument": {
-                                          "type": "MemberExpression",
-                                          "range": [
-                                            4,
-                                            7
-                                          ],
-                                          "computed": true,
-                                          "property": {
-                                            "type": "Identifier",
-                                            "range": [
-                                              4,
-                                              7
-                                            ],
-                                            "name": "v"
-                                          },
-                                          "object": {
-                                            "type": "MemberExpression",
-                                            "range": [
-                                              4,
-                                              7
-                                            ],
-                                            "computed": false,
-                                            "object": {
-                                              "type": "Identifier",
-                                              "range": [
-                                                4,
-                                                7
-                                              ],
-                                              "name": "__params0"
-                                            },
-                                            "property": {
-                                              "type": "Identifier",
-                                              "range": [
-                                                4,
-                                                7
-                                              ],
-                                              "name": "keywords"
-                                            }
-                                          }
-                                        }
-                                      }
-                                    }
-                                  ]
-                                },
-                                "alternate": null
-                              }
-                            }
-                          ]
-                        },
-                        "alternate": {
-                          "type": "IfStatement",
-                          "range": [
-                            4,
-                            7
-                          ],
-                          "test": {
-                            "type": "BinaryExpression",
+                          "computed": false,
+                          "object": {
+                            "type": "MemberExpression",
                             "range": [
                               4,
                               7
                             ],
-                            "operator": "<",
-                            "left": {
+                            "computed": true,
+                            "object": {
                               "type": "Identifier",
                               "range": [
                                 4,
                                 7
                               ],
-                              "name": "__formalsIndex0"
+                              "name": "arguments"
                             },
-                            "right": {
-                              "type": "MemberExpression",
+                            "property": {
+                              "type": "BinaryExpression",
                               "range": [
                                 4,
                                 7
                               ],
-                              "computed": false,
-                              "object": {
-                                "type": "Identifier",
+                              "operator": "-",
+                              "left": {
+                                "type": "MemberExpression",
                                 "range": [
                                   4,
                                   7
                                 ],
-                                "name": "__args0"
-                              },
-                              "property": {
-                                "type": "Identifier",
-                                "range": [
-                                  4,
-                                  7
-                                ],
-                                "name": "length"
-                              }
-                            }
-                          },
-                          "consequent": {
-                            "type": "BlockStatement",
-                            "range": [
-                              4,
-                              7
-                            ],
-                            "body": [
-                              {
-                                "type": "ExpressionStatement",
-                                "range": [
-                                  4,
-                                  7
-                                ],
-                                "expression": {
-                                  "type": "AssignmentExpression",
+                                "computed": false,
+                                "object": {
+                                  "type": "Identifier",
                                   "range": [
                                     4,
                                     7
                                   ],
-                                  "operator": "=",
-                                  "left": {
-                                    "type": "Identifier",
-                                    "range": [
-                                      4,
-                                      7
-                                    ],
-                                    "name": "r"
-                                  },
-                                  "right": {
-                                    "type": "MemberExpression",
-                                    "range": [
-                                      4,
-                                      7
-                                    ],
-                                    "computed": true,
-                                    "object": {
-                                      "type": "Identifier",
-                                      "range": [
-                                        4,
-                                        7
-                                      ],
-                                      "name": "__args0"
-                                    },
-                                    "property": {
-                                      "type": "UpdateExpression",
-                                      "range": [
-                                        4,
-                                        7
-                                      ],
-                                      "operator": "++",
-                                      "argument": {
-                                        "type": "Identifier",
-                                        "range": [
-                                          4,
-                                          7
-                                        ],
-                                        "name": "__formalsIndex0"
-                                      },
-                                      "prefix": false
-                                    }
-                                  }
+                                  "name": "arguments"
+                                },
+                                "property": {
+                                  "type": "Identifier",
+                                  "range": [
+                                    4,
+                                    7
+                                  ],
+                                  "name": "length"
                                 }
+                              },
+                              "right": {
+                                "type": "Literal",
+                                "range": [
+                                  4,
+                                  7
+                                ],
+                                "value": 1
                               }
-                            ]
+                            }
                           },
-                          "alternate": null
+                          "property": {
+                            "type": "Identifier",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "name": "keywords"
+                          }
+                        },
+                        "alternate": {
+                          "type": "ObjectExpression",
+                          "range": [
+                            4,
+                            7
+                          ],
+                          "properties": []
                         }
-                      },
-                      {
-                        "type": "ReturnStatement",
+                      }
+                    }
+                  ],
+                  "userCode": false
+                },
+                {
+                  "type": "VariableDeclaration",
+                  "range": [
+                    4,
+                    7
+                  ],
+                  "kind": "var",
+                  "declarations": [
+                    {
+                      "type": "VariableDeclarator",
+                      "range": [
+                        4,
+                        7
+                      ],
+                      "id": {
+                        "type": "Identifier",
                         "range": [
                           4,
                           7
                         ],
-                        "argument": {
+                        "name": "__realArgCount0"
+                      },
+                      "init": {
+                        "type": "BinaryExpression",
+                        "range": [
+                          4,
+                          7
+                        ],
+                        "operator": "-",
+                        "left": {
+                          "type": "MemberExpression",
+                          "range": [
+                            4,
+                            7
+                          ],
+                          "computed": false,
+                          "object": {
+                            "type": "Identifier",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "name": "arguments"
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "name": "length"
+                          }
+                        },
+                        "right": {
+                          "type": "ConditionalExpression",
+                          "range": [
+                            4,
+                            7
+                          ],
+                          "test": {
+                            "type": "Identifier",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "name": "__hasParams0"
+                          },
+                          "consequent": {
+                            "type": "Literal",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "value": 1
+                          },
+                          "alternate": {
+                            "type": "Literal",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "value": 0
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "userCode": false
+                },
+                {
+                  "type": "IfStatement",
+                  "range": [
+                    4,
+                    7
+                  ],
+                  "test": {
+                    "type": "BinaryExpression",
+                    "range": [
+                      4,
+                      7
+                    ],
+                    "operator": "<",
+                    "left": {
+                      "type": "Identifier",
+                      "range": [
+                        4,
+                        7
+                      ],
+                      "name": "__realArgCount0"
+                    },
+                    "right": {
+                      "type": "Literal",
+                      "range": [
+                        4,
+                        7
+                      ],
+                      "value": 1
+                    }
+                  },
+                  "consequent": {
+                    "type": "ExpressionStatement",
+                    "range": [
+                      4,
+                      7
+                    ],
+                    "expression": {
+                      "type": "AssignmentExpression",
+                      "range": [
+                        4,
+                        7
+                      ],
+                      "operator": "=",
+                      "left": {
+                        "type": "Identifier",
+                        "range": [
+                          4,
+                          7
+                        ],
+                        "name": "a"
+                      },
+                      "right": {
+                        "type": "ConditionalExpression",
+                        "range": [
+                          4,
+                          7
+                        ],
+                        "test": {
+                          "type": "BinaryExpression",
+                          "range": [
+                            4,
+                            7
+                          ],
+                          "operator": "in",
+                          "left": {
+                            "type": "Literal",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "value": "a"
+                          },
+                          "right": {
+                            "type": "Identifier",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "name": "__params0"
+                          }
+                        },
+                        "consequent": {
+                          "type": "MemberExpression",
+                          "range": [
+                            0,
+                            0
+                          ],
+                          "object": {
+                            "type": "Identifier",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "name": "__params0"
+                          },
+                          "property": {
+                            "type": "Literal",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "value": "a"
+                          },
+                          "computed": true
+                        },
+                        "alternate": {
                           "type": "Identifier",
                           "range": [
                             4,
                             7
                           ],
-                          "name": "r"
+                          "name": "undefined"
                         }
                       }
-                    ]
-                  },
-                  "rest": null,
-                  "generator": false,
-                  "expression": false
-                },
-                {
-                  "type": "VariableDeclaration",
-                  "range": [
-                    8,
-                    9
-                  ],
-                  "kind": "var",
-                  "declarations": [
-                    {
-                      "type": "VariableDeclarator",
-                      "range": [
-                        8,
-                        9
-                      ],
-                      "id": {
-                        "type": "Identifier",
-                        "range": [
-                          8,
-                          9
-                        ],
-                        "name": "a"
-                      },
-                      "init": {
-                        "type": "CallExpression",
-                        "range": [
-                          8,
-                          9
-                        ],
-                        "callee": {
-                          "type": "Identifier",
-                          "range": [
-                            8,
-                            9
-                          ],
-                          "name": "__getParam0"
-                        },
-                        "arguments": [
-                          {
-                            "type": "Literal",
-                            "range": [
-                              8,
-                              9
-                            ],
-                            "value": "a"
-                          }
-                        ]
-                      }
                     }
-                  ]
+                  }
                 },
                 {
-                  "type": "VariableDeclaration",
+                  "type": "IfStatement",
                   "range": [
-                    11,
-                    12
+                    4,
+                    7
                   ],
-                  "kind": "var",
-                  "declarations": [
-                    {
-                      "type": "VariableDeclarator",
+                  "test": {
+                    "type": "BinaryExpression",
+                    "range": [
+                      4,
+                      7
+                    ],
+                    "operator": "<",
+                    "left": {
+                      "type": "Identifier",
                       "range": [
-                        11,
-                        12
+                        4,
+                        7
                       ],
-                      "id": {
+                      "name": "__realArgCount0"
+                    },
+                    "right": {
+                      "type": "Literal",
+                      "range": [
+                        4,
+                        7
+                      ],
+                      "value": 2
+                    }
+                  },
+                  "consequent": {
+                    "type": "ExpressionStatement",
+                    "range": [
+                      4,
+                      7
+                    ],
+                    "expression": {
+                      "type": "AssignmentExpression",
+                      "range": [
+                        4,
+                        7
+                      ],
+                      "operator": "=",
+                      "left": {
                         "type": "Identifier",
                         "range": [
-                          11,
-                          12
+                          4,
+                          7
                         ],
                         "name": "b"
                       },
+                      "right": {
+                        "type": "ConditionalExpression",
+                        "range": [
+                          4,
+                          7
+                        ],
+                        "test": {
+                          "type": "BinaryExpression",
+                          "range": [
+                            4,
+                            7
+                          ],
+                          "operator": "in",
+                          "left": {
+                            "type": "Literal",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "value": "b"
+                          },
+                          "right": {
+                            "type": "Identifier",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "name": "__params0"
+                          }
+                        },
+                        "consequent": {
+                          "type": "MemberExpression",
+                          "range": [
+                            0,
+                            0
+                          ],
+                          "object": {
+                            "type": "Identifier",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "name": "__params0"
+                          },
+                          "property": {
+                            "type": "Literal",
+                            "range": [
+                              4,
+                              7
+                            ],
+                            "value": "b"
+                          },
+                          "computed": true
+                        },
+                        "alternate": {
+                          "type": "Identifier",
+                          "range": [
+                            4,
+                            7
+                          ],
+                          "name": "undefined"
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "VariableDeclaration",
+                  "range": [
+                    17,
+                    18
+                  ],
+                  "kind": "var",
+                  "declarations": [
+                    {
+                      "type": "VariableDeclarator",
+                      "range": [
+                        17,
+                        18
+                      ],
+                      "id": {
+                        "type": "Identifier",
+                        "range": [
+                          17,
+                          18
+                        ],
+                        "name": "r"
+                      },
                       "init": {
                         "type": "CallExpression",
                         "range": [
-                          11,
-                          12
+                          21,
+                          26
                         ],
-                        "callee": {
-                          "type": "Identifier",
-                          "range": [
-                            11,
-                            12
-                          ],
-                          "name": "__getParam0"
-                        },
                         "arguments": [
                           {
-                            "type": "Literal",
+                            "type": "Identifier",
                             "range": [
-                              11,
-                              12
+                              21,
+                              22
                             ],
-                            "value": "b"
+                            "name": "a"
+                          },
+                          {
+                            "type": "Identifier",
+                            "range": [
+                              25,
+                              26
+                            ],
+                            "name": "b"
                           }
-                        ]
+                        ],
+                        "callee": {
+                          "type": "MemberExpression",
+                          "range": [
+                            21,
+                            26
+                          ],
+                          "object": {
+                            "type": "MemberExpression",
+                            "range": [
+                              21,
+                              26
+                            ],
+                            "object": {
+                              "type": "Identifier",
+                              "range": [
+                                21,
+                                26
+                              ],
+                              "name": "__pythonRuntime",
+                              "userCode": false
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "range": [
+                                21,
+                                26
+                              ],
+                              "name": "ops",
+                              "userCode": false
+                            },
+                            "computed": false,
+                            "userCode": false
+                          },
+                          "property": {
+                            "type": "Identifier",
+                            "range": [
+                              21,
+                              26
+                            ],
+                            "name": "add",
+                            "userCode": false
+                          },
+                          "computed": false,
+                          "userCode": false
+                        }
                       }
                     }
                   ]
@@ -5247,165 +4336,16 @@ describe("Source Locations", function () {
                 {
                   "type": "ReturnStatement",
                   "range": [
-                    14,
-                    36
+                    29,
+                    37
                   ],
                   "argument": {
-                    "type": "CallExpression",
+                    "type": "Identifier",
                     "range": [
-                      14,
-                      36
+                      36,
+                      37
                     ],
-                    "callee": {
-                      "type": "MemberExpression",
-                      "range": [
-                        14,
-                        36
-                      ],
-                      "computed": false,
-                      "object": {
-                        "type": "FunctionExpression",
-                        "range": [
-                          14,
-                          36
-                        ],
-                        "params": [],
-                        "defaults": [],
-                        "body": {
-                          "type": "BlockStatement",
-                          "range": [
-                            14,
-                            36
-                          ],
-                          "body": [
-                            {
-                              "type": "VariableDeclaration",
-                              "range": [
-                                16,
-                                17
-                              ],
-                              "kind": "var",
-                              "declarations": [
-                                {
-                                  "type": "VariableDeclarator",
-                                  "range": [
-                                    16,
-                                    17
-                                  ],
-                                  "id": {
-                                    "type": "Identifier",
-                                    "range": [
-                                      16,
-                                      17
-                                    ],
-                                    "name": "r"
-                                  },
-                                  "init": {
-                                    "type": "CallExpression",
-                                    "range": [
-                                      20,
-                                      25
-                                    ],
-                                    "arguments": [
-                                      {
-                                        "type": "Identifier",
-                                        "range": [
-                                          20,
-                                          21
-                                        ],
-                                        "name": "a"
-                                      },
-                                      {
-                                        "type": "Identifier",
-                                        "range": [
-                                          24,
-                                          25
-                                        ],
-                                        "name": "b"
-                                      }
-                                    ],
-                                    "callee": {
-                                      "type": "MemberExpression",
-                                      "range": [
-                                        20,
-                                        25
-                                      ],
-                                      "object": {
-                                        "type": "MemberExpression",
-                                        "range": [
-                                          20,
-                                          25
-                                        ],
-                                        "object": {
-                                          "type": "Identifier",
-                                          "range": [
-                                            20,
-                                            25
-                                          ],
-                                          "name": "__pythonRuntime"
-                                        },
-                                        "property": {
-                                          "type": "Identifier",
-                                          "range": [
-                                            20,
-                                            25
-                                          ],
-                                          "name": "ops"
-                                        },
-                                        "computed": false
-                                      },
-                                      "property": {
-                                        "type": "Identifier",
-                                        "range": [
-                                          20,
-                                          25
-                                        ],
-                                        "name": "add"
-                                      },
-                                      "computed": false
-                                    }
-                                  }
-                                }
-                              ]
-                            },
-                            {
-                              "type": "ReturnStatement",
-                              "range": [
-                                27,
-                                35
-                              ],
-                              "argument": {
-                                "type": "Identifier",
-                                "range": [
-                                  34,
-                                  35
-                                ],
-                                "name": "r"
-                              }
-                            }
-                          ]
-                        },
-                        "generator": false,
-                        "expression": false
-                      },
-                      "property": {
-                        "type": "Identifier",
-                        "range": [
-                          14,
-                          36
-                        ],
-                        "name": "call"
-                      }
-                    },
-                    "arguments": [
-                      {
-                        "type": "ThisExpression",
-                        "range": [
-                          14,
-                          36
-                        ]
-                      }
-                    ]
+                    "name": "r"
                   }
                 }
               ]
