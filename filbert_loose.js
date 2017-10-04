@@ -418,15 +418,17 @@ function parseStatement() {
 
 function parseSuite() {
   var node = startNode();
+  var stmt;
   node.body = [];
   if (eat(tt.newline)) {
     eat(tt.indent);
     while (!eat(tt.dedent) && token.type !== tt.eof) {
-      var stmt = parseStatement();
+      stmt = parseStatement();
       if (stmt) node.body.push(stmt);
     }
   } else {
-    node.body.push(parseStatement());
+    stmt = parseStatement();
+    if (stmt) node.body.push(stmt);
     next();
   }
   return finishNode(node, "BlockStatement");
