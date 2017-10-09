@@ -411,12 +411,12 @@ var _exponentiation = { prec: 12, beforeExpr: true };
 // tokenizer.
 
 exports.tokTypes = {bracketL: _bracketL, bracketR: _bracketR, braceL: _braceL, braceR: _braceR,
-                    parenL: _parenL, parenR: _parenR, comma: _comma, semi: _semi, colon: _colon,
-                    dot: _dot, question: _question, slash: _slash, eq: _eq, name: _name, eof: _eof,
-                    num: _num, regexp: _regexp, string: _string,
-                    newline: _newline, indent: _indent, dedent: _dedent,
-                    exponentiation: _exponentiation, floorDiv: _floorDiv, plusMin: _plusMin,
-                    posNegNot: _posNegNot, multiplyModulo: _multiplyModulo
+  parenL: _parenL, parenR: _parenR, comma: _comma, semi: _semi, colon: _colon,
+  dot: _dot, question: _question, slash: _slash, eq: _eq, name: _name, eof: _eof,
+  num: _num, regexp: _regexp, string: _string,
+  newline: _newline, indent: _indent, dedent: _dedent,
+  exponentiation: _exponentiation, floorDiv: _floorDiv, plusMin: _plusMin,
+  posNegNot: _posNegNot, multiplyModulo: _multiplyModulo
 };
 for (var kw in keywordTypes) exports.tokTypes["_" + kw] = keywordTypes[kw];
 
@@ -571,7 +571,7 @@ function skipLineComment() {
   skipLine();
   if (options.onComment)
     options.onComment(input.slice(start + 1, tokPos), start, tokPos,
-                      startLoc, options.locations && new Position);
+      startLoc, options.locations && new Position);
 }
 
 // Called at the start of the parse and after every token. Skips
@@ -761,7 +761,7 @@ function readToken_indent() {
 function getTokenFromCode(code) {
   switch(code) {
 
-  case 13: case 10: case 8232: case 8233:
+    case 13: case 10: case 8232: case 8233:
     ++tokPos;
     if (code === 13 && input.charCodeAt(tokPos) === 10) ++tokPos;
     if (options.locations) {
@@ -770,68 +770,68 @@ function getTokenFromCode(code) {
     }
     return finishToken(_newline);
 
-  case 35: // '#'
-    skipLineComment();
-    return readToken();
+    case 35: // '#'
+      skipLineComment();
+      return readToken();
 
     // The interpretation of a dot depends on whether it is followed
     // by a digit.
-  case 46: // '.'
-    return readToken_dot();
+    case 46: // '.'
+      return readToken_dot();
 
     // Punctuation tokens.
-  case 40: ++tokPos; return finishToken(_parenL);
-  case 41: ++tokPos; return finishToken(_parenR);
-  case 59: ++tokPos; return finishToken(_semi);
-  case 44: ++tokPos; return finishToken(_comma);
-  case 91: ++tokPos; return finishToken(_bracketL);
-  case 93: ++tokPos; return finishToken(_bracketR);
-  case 123: ++tokPos; return finishToken(_braceL);
-  case 125: ++tokPos; return finishToken(_braceR);
-  case 58: ++tokPos; return finishToken(_colon);
-  case 63: ++tokPos; return finishToken(_question);
+    case 40: ++tokPos; return finishToken(_parenL);
+    case 41: ++tokPos; return finishToken(_parenR);
+    case 59: ++tokPos; return finishToken(_semi);
+    case 44: ++tokPos; return finishToken(_comma);
+    case 91: ++tokPos; return finishToken(_bracketL);
+    case 93: ++tokPos; return finishToken(_bracketR);
+    case 123: ++tokPos; return finishToken(_braceL);
+    case 125: ++tokPos; return finishToken(_braceR);
+    case 58: ++tokPos; return finishToken(_colon);
+    case 63: ++tokPos; return finishToken(_question);
 
     // '0x' is a hexadecimal number.
-  case 48: // '0'
-    var next = input.charCodeAt(tokPos + 1);
-    if (next === 120 || next === 88) return readHexNumber();
+    case 48: // '0'
+      var next = input.charCodeAt(tokPos + 1);
+      if (next === 120 || next === 88) return readHexNumber();
     // Anything else beginning with a digit is an integer, octal
     // number, or float.
-  case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57: // 1-9
+    case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57: // 1-9
     return readNumber(false);
 
     // Quotes produce strings.
-  case 34: case 39: // '"', "'"
+    case 34: case 39: // '"', "'"
     return readString(code);
 
-  // Operators are parsed inline in tiny state machines. '=' (61) is
-  // often referred to. `finishOp` simply skips the amount of
-  // characters it is given as second argument, and returns a token
-  // of the type given by its first argument.
+    // Operators are parsed inline in tiny state machines. '=' (61) is
+    // often referred to. `finishOp` simply skips the amount of
+    // characters it is given as second argument, and returns a token
+    // of the type given by its first argument.
 
-  case 47: // '/'
-    return readToken_slash(code);
+    case 47: // '/'
+      return readToken_slash(code);
 
-  case 42: case 37: // '*%'
+    case 42: case 37: // '*%'
     return readToken_mult_modulo(code);
 
-  case 124: case 38: // '|&'
+    case 124: case 38: // '|&'
     return readToken_pipe_amp(code);
 
-  case 94: // '^'
-    return readToken_caret();
+    case 94: // '^'
+      return readToken_caret();
 
-  case 43: case 45: // '+-'
+    case 43: case 45: // '+-'
     return readToken_plus_min(code);
 
-  case 60: case 62: // '<>'
+    case 60: case 62: // '<>'
     return readToken_lt_gt(code);
 
-  case 61: case 33: // '=!'
+    case 61: case 33: // '=!'
     return readToken_eq_excl(code);
 
-  case 126: // '~'
-    return finishOp(_bitwiseNOT, 1);
+    case 126: // '~'
+      return finishOp(_bitwiseNOT, 1);
   }
 
   return false;
@@ -978,7 +978,7 @@ function readString(quote) {
     if (ch === quote) {
       if (tripleQuoted) {
         if (input.charCodeAt(tokPos+1) === quote &&
-            input.charCodeAt(tokPos+2) === quote) {
+          input.charCodeAt(tokPos+2) === quote) {
           tokPos += 3;
           return finishToken(_string, out);
         }
@@ -1000,28 +1000,28 @@ function readString(quote) {
         tokPos += octal.length - 1;
       } else {
         switch (ch) {
-        case 110: out += "\n"; break; // 'n' -> '\n'
-        case 114: out += "\r"; break; // 'r' -> '\r'
-        case 120: out += String.fromCharCode(readHexChar(2)); break; // 'x'
-        case 117: out += String.fromCharCode(readHexChar(4)); break; // 'u'
-        case 85: // 'U'
-          ch = readHexChar(8);
-          if (ch < 0xFFFF && (ch < 0xD800 || 0xDBFF < ch)) out += String.fromCharCode(ch); // If it's UTF-16
-          else { // If we need UCS-2
-            ch -= 0x10000;
-            out += String.fromCharCode((ch>>10)+0xd800)+String.fromCharCode((ch%0x400)+0xdc00);
-          }
-          break;
-        case 116: out += "\t"; break; // 't' -> '\t'
-        case 98: out += "\b"; break; // 'b' -> '\b'
-        case 118: out += "\u000b"; break; // 'v' -> '\u000b'
-        case 102: out += "\f"; break; // 'f' -> '\f'
-        case 48: out += "\0"; break; // 0 -> '\0'
-        case 13: if (input.charCodeAt(tokPos) === 10) ++tokPos; // '\r\n'
-        case 10: // ' \n'
-          if (options.locations) { tokLineStart = tokPos; ++tokCurLine; }
-          break;
-        default: out += '\\' + String.fromCharCode(ch); break; // Python doesn't remove slashes on failed escapes
+          case 110: out += "\n"; break; // 'n' -> '\n'
+          case 114: out += "\r"; break; // 'r' -> '\r'
+          case 120: out += String.fromCharCode(readHexChar(2)); break; // 'x'
+          case 117: out += String.fromCharCode(readHexChar(4)); break; // 'u'
+          case 85: // 'U'
+            ch = readHexChar(8);
+            if (ch < 0xFFFF && (ch < 0xD800 || 0xDBFF < ch)) out += String.fromCharCode(ch); // If it's UTF-16
+            else { // If we need UCS-2
+              ch -= 0x10000;
+              out += String.fromCharCode((ch>>10)+0xd800)+String.fromCharCode((ch%0x400)+0xdc00);
+            }
+            break;
+          case 116: out += "\t"; break; // 't' -> '\t'
+          case 98: out += "\b"; break; // 'b' -> '\b'
+          case 118: out += "\u000b"; break; // 'v' -> '\u000b'
+          case 102: out += "\f"; break; // 'f' -> '\f'
+          case 48: out += "\0"; break; // 0 -> '\0'
+          case 13: if (input.charCodeAt(tokPos) === 10) ++tokPos; // '\r\n'
+          case 10: // ' \n'
+            if (options.locations) { tokLineStart = tokPos; ++tokCurLine; }
+            break;
+          default: out += '\\' + String.fromCharCode(ch); break; // Python doesn't remove slashes on failed escapes
         }
       }
     } else {
@@ -1447,11 +1447,11 @@ var getNodeCreator = exports.getNodeCreator = function(startNode, startNodeFrom,
                           operator: '=', left: rId, right: __paramsKeywordsV
                         })
                       }),
-                      this.createGeneratedNodeSpan(r, r, "ExpressionStatement", {
-                        expression: this.createNodeSpan(r, r, "UnaryExpression", {
-                          operator: 'delete', prefix: true, argument: __paramsKeywordsV
-                        })
-                      })]
+                        this.createGeneratedNodeSpan(r, r, "ExpressionStatement", {
+                          expression: this.createNodeSpan(r, r, "UnaryExpression", {
+                            operator: 'delete', prefix: true, argument: __paramsKeywordsV
+                          })
+                        })]
                     }),
                     alternate: null
                   })
@@ -1533,13 +1533,7 @@ var getNodeCreator = exports.getNodeCreator = function(startNode, startNodeFrom,
         return null;
       }
 
-      // Start building class constructor
-
-      var ctorBlock = startNodeFrom(classBlock);
-      ctorBlock.body = [];
-
       // Add parent class constructor call
-
       if (classParams.length === 1) {
         var objId = this.createNodeSpan(classBodyRefNode, classBodyRefNode, "Identifier", { name: classParams[0].name });
         var propertyId = this.createNodeSpan(classBodyRefNode, classBodyRefNode, "Identifier", { name: "call" });
@@ -1547,16 +1541,15 @@ var getNodeCreator = exports.getNodeCreator = function(startNode, startNodeFrom,
         var thisExpr = this.createNodeSpan(classBodyRefNode, classBodyRefNode, "ThisExpression");
         var callExpr = this.createNodeSpan(classBodyRefNode, classBodyRefNode, "CallExpression", { callee: calleeMember, arguments: [thisExpr] });
         var superExpr = this.createNodeSpan(classBodyRefNode, classBodyRefNode, "ExpressionStatement", { expression: callExpr });
-        ctorBlock.body.push(superExpr);
+        //ctorNode.body.push(superExpr);
       }
 
       // Add non-function statements and contents of special '__init__' method
-
       for (var i in classBlock.body) {
         var stmt = classBlock.body[i];
         var prototype = getPrototype(stmt);
         if (!prototype) {
-          ctorBlock.body.push(stmt);
+          ctorNode.body.push(stmt);
         }
         else if (prototype === "__init__") {
           for (var j in stmt.expression.right.body.body)
@@ -1565,16 +1558,9 @@ var getNodeCreator = exports.getNodeCreator = function(startNode, startNodeFrom,
         }
       }
 
-      // Finish class constructor
-
-      ctorNode.body = finishNode(ctorBlock, "BlockStatement");
-      finishNode(ctorNode, "FunctionDeclaration");
-      container.body.push(ctorNode);
-
       // Add inheritance via 'MyClass.prototype = Object.create(ParentClass.prototype)'
-
       if (classParams.length === 1) {
-        var childClassId = this.createNodeSpan(ctorNode, ctorNode, "Identifier", { name: ctorNode.id.name });
+        var childClassId = this.createNodeSpan(ctorNode, ctorNode, "Identifier", { name: container.id.name });
         var childPrototypeId = this.createNodeSpan(ctorNode, ctorNode, "Identifier", { name: "prototype" });
         var childPrototypeMember = this.createNodeSpan(ctorNode, ctorNode, "MemberExpression", { object: childClassId, property: childPrototypeId, computed: false });
         var parentClassId = this.createNodeSpan(ctorNode, ctorNode, "Identifier", { name: classParams[0].name });
@@ -1586,7 +1572,7 @@ var getNodeCreator = exports.getNodeCreator = function(startNode, startNodeFrom,
         var callExpr = this.createNodeSpan(ctorNode, ctorNode, "CallExpression", { callee: objPropertyMember, arguments: [parentPrototypeMember] });
         var assignExpr = this.createNodeSpan(ctorNode, ctorNode, "AssignmentExpression", { left: childPrototypeMember, operator: "=", right: callExpr });
         var inheritanceExpr = this.createNodeSpan(ctorNode, ctorNode, "ExpressionStatement", { expression: assignExpr });
-        container.body.push(inheritanceExpr);
+        ctorNode.body = inheritanceExpr;
       }
 
       // Add class methods, which are already prototype assignments
@@ -1595,10 +1581,11 @@ var getNodeCreator = exports.getNodeCreator = function(startNode, startNodeFrom,
         var stmt = classBlock.body[i];
         var prototype = getPrototype(stmt);
         if (prototype && prototype !== "__init__")
-          container.body.push(stmt);
+          ctorNode.body.push(stmt);
       }
-
-      return finishNode(container, "BlockStatement");
+      // Finish class constructor
+      finishNode(ctorNode, "ClassBody");
+      return finishNode(container, "ClassDeclaration");
     },
 
     // Create for loop
@@ -1735,7 +1722,7 @@ var getNodeCreator = exports.getNodeCreator = function(startNode, startNodeFrom,
       var iifeReturn = this.createNodeSpan(node, node, "ReturnStatement", { argument: iifeReturnListId });
 
       var iifeBlock = this.createNodeSpan(node, node, "BlockStatement", { body: [iifeListDecl, body, iifeReturn] });
-      var fnExpr = this.createNodeSpan(node, node, "FunctionExpression", { params: [], defaults: [], body: iifeBlock, generator: false, expression: false });
+      var fnExpr = this.createNodeSpan(node, node, "FunctionExpression", { params: [], defaults: [], body: iifeBlock, generator: false, expression: false, computed: false });
 
       return this.createNodeSpan(node, node, "CallExpression", { callee: fnExpr, arguments: [] });
     }
@@ -1878,32 +1865,32 @@ function parseStatement() {
 
   switch (starttype) {
 
-  case _break:
-    next();
-    return finishNode(node, "BreakStatement");
+    case _break:
+      next();
+      return finishNode(node, "BreakStatement");
 
-  case _continue:
-    next();
-    return finishNode(node, "ContinueStatement");
+    case _continue:
+      next();
+      return finishNode(node, "ContinueStatement");
 
-  case _class:
-    next();
-    return parseClass(node);
+    case _class:
+      next();
+      return parseClass(node);
 
-  case _def:
-    next();
-    return parseFunction(node);
+    case _def:
+      next();
+      return parseFunction(node);
 
-  case _for:
-    next();
-    return parseFor(node);
+    case _for:
+      next();
+      return parseFor(node);
 
-  case _from: // Skipping from and import statements for now
-    skipLine();
-    next();
-    return parseStatement();
+    case _from: // Skipping from and import statements for now
+      skipLine();
+      next();
+      return parseStatement();
 
-  case _if: case _elif:
+    case _if: case _elif:
     next();
     if (tokType === _parenL) node.test = parseParenExpression();
     else node.test = parseExpression();
@@ -1922,81 +1909,81 @@ function parseStatement() {
     }
     return finishNode(node, "IfStatement");
 
-  case _import: // Skipping from and import statements for now
-    skipLine();
-    next();
-    return parseStatement();
-
-  case _newline:
-    // TODO: parseStatement() should probably eat it's own newline
-    next();
-    return null;
-
-  case _pass:
-    next();
-    return finishNode(node, "EmptyStatement");
-
-  case _return:
-    if (!inFunction && !options.allowReturnOutsideFunction)
-      raise(tokStart, "'return' outside of function");
-    next();
-    if (tokType ===_newline || tokType === _eof) node.argument = null;
-    else { node.argument = parseExpression();}
-    return finishNode(node, "ReturnStatement");
-
-  case _try: // TODO, and remove parseBlock
-    next();
-    node.block = parseBlock();
-    node.handler = null;
-    if (tokType === _catch) {
-      var clause = startNode();
+    case _import: // Skipping from and import statements for now
+      skipLine();
       next();
-      expect(_parenL);
-      clause.param = parseIdent();
-      if (strict && isStrictBadIdWord(clause.param.name))
-        raise(clause.param.start, "Binding " + clause.param.name + " in strict mode");
-      expect(_parenR);
-      clause.guard = null;
-      clause.body = parseBlock();
-      node.handler = finishNode(clause, "CatchClause");
-    }
-    node.guardedHandlers = empty;
-    node.finalizer = eat(_finally) ? parseBlock() : null;
-    if (!node.handler && !node.finalizer)
-      raise(node.start, "Missing catch or finally clause");
-    return finishNode(node, "TryStatement");
+      return parseStatement();
 
-  case _while:
-    next();
-    if (tokType === _parenL) node.test = parseParenExpression();
-    else node.test = parseExpression();
-    expect(_colon);
-    node.body = parseSuite();
-    return finishNode(node, "WhileStatement");
+    case _newline:
+      // TODO: parseStatement() should probably eat it's own newline
+      next();
+      return null;
 
-  case _with: // TODO
-    if (strict) raise(tokStart, "'with' in strict mode");
-    next();
-    node.object = parseParenExpression();
-    node.body = parseStatement();
-    return finishNode(node, "WithStatement");
+    case _pass:
+      next();
+      return finishNode(node, "EmptyStatement");
 
-  case _semi:
-    next();
-    return finishNode(node, "EmptyStatement");
+    case _return:
+      if (!inFunction && !options.allowReturnOutsideFunction)
+        raise(tokStart, "'return' outside of function");
+      next();
+      if (tokType ===_newline || tokType === _eof) node.argument = null;
+      else { node.argument = parseExpression();}
+      return finishNode(node, "ReturnStatement");
+
+    case _try: // TODO, and remove parseBlock
+      next();
+      node.block = parseBlock();
+      node.handler = null;
+      if (tokType === _catch) {
+        var clause = startNode();
+        next();
+        expect(_parenL);
+        clause.param = parseIdent();
+        if (strict && isStrictBadIdWord(clause.param.name))
+          raise(clause.param.start, "Binding " + clause.param.name + " in strict mode");
+        expect(_parenR);
+        clause.guard = null;
+        clause.body = parseBlock();
+        node.handler = finishNode(clause, "CatchClause");
+      }
+      node.guardedHandlers = empty;
+      node.finalizer = eat(_finally) ? parseBlock() : null;
+      if (!node.handler && !node.finalizer)
+        raise(node.start, "Missing catch or finally clause");
+      return finishNode(node, "TryStatement");
+
+    case _while:
+      next();
+      if (tokType === _parenL) node.test = parseParenExpression();
+      else node.test = parseExpression();
+      expect(_colon);
+      node.body = parseSuite();
+      return finishNode(node, "WhileStatement");
+
+    case _with: // TODO
+      if (strict) raise(tokStart, "'with' in strict mode");
+      next();
+      node.object = parseParenExpression();
+      node.body = parseStatement();
+      return finishNode(node, "WithStatement");
+
+    case _semi:
+      next();
+      return finishNode(node, "EmptyStatement");
 
     // Assume it's an ExpressionStatement. If an assign has been
     // converted to a variable declaration, pass it up as is.
 
-  default:
-    var expr = parseExpression();
-    if (tokType !== _semi && tokType !== _newline && tokType !== _eof) unexpected();
-    if (expr.type === "VariableDeclaration" || expr.type === "BlockStatement") {
-      return expr;
-    } else {
-      node.expression = expr;
-      return finishNode(node, "ExpressionStatement");
-    }
+    default:
+      var expr = parseExpression();
+      if (tokType !== _semi && tokType !== _newline && tokType !== _eof) unexpected();
+      if (expr.type === "VariableDeclaration" || expr.type === "BlockStatement") {
+        return expr;
+      } else {
+        node.expression = expr;
+        return finishNode(node, "ExpressionStatement");
+      }
   }
 }
 
@@ -2268,9 +2255,9 @@ function parseSubscripts(base, noCalls) {
 
     if ( base.name === 'len' && node.arguments.length === 1 ) {
       node.type = "MemberExpression",
-      node.object = node.arguments[0];
+        node.object = node.arguments[0];
       node.property = nc.createNodeSpan(base, base, "Identifier", { name: "length"}),
-      node.computed = false;
+        node.computed = false;
       delete node.arguments;
       delete node.callee;
       finishNode(node, "MemberExpression");
@@ -2322,60 +2309,60 @@ function parseSlice(node, base, start, noCalls) {
 function parseExprAtom() {
   switch (tokType) {
 
-  case _dict:
-    next();
-    return parseDict(_parenR);
+    case _dict:
+      next();
+      return parseDict(_parenR);
 
-  case _name:
-    return parseIdent();
+    case _name:
+      return parseIdent();
 
-  case _num: case _string: case _regexp:
+    case _num: case _string: case _regexp:
     var node = startNode();
     node.value = tokVal;
     node.raw = input.slice(tokStart, tokEnd);
     next();
     return finishNode(node, "Literal");
 
-  case _none: case _true: case _false:
+    case _none: case _true: case _false:
     var node = startNode();
     node.value = tokType.atomValue;
     node.raw = tokType.keyword;
     next();
     return finishNode(node, "Literal");
 
-  case _parenL:
-    var tokStartLoc1 = tokStartLoc, tokStart1 = tokStart;
-    next();
-    if (tokType === _parenR) {
-      // Empty tuple
-      var node = parseTuple(false);
-      eat(_parenR);
-      return node;
-    }
-    var val = parseMaybeTuple(false);
-    if (options.locations) {
-      val.loc.start = tokStartLoc1;
-      val.loc.end = tokEndLoc;
-    }
-    if (options.ranges)
-      val.range = [tokStart1, tokEnd];
-    expect(_parenR);
-    return val;
+    case _parenL:
+      var tokStartLoc1 = tokStartLoc, tokStart1 = tokStart;
+      next();
+      if (tokType === _parenR) {
+        // Empty tuple
+        var node = parseTuple(false);
+        eat(_parenR);
+        return node;
+      }
+      var val = parseMaybeTuple(false);
+      if (options.locations) {
+        val.loc.start = tokStartLoc1;
+        val.loc.end = tokEndLoc;
+      }
+      if (options.ranges)
+        val.range = [tokStart1, tokEnd];
+      expect(_parenR);
+      return val;
 
-  case _bracketL:
-    return parseList();
+    case _bracketL:
+      return parseList();
 
-  case _braceL:
-    return parseDict(_braceR);
+    case _braceL:
+      return parseDict(_braceR);
 
-  case _indent:
-    raise(tokStart, "Unexpected indent");
+    case _indent:
+      raise(tokStart, "Unexpected indent");
 
-  case _else:
-    raise(tokPos, '`else` needs to line up with its `if`.');
+    case _else:
+      raise(tokPos, '`else` needs to line up with its `if`.');
 
-  default:
-    unexpected();
+    default:
+      unexpected();
   }
 }
 
@@ -2456,11 +2443,12 @@ function parseCompIter(expr, first) {
 function parseClass(ctorNode) {
   // Container for class constructor and prototype functions
   var container = startNodeFrom(ctorNode);
-  container.body = [];
+  container.body = ctorNode;
 
   // Parse class signature
-  ctorNode.id = parseIdent();
+  container.id = parseIdent();
   ctorNode.params = [];
+  ctorNode.body = [];
   var classParams = [];
   if (eat(_parenL)) {
     var first = true;
@@ -2473,7 +2461,7 @@ function parseClass(ctorNode) {
   expect(_colon);
 
   // Start new namespace for class body
-  scope.startClass(ctorNode.id.name);
+  scope.startClass(container.id.name);
 
   // Save a reference for source ranges
   var classBodyRefNode = finishNode(startNode());
@@ -2694,7 +2682,7 @@ function parseFunction(node) {
 
   if ( paramHandler.length  > 0 ) {
     if ( fastModePossible ) {
-          node.body.body.push(nc.createNodeSpan(node.id, node.id, "IfStatement", {
+      node.body.body.push(nc.createNodeSpan(node.id, node.id, "IfStatement", {
         test: __hasParams,
         consequent: nc.createNodeSpan(node.id, node.id, "BlockStatement", {body: paramHandler})
       }));
@@ -2753,7 +2741,7 @@ function parseFunction(node) {
     var classId = nc.createNodeSpan(node, node, "Identifier", { name: scope.getParentClassName() });
     var prototypeId = nc.createNodeSpan(node, node, "Identifier", { name: "prototype" });
     var functionId = node.id;
-    var prototypeMember = nc.createNodeSpan(node, node, "MemberExpression", { object: classId, property: prototypeId, computed: false });
+    var prototypeMember = nc.createNodeSpan(node, node, "MemberExpression", { property: prototypeId, computed: false });
     var functionMember = nc.createNodeSpan(node, node, "MemberExpression", { object: prototypeMember, property: functionId, computed: false });
     var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body, params: node.params });
     var assignExpr = nc.createNodeSpan(node, node, "AssignmentExpression", { left: functionMember, operator: "=", right: functionExpr });
@@ -2927,157 +2915,157 @@ var pythonRuntime = exports.pythonRuntime = {
       return dict;
     },
     listPropertyDescriptor: {
-        "_type": {
-          get: function () { return 'list'; },
-          enumerable: false
+      "_type": {
+        get: function () { return 'list'; },
+        enumerable: false
+      },
+      "_isPython": {
+        get: function () { return true; },
+        enumerable: false
+      },
+      "append": {
+        value: function (x) {
+          this.push(x);
         },
-        "_isPython": {
-          get: function () { return true; },
-          enumerable: false
+        enumerable: false
+      },
+      "clear": {
+        value: function () {
+          this.splice(0, this.length);
         },
-        "append": {
-          value: function (x) {
-            this.push(x);
-          },
-          enumerable: false
+        enumerable: false
+      },
+      "copy": {
+        value: function () {
+          return this.slice(0);
         },
-        "clear": {
-          value: function () {
-            this.splice(0, this.length);
-          },
-          enumerable: false
+        enumerable: false
+      },
+      "count": {
+        value: function (x) {
+          var c = 0;
+          for (var i = 0; i < this.length; i++)
+            if (this[i] === x) c++;
+          return c;
         },
-        "copy": {
-          value: function () {
-            return this.slice(0);
-          },
-          enumerable: false
+        enumerable: false
+      },
+      "equals": {
+        value: function (x) {
+          try {
+            if (this.length !== x.length) return false;
+            for (var i = 0; i < this.length; i++) {
+              if (this[i].hasOwnProperty("equals")) {
+                if (!this[i].equals(x[i])) return false;
+              } else if (this[i] !== x[i]) return false;
+            }
+            return true;
+          }
+          catch (e) { }
+          return false;
         },
-        "count": {
-          value: function (x) {
-            var c = 0;
-            for (var i = 0; i < this.length; i++)
-              if (this[i] === x) c++;
-            return c;
-          },
-          enumerable: false
+        enumerable: false
+      },
+      "extend": {
+        value: function (L) {
+          for (var i = 0; i < L.length; i++) this.push(L[i]);
         },
-        "equals": {
-          value: function (x) {
-            try {
-              if (this.length !== x.length) return false;
-              for (var i = 0; i < this.length; i++) {
-                if (this[i].hasOwnProperty("equals")) {
-                  if (!this[i].equals(x[i])) return false;
-                } else if (this[i] !== x[i]) return false;
+        enumerable: false
+      },
+      "index": {
+        value: function (x) {
+          return this.indexOf(x);
+        },
+        enumerable: false
+      },
+      "indexOf": {
+        value: function (x, fromIndex) {
+          try {
+            for (var i = fromIndex ? fromIndex : 0; i < this.length; i++) {
+              if (this[i].hasOwnProperty("equals")) {
+                if (this[i].equals(x)) return i;
+              } else if (this[i] === x) return i;
+            }
+          }
+          catch (e) { }
+          return -1;
+        },
+        enumerable: false
+      },
+      "insert": {
+        value: function (i, x) {
+          this.splice(i, 0, x);
+        },
+        enumerable: false
+      },
+      "pop": {
+        value: function (i) {
+          if (!i)
+            i = this.length - 1;
+          var item = this[i];
+          this.splice(i, 1);
+          return item;
+        },
+        enumerable: false
+      },
+      "_pySlice": {
+        value: function (start, end, step) {
+          return pythonRuntime.internal.slice(this, start, end, step);
+        },
+        enumerable: false
+      },
+      "remove": {
+        value: function (x) {
+          this.splice(this.indexOf(x), 1);
+        },
+        enumerable: false
+      },
+      "sort": {
+        value: function(x, reverse) {
+          var list2 = this.slice(0);
+          var apply_key = function(a, numerical) {
+            var list3 = list2.map(x);
+            // construct a dict that maps the listay before and after the map
+            var mapping = {}
+            for(var i in list3) mapping[list3[i]] = list2[i];
+            if(numerical)
+              list3.sort(function(a, b) { return a - b; });
+            else
+              list3.sort()
+            for(var i in a) a[i] = mapping[list3[i]];
+          }
+          for(var i in this) {
+            if(typeof this[i] !== 'number' || !isFinite(this[i])) {
+              if(typeof x != 'undefined') {
+                apply_key(this, false);
               }
-              return true;
-            }
-            catch (e) { }
-            return false;
-          },
-          enumerable: false
-        },
-        "extend": {
-          value: function (L) {
-            for (var i = 0; i < L.length; i++) this.push(L[i]);
-          },
-          enumerable: false
-        },
-        "index": {
-          value: function (x) {
-            return this.indexOf(x);
-          },
-          enumerable: false
-        },
-        "indexOf": {
-          value: function (x, fromIndex) {
-            try {
-              for (var i = fromIndex ? fromIndex : 0; i < this.length; i++) {
-                if (this[i].hasOwnProperty("equals")) {
-                  if (this[i].equals(x)) return i;
-                } else if (this[i] === x) return i;
+              else {
+                list2.sort();
+                for (var j in this) this[j] = list2[j];
               }
+              if(reverse)
+                this.reverse();
+              return;
             }
-            catch (e) { }
-            return -1;
-          },
-          enumerable: false
+          }
+          if(typeof x != 'undefined') {
+            apply_key(this, true);
+          }
+          else {
+            list2.sort(function(a, b) { return a - b; });
+            for(var i in this) this[i] = list2[i];
+          }
+          if(reverse)
+            this.reverse();
         },
-        "insert": {
-          value: function (i, x) {
-            this.splice(i, 0, x);
-          },
-          enumerable: false
+        enumerable: false
+      },
+      "toString": {
+        value: function () {
+          return '[' + this.join(', ') + ']';
         },
-        "pop": {
-          value: function (i) {
-            if (!i)
-              i = this.length - 1;
-            var item = this[i];
-            this.splice(i, 1);
-            return item;
-          },
-          enumerable: false
-        },
-        "_pySlice": {
-          value: function (start, end, step) {
-            return pythonRuntime.internal.slice(this, start, end, step);
-          },
-          enumerable: false
-        },
-        "remove": {
-          value: function (x) {
-            this.splice(this.indexOf(x), 1);
-          },
-          enumerable: false
-        },
-        "sort": {
-          value: function(x, reverse) {
-            var list2 = this.slice(0);
-            var apply_key = function(a, numerical) {
-              var list3 = list2.map(x);
-              // construct a dict that maps the listay before and after the map
-              var mapping = {}
-              for(var i in list3) mapping[list3[i]] = list2[i];
-              if(numerical)
-                list3.sort(function(a, b) { return a - b; });
-              else
-                list3.sort()
-              for(var i in a) a[i] = mapping[list3[i]];
-            }
-            for(var i in this) {
-              if(typeof this[i] !== 'number' || !isFinite(this[i])) {
-                if(typeof x != 'undefined') {
-                  apply_key(this, false);
-                }
-                else {
-                  list2.sort();
-                  for (var j in this) this[j] = list2[j];
-                }
-                if(reverse)
-                  this.reverse();
-                return;
-              }
-            }
-            if(typeof x != 'undefined') {
-              apply_key(this, true);
-            }
-            else {
-              list2.sort(function(a, b) { return a - b; });
-              for(var i in this) this[i] = list2[i];
-            }
-            if(reverse)
-              this.reverse();
-          },
-          enumerable: false
-        },
-        "toString": {
-          value: function () {
-            return '[' + this.join(', ') + ']';
-          },
-          enumerable: false
-        }
+        enumerable: false
+      }
     },
     createList: function () {
       var ret = new pythonRuntime.objects.list();
@@ -3221,81 +3209,81 @@ var pythonRuntime = exports.pythonRuntime = {
       var arr = [];
       arr.push.apply(arr, arguments);
       Object.defineProperty(arr, "_type",
-      {
-        get: function () { return 'tuple'; },
-        enumerable: false
-      });
-      Object.defineProperty(arr, "_isPython",
-      {
-        get: function () { return true; },
-        enumerable: false
-      });
-      Object.defineProperty(arr, "count",
-      {
-        value: function (x) {
-          var c = 0;
-          for (var i = 0; i < this.length; i++)
-            if (this[i] === x) c++;
-          return c;
-        },
-        enumerable: false
-      });
-      Object.defineProperty(arr, "equals",
-      {
-        value: function (x) {
-          try {
-            if (this.length !== x.length) return false;
-            for (var i = 0; i < this.length; i++) {
-              if (this[i].hasOwnProperty("equals")) {
-                if (!this[i].equals(x[i])) return false;
-              } else if (this[i] !== x[i]) return false;
-            }
-            return true;
-          }
-          catch (e) { }
-          return false;
-        },
-        enumerable: false
-      });
-      Object.defineProperty(arr, "index",
-      {
-        value: function (x) {
-          return this.indexOf(x);
-        },
-        enumerable: false
-      });
-      Object.defineProperty(arr, "indexOf",
-      {
-        value: function (x, fromIndex) {
-          try {
-            for (var i = fromIndex ? fromIndex : 0; i < this.length; i++) {
-              if (this[i].hasOwnProperty("equals")) {
-                if (this[i].equals(x)) return i;
-              } else if (this[i] === x) return i;
-            }
-          }
-          catch (e) { }
-          return -1;
-        },
-        enumerable: false
-      });
-      Object.defineProperty(arr, "_pySlice",
-      {
-        value: function (start, end, step) {
-          return pythonRuntime.internal.slice(this, start, end, step);
-        },
+        {
+          get: function () { return 'tuple'; },
           enumerable: false
-      });
+        });
+      Object.defineProperty(arr, "_isPython",
+        {
+          get: function () { return true; },
+          enumerable: false
+        });
+      Object.defineProperty(arr, "count",
+        {
+          value: function (x) {
+            var c = 0;
+            for (var i = 0; i < this.length; i++)
+              if (this[i] === x) c++;
+            return c;
+          },
+          enumerable: false
+        });
+      Object.defineProperty(arr, "equals",
+        {
+          value: function (x) {
+            try {
+              if (this.length !== x.length) return false;
+              for (var i = 0; i < this.length; i++) {
+                if (this[i].hasOwnProperty("equals")) {
+                  if (!this[i].equals(x[i])) return false;
+                } else if (this[i] !== x[i]) return false;
+              }
+              return true;
+            }
+            catch (e) { }
+            return false;
+          },
+          enumerable: false
+        });
+      Object.defineProperty(arr, "index",
+        {
+          value: function (x) {
+            return this.indexOf(x);
+          },
+          enumerable: false
+        });
+      Object.defineProperty(arr, "indexOf",
+        {
+          value: function (x, fromIndex) {
+            try {
+              for (var i = fromIndex ? fromIndex : 0; i < this.length; i++) {
+                if (this[i].hasOwnProperty("equals")) {
+                  if (this[i].equals(x)) return i;
+                } else if (this[i] === x) return i;
+              }
+            }
+            catch (e) { }
+            return -1;
+          },
+          enumerable: false
+        });
+      Object.defineProperty(arr, "_pySlice",
+        {
+          value: function (start, end, step) {
+            return pythonRuntime.internal.slice(this, start, end, step);
+          },
+          enumerable: false
+        });
       Object.defineProperty(arr, "toString",
-      {
-        value: function () {
-          var s = '(' + this.join(', ');
-          if (this.length === 1) s += ',';
-          s += ')';
-          return s;
-        },
-        enumerable: false
-      });
+        {
+          value: function () {
+            var s = '(' + this.join(', ');
+            if (this.length === 1) s += ',';
+            s += ')';
+            return s;
+          },
+          enumerable: false
+        });
       return arr;
     }
   },
@@ -3316,8 +3304,8 @@ var pythonRuntime = exports.pythonRuntime = {
     },
     ascii: function(obj) {
       var s = pythonRuntime.functions.repr(obj),
-          asc = "",
-          code;
+        asc = "",
+        code;
       for (var i = 0; i < s.length; i++) {
         code = s.charCodeAt(i);
         if (code <= 127) asc += s[i];
@@ -3334,13 +3322,13 @@ var pythonRuntime = exports.pythonRuntime = {
     },
     bool: function(x) {
       return !(x === undefined || // No argument
-               x === null || // None
-               x === false || // False
-               x === 0 || // Zero
-               x.length === 0 || // Empty Sequence
-               // TODO: Empty Mapping, needs more support for python mappings first
-               (x.__bool__ !== undefined && x.__bool__() === false) || // If it has bool conversion defined
-               (x.__len__ !== undefined && (x.__len__() === false || x.__len__() === 0))); // If it has length conversion defined
+        x === null || // None
+        x === false || // False
+        x === 0 || // Zero
+        x.length === 0 || // Empty Sequence
+        // TODO: Empty Mapping, needs more support for python mappings first
+        (x.__bool__ !== undefined && x.__bool__() === false) || // If it has bool conversion defined
+        (x.__len__ !== undefined && (x.__len__() === false || x.__len__() === 0))); // If it has length conversion defined
     },
     chr: function(i) {
       return String.fromCharCode(i); // TODO: Error code for not 0 <= i <= 1114111

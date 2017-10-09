@@ -22,7 +22,7 @@
 //
 // Quite a lot of filbert.js is duplicated here. The alternative was to
 // add a *lot* of extra cruft to that file, making it less readable
-// and slower. Copying and editing the code allowed invasive changes and 
+// and slower. Copying and editing the code allowed invasive changes and
 // simplifications without creating a complicated tangle.
 "use strict";
 const filbert = require('./filbert');
@@ -326,32 +326,32 @@ function parseStatement() {
 
   switch (starttype) {
 
-  case tt._break:
-    next();
-    return finishNode(node, "BreakStatement");
+    case tt._break:
+      next();
+      return finishNode(node, "BreakStatement");
 
-  case tt._continue:
-    next();
-    return finishNode(node, "ContinueStatement");
+    case tt._continue:
+      next();
+      return finishNode(node, "ContinueStatement");
 
-  case tt._class:
-    next();
-    return parseClass(node);
+    case tt._class:
+      next();
+      return parseClass(node);
 
-  case tt._def:
-    next();
-    return parseFunction(node);
+    case tt._def:
+      next();
+      return parseFunction(node);
 
-  case tt._for:
-    next();
-    return parseFor(node);
+    case tt._for:
+      next();
+      return parseFor(node);
 
-  case tt._from: // Skipping from and import statements for now
-    skipLine();
-    next();
-    return parseStatement();
+    case tt._from: // Skipping from and import statements for now
+      skipLine();
+      next();
+      return parseStatement();
 
-  case tt._if: case tt._elif:
+    case tt._if: case tt._elif:
     next();
     if (token.type === tt.parenL) node.test = parseParenExpression();
     else node.test = parseExpression();
@@ -363,56 +363,56 @@ function parseStatement() {
       node.alternate = eat(tt._else) && eat(tt.colon) ? parseSuite() : null;
     return finishNode(node, "IfStatement");
 
-  case tt._import: // Skipping from and import statements for now
-    skipLine();
-    next();
-    return parseStatement();
-
-  case tt.newline:
-    // TODO: parseStatement() should probably eat it's own newline
-    next();
-    return null;
-
-  case tt._pass:
-    next();
-    return finishNode(node, "EmptyStatement");
-
-  case tt._return:
-    next();
-    if (token.type === tt.newline || token.type === tt.eof) node.argument = null;
-    else { node.argument = parseExpression(); }
-    return finishNode(node, "ReturnStatement");
-
-  case tt._while:
-    next();
-    if (token.type === tt.parenL) node.test = parseParenExpression();
-    else node.test = parseExpression();
-    expect(tt.colon);
-    node.body = parseSuite();
-    return finishNode(node, "WhileStatement");
-
-  case tt.semi:
-    next();
-    return finishNode(node, "EmptyStatement");
-
-  case tt.indent:
-    // Unexpected indent, let's ignore it
-    indentHist.undoIndent();
-    next();
-    return parseStatement();
-
-  default:
-    var expr = parseExpression();
-    if (isDummy(expr)) {
+    case tt._import: // Skipping from and import statements for now
+      skipLine();
       next();
-      if (token.type === tt.eof) return finishNode(node, "EmptyStatement");
       return parseStatement();
-    } else if (expr.type === "VariableDeclaration" || expr.type === "BlockStatement") {
-      return expr;
-    } else {
-      node.expression = expr;
-      return finishNode(node, "ExpressionStatement");
-    }
+
+    case tt.newline:
+      // TODO: parseStatement() should probably eat it's own newline
+      next();
+      return null;
+
+    case tt._pass:
+      next();
+      return finishNode(node, "EmptyStatement");
+
+    case tt._return:
+      next();
+      if (token.type === tt.newline || token.type === tt.eof) node.argument = null;
+      else { node.argument = parseExpression(); }
+      return finishNode(node, "ReturnStatement");
+
+    case tt._while:
+      next();
+      if (token.type === tt.parenL) node.test = parseParenExpression();
+      else node.test = parseExpression();
+      expect(tt.colon);
+      node.body = parseSuite();
+      return finishNode(node, "WhileStatement");
+
+    case tt.semi:
+      next();
+      return finishNode(node, "EmptyStatement");
+
+    case tt.indent:
+      // Unexpected indent, let's ignore it
+      indentHist.undoIndent();
+      next();
+      return parseStatement();
+
+    default:
+      var expr = parseExpression();
+      if (isDummy(expr)) {
+        next();
+        if (token.type === tt.eof) return finishNode(node, "EmptyStatement");
+        return parseStatement();
+      } else if (expr.type === "VariableDeclaration" || expr.type === "BlockStatement") {
+        return expr;
+      } else {
+        node.expression = expr;
+        return finishNode(node, "ExpressionStatement");
+      }
   }
 }
 
@@ -649,53 +649,53 @@ function parseSlice(node, base, start, noCalls) {
 function parseExprAtom() {
   switch (token.type) {
 
-  case tt._dict:
-    next();
-    return parseDict(tt.parenR);
+    case tt._dict:
+      next();
+      return parseDict(tt.parenR);
 
-  case tt.name:
-    return parseIdent();
+    case tt.name:
+      return parseIdent();
 
-  case tt.num: case tt.string: case tt.regexp:
+    case tt.num: case tt.string: case tt.regexp:
     var node = startNode();
     node.value = token.value;
     node.raw = input.slice(token.start, token.end);
     next();
     return finishNode(node, "Literal");
 
-  case tt._None: case tt._True: case tt._False:
+    case tt._None: case tt._True: case tt._False:
     var node = startNode();
     node.value = token.type.atomValue;
     node.raw = token.type.keyword;
     next();
     return finishNode(node, "Literal");
 
-  case tt.parenL:
-    var tokStartLoc1 = token.startLoc, tokStart1 = token.start;
-    next();
-    if (token.type === tt.parenR) {
-      var node = parseTuple(true);
-      eat(tt.parenR);
-      return node;
-    }
-    var val = parseMaybeTuple(true);
-    if (options.locations) {
-      val.loc.start = tokStartLoc1;
-      val.loc.end = token.endLoc;
-    }
-    if (options.ranges)
-      val.range = [tokStart1, token.end];
-    expect(tt.parenR);
-    return val;
+    case tt.parenL:
+      var tokStartLoc1 = token.startLoc, tokStart1 = token.start;
+      next();
+      if (token.type === tt.parenR) {
+        var node = parseTuple(true);
+        eat(tt.parenR);
+        return node;
+      }
+      var val = parseMaybeTuple(true);
+      if (options.locations) {
+        val.loc.start = tokStartLoc1;
+        val.loc.end = token.endLoc;
+      }
+      if (options.ranges)
+        val.range = [tokStart1, token.end];
+      expect(tt.parenR);
+      return val;
 
-  case tt.bracketL:
-    return parseList();
+    case tt.bracketL:
+      return parseList();
 
-  case tt.braceL:
-    return parseDict(tt.braceR);
+    case tt.braceL:
+      return parseDict(tt.braceR);
 
-  default:
-    return dummyIdent();
+    default:
+      return dummyIdent();
   }
 }
 
@@ -775,11 +775,11 @@ function parseCompIter(expr, first) {
 function parseClass(ctorNode) {
   // Container for class constructor and prototype functions
   var container = startNodeFrom(ctorNode);
-  container.body = [];
+  container.body = ctorNode;
 
   // Parse class signature
-  ctorNode.id = parseIdent();
-  ctorNode.params = [];
+  container.id = parseIdent();
+  ctorNode.body = [];
   var classParams = [];
   if (eat(tt.parenL)) {
     var first = true;
@@ -791,7 +791,7 @@ function parseClass(ctorNode) {
   expect(tt.colon);
 
   // Start new namespace for class body
-  scope.startClass(ctorNode.id.name);
+  scope.startClass(container.id.name);
 
   // Save a reference for source ranges
   var classBodyRefNode = finishNode(startNode());
@@ -946,20 +946,14 @@ function parseFunction(node) {
     }
     node.body.body.push(argsIf);
   }
-  node.body.body.push(nc.createNodeFnBodyIife(body));
+  node.body.body.push(body);
 
   // If class method, replace with prototype function literals
   var retNode;
   if (scope.isParentClass()) {
     finishNode(node);
-    var classId = nc.createNodeSpan(node, node, "Identifier", { name: scope.getParentClassName() });
-    var prototypeId = nc.createNodeSpan(node, node, "Identifier", { name: "prototype" });
-    var functionId = node.id;
-    var prototypeMember = nc.createNodeSpan(node, node, "MemberExpression", { object: classId, property: prototypeId, computed: false });
-    var functionMember = nc.createNodeSpan(node, node, "MemberExpression", { object: prototypeMember, property: functionId, computed: false });
-    var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body, params: node.params });
-    var assignExpr = nc.createNodeSpan(node, node, "AssignmentExpression", { left: functionMember, operator: "=", right: functionExpr });
-    retNode = nc.createNodeSpan(node, node, "ExpressionStatement", { expression: assignExpr });
+    var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body.body[0], params: node.params });
+    retNode = nc.createNodeSpan(node, node, "MethodDefinition", { value: functionExpr, key: node.id, kind: "method", "static": false });
   } else retNode = finishNode(node, "FunctionDeclaration");
 
   scope.end();
