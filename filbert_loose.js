@@ -416,6 +416,24 @@ function parseStatement() {
   }
 }
 
+function parseFunctionSuite() {
+  var stmt;
+  var body = [];
+  if (eat(tt.newline)) {
+    eat(tt.indent);
+    while (!eat(tt.dedent) && token.type !== tt.eof) {
+      stmt = parseStatement();
+      if (stmt) body.push(stmt);
+    }
+  } else {
+    stmt = parseStatement();
+    if (stmt) body.push(stmt);
+    next();
+  }
+
+  return body;
+}
+
 function parseSuite() {
   var node = startNode();
   var stmt;
@@ -431,6 +449,7 @@ function parseSuite() {
     if (stmt) node.body.push(stmt);
     next();
   }
+
   return finishNode(node, "BlockStatement");
 }
 
@@ -894,8 +913,8 @@ function parseFunction(node) {
     scope.setThisReplace(selfId.id.name);
   }
 
-  var body = parseSuite();
-  node.body = nc.createNodeSpan(body, body, "BlockStatement", { body: [] });
+  var bodyNode = startNode();
+  node.body = nc.createNodeSpan(bodyNode, bodyNode, "BlockStatement", { body: [] });
 
   // Add runtime parameter processing
 
@@ -946,7 +965,7 @@ function parseFunction(node) {
     }
     node.body.body.push(argsIf);
   }
-  node.body.body.push(body);
+  node.body.body.push.apply(node.body.body, parseFunctionSuite());
 
   // If class method, replace with prototype function literals
   var retNode;
