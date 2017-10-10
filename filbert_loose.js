@@ -971,7 +971,7 @@ function parseFunction(node) {
   var retNode;
   if (scope.isParentClass()) {
     finishNode(node);
-    var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body.body[0], params: node.params });
+    var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body, params: node.params });
     retNode = nc.createNodeSpan(node, node, "MethodDefinition", { value: functionExpr, key: node.id, kind: "method", "static": false });
   } else retNode = finishNode(node, "FunctionDeclaration");
 
