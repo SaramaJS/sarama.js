@@ -1382,109 +1382,6 @@ var getNodeCreator = exports.getNodeCreator = function(startNode, startNodeFrom,
       return this.createGeneratedVarDeclFromId(r, __paramsId, checks);
     },
 
-    // function __getParam(v, d) {
-    //   var r = d;
-    //   if (__params) {
-    //     if (__formalsIndex < __params.formals.length) {
-    //       r = __params.formals[__formalsIndex++];
-    //     } else if (v in __params.keywords) {
-    //       r = __params.keywords[v];
-    //       delete __params.keywords[v];
-    //     }
-    //   } else if (__formalsIndex < __args.length) {
-    //     r = __args[__formalsIndex++];
-    //   }
-    //   return r;
-    // }
-    createNodeGetParamFn: function (r, s) {
-      var dId = this.createNodeSpan(r, r, "Identifier", { name: 'd' });
-      var vId = this.createNodeSpan(r, r, "Identifier", { name: 'v' });
-      var rId = this.createNodeSpan(r, r, "Identifier", { name: 'r' });
-      var __formalsIndexId = this.createNodeSpan(r, r, "Identifier", { name: '__formalsIndex' + s });
-      var __params = '__params' + s;
-      var __getParam = '__getParam' + s;
-      var __args = '__args' + s;
-      var __paramsFormals = this.createNodeMembIds(r, __params, 'formals');
-      var __paramsKeywords = this.createNodeMembIds(r, __params, 'keywords')
-      var __paramsKeywordsV = this.createNodeSpan(r, r, "MemberExpression", { computed: true, property: vId, object: __paramsKeywords });
-      return this.createGeneratedNodeSpan(r, r, "FunctionDeclaration", {
-        id: this.createNodeSpan(r, r, "Identifier", { name: __getParam }),
-        params: [vId, dId],
-        defaults: [],
-        body: this.createNodeSpan(r, r, "BlockStatement", {
-          body: [this.createGeneratedVarDeclFromId(r, rId, dId),
-            this.createGeneratedNodeSpan(r, r, "IfStatement", {
-              test: this.createNodeSpan(r, r, "Identifier", { name: __params }),
-              consequent: this.createNodeSpan(r, r, "BlockStatement", {
-                body: [this.createGeneratedNodeSpan(r, r, "IfStatement", {
-                  test: this.createNodeSpan(r, r, "BinaryExpression", {
-                    operator: '<', left: __formalsIndexId,
-                    right: this.createNodeSpan(r, r, "MemberExpression", {
-                      computed: false, object: __paramsFormals,
-                      property: this.createNodeSpan(r, r, "Identifier", { name: 'length' })
-                    })
-                  }),
-                  consequent: this.createNodeSpan(r, r, "BlockStatement", {
-                    body: [this.createGeneratedNodeSpan(r, r, "ExpressionStatement", {
-                      expression: this.createGeneratedNodeSpan(r, r, "AssignmentExpression", {
-                        operator: '=', left: rId,
-                        right: this.createNodeSpan(r, r, "MemberExpression", {
-                          computed: true, object: __paramsFormals,
-                          property: this.createNodeSpan(r, r, "UpdateExpression", {
-                            operator: '++', argument: __formalsIndexId, prefix: false
-                          })
-                        })
-                      })
-                    })]
-                  }),
-                  alternate: this.createGeneratedNodeSpan(r, r, "IfStatement", {
-                    test: this.createNodeSpan(r, r, "BinaryExpression", {
-                      operator: 'in', left: vId, right: __paramsKeywords,
-                    }),
-                    consequent: this.createNodeSpan(r, r, "BlockStatement", {
-                      body: [this.createGeneratedNodeSpan(r, r, "ExpressionStatement", {
-                        expression: this.createGeneratedNodeSpan(r, r, "AssignmentExpression", {
-                          operator: '=', left: rId, right: __paramsKeywordsV
-                        })
-                      }),
-                        this.createGeneratedNodeSpan(r, r, "ExpressionStatement", {
-                          expression: this.createNodeSpan(r, r, "UnaryExpression", {
-                            operator: 'delete', prefix: true, argument: __paramsKeywordsV
-                          })
-                        })]
-                    }),
-                    alternate: null
-                  })
-                })]
-              }),
-              alternate: this.createGeneratedNodeSpan(r, r, "IfStatement", {
-                test: this.createGeneratedNodeSpan(r, r, "BinaryExpression", {
-                  operator: '<', left: __formalsIndexId,
-                  right: this.createNodeMembIds(r, __args, 'length'),
-                }),
-                consequent: this.createGeneratedNodeSpan(r, r, "BlockStatement", {
-                  body: [this.createGeneratedNodeSpan(r, r, "ExpressionStatement", {
-                    expression: this.createGeneratedNodeSpan(r, r, "AssignmentExpression", {
-                      operator: '=', left: rId,
-                      right: this.createGeneratedNodeSpan(r, r, "MemberExpression", {
-                        computed: true,
-                        object: this.createGeneratedNodeSpan(r, r, "Identifier", { name: __args }),
-                        property: this.createGeneratedNodeSpan(r, r, "UpdateExpression", {
-                          operator: '++', argument: __formalsIndexId, prefix: false
-                        })
-                      })
-                    })
-                  })]
-                }),
-                alternate: null
-              })
-            }),
-            this.createGeneratedNodeSpan(r, r, "ReturnStatement", { argument: rId })]
-        }),
-        rest: null, generator: false, expression: false
-      });
-    },
-
     // E.g. pyRuntime.utils.add
 
     createNodeRuntimeCall: function (r, mod, fn, args) {
@@ -2746,7 +2643,9 @@ function parseFunction(node) {
     var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body, params: node.params });
     var assignExpr = nc.createNodeSpan(node, node, "AssignmentExpression", { left: functionMember, operator: "=", right: functionExpr });
     retNode = nc.createNodeSpan(node, node, "ExpressionStatement", { expression: assignExpr });
-  } else retNode = finishNode(node, "FunctionDeclaration");
+  } else {
+    retNode = finishNode(node, "FunctionDeclaration");
+  }
 
   scope.end();
 

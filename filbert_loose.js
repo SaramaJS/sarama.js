@@ -632,7 +632,9 @@ function parseSubscripts(base, noCalls) {
     } else node.arguments = parseExprList(tt.parenR, false);
 
     if (scope.isNewObj(base.name)) finishNode(node, "NewExpression");
-    else finishNode(node, "CallExpression");
+    else {
+      finishNode(node, "CallExpression");
+    }
     if (filbert.pythonRuntime.functions[base.name]) {
       // Calling a Python built-in function
       var runtimeId = nc.createNodeSpan(base, base, "Identifier", { name: options.runtimeParamName });
@@ -917,27 +919,6 @@ function parseFunction(node) {
   node.body = nc.createNodeSpan(bodyNode, bodyNode, "BlockStatement", { body: [] });
 
   // Add runtime parameter processing
-
-  if (formals.length > 0 || argsId || kwargsId) {
-    node.body.body.push(nc.createNodeParamsCheck(node.id, suffix));
-    node.body.body.push(nc.createVarDeclFromId(node.id,
-      nc.createNodeSpan(node.id, node.id, "Identifier", { name: '__formalsIndex' + suffix }),
-      nc.createNodeSpan(node.id, node.id, "Literal", { value: 0 })));
-    node.body.body.push(nc.createVarDeclFromId(node.id,
-      nc.createNodeSpan(node.id, node.id, "Identifier", { name: '__args' + suffix }),
-      nc.createNodeSpan(node.id, node.id, "Identifier", { name: 'arguments' })));
-  }
-  if (formals.length > 0) {
-    node.body.body.push(nc.createNodeGetParamFn(node.id, suffix));
-    for (var i = 0; i < formals.length; i++) {
-      var __getParamCall = nc.createNodeSpan(formals[i].id, formals[i].id, "CallExpression", {
-        callee: nc.createNodeSpan(formals[i].id, formals[i].id, "Identifier", { name: '__getParam' + suffix }),
-        arguments: [nc.createNodeSpan(formals[i].id, formals[i].id, "Literal", { value: formals[i].id.name })]
-      });
-      if (formals[i].expr) __getParamCall.arguments.push(formals[i].expr);
-      node.body.body.push(nc.createVarDeclFromId(formals[i].id, formals[i].id, __getParamCall));
-    }
-  }
   var refNode = argsId || kwargsId;
   if (refNode) {
     if (argsId) {
@@ -969,11 +950,22 @@ function parseFunction(node) {
 
   // If class method, replace with prototype function literals
   var retNode;
+  var params = [];
+  for (var i = 0; i < formals.length; i++) {
+    if (formals[i].id.name === 'self') continue;
+    params.push(formals[i].id);
+  }
   if (scope.isParentClass()) {
     finishNode(node);
-    var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body, params: node.params });
+    var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body, params: params });
+    if (node.id.name === '__init__') {
+      node.id.name = 'constructor';
+    }
     retNode = nc.createNodeSpan(node, node, "MethodDefinition", { value: functionExpr, key: node.id, kind: "method", "static": false });
-  } else retNode = finishNode(node, "FunctionDeclaration");
+  } else {
+    node.params = params;
+    retNode = finishNode(node, "FunctionDeclaration");
+  }
 
   scope.end();
 
