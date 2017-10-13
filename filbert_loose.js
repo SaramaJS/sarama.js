@@ -715,6 +715,14 @@ function parseExprAtom() {
     case tt.braceL:
       return parseDict(tt.braceR);
 
+    case tt.documentationString:
+      var statement = startNode();
+      var commentBlock = startNode();
+      commentBlock.value = token.value;
+      finishNode(commentBlock, "Block");
+      statement.leadingComments = [commentBlock];
+      next();
+      return finishNode(statement, "EmptyStatement");
     default:
       return dummyIdent();
   }

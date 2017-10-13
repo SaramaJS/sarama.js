@@ -320,6 +320,7 @@ var scope = exports.scope = {
 var _num = {type: "num"}, _regexp = {type: "regexp"}, _string = {type: "string"};
 var _name = {type: "name"}, _eof = {type: "eof"};
 var _newline = {type: "newline"}, _indent = {type: "indent"}, _dedent = {type: "dedent"};
+var _documentationString = {type: "documentation-string"};
 
 // Keyword tokens. The `keyword` property (also used in keyword-like
 // operators) indicates that the token originated from an
@@ -414,6 +415,7 @@ exports.tokTypes = {bracketL: _bracketL, bracketR: _bracketR, braceL: _braceL, b
   parenL: _parenL, parenR: _parenR, comma: _comma, semi: _semi, colon: _colon,
   dot: _dot, question: _question, slash: _slash, eq: _eq, name: _name, eof: _eof,
   num: _num, regexp: _regexp, string: _string,
+  documentationString: _documentationString,
   newline: _newline, indent: _indent, dedent: _dedent,
   exponentiation: _exponentiation, floorDiv: _floorDiv, plusMin: _plusMin,
   posNegNot: _posNegNot, multiplyModulo: _multiplyModulo
@@ -801,7 +803,11 @@ function getTokenFromCode(code) {
     return readNumber(false);
 
     // Quotes produce strings.
-    case 34: case 39: // '"', "'"
+    case 34: // '"'
+      if (input.charCodeAt(tokPos + 1) === 34 && input.charCodeAt(tokPos + 2) === 34) {
+        return readDocumentationString();
+      }
+    case 39: // "'"
     return readString(code);
 
     // Operators are parsed inline in tiny state machines. '=' (61) is
@@ -961,6 +967,37 @@ function readNumber(startsWithDot) {
   return finishToken(_num, val);
 }
 
+function readDocumentationString() {
+  var out = "";
+  tokPos += 3;
+  for (;;) {
+    if (tokPos >= inputLen) raise(tokStart, "Unterminated documentation string");
+    var ch = input.charCodeAt(tokPos);
+    if (ch === 34) {
+      if (input.charCodeAt(tokPos + 1) === 34 &&
+        input.charCodeAt(tokPos + 2) === 34) {
+        tokPos += 3;
+        return finishToken(_documentationString, out);
+      }
+    }
+    if (isNewline(ch)) {
+      out += String.fromCharCode(ch);
+      ++tokPos;
+      if (ch === 13 && input.charCodeAt(tokPos) === 10) {
+        ++tokPos;
+        out += "\n";
+      }
+      if (options.location) {
+        tokLineStart = tokPos;
+        ++tokCurLine;
+      }
+    } else {
+      out += String.fromCharCode(ch); // '\'
+      ++tokPos;
+    }
+
+  }
+}
 // Read a string value, interpreting backslash-escapes.
 
 function readString(quote) {
@@ -2205,7 +2242,6 @@ function parseSlice(node, base, start, noCalls) {
 
 function parseExprAtom() {
   switch (tokType) {
-
     case _dict:
       next();
       return parseDict(_parenR);
@@ -2252,6 +2288,14 @@ function parseExprAtom() {
     case _braceL:
       return parseDict(_braceR);
 
+    case _documentationString:
+      var statement = startNode();
+      var commentBlock = startNode();
+      commentBlock.value = tokType.value;
+      finishNode(commentBlock, "Block");
+      statement.leadingComments = [commentBlock];
+      next();
+      return finishNode(statement, "EmptyStatement");
     case _indent:
       raise(tokStart, "Unexpected indent");
 
@@ -2413,7 +2457,7 @@ function parseDict(tokClose) {
 }
 
 function parsePropertyName() {
-  if (tokType === _num || tokType === _string) return parseExprAtom();
+  if (tokType === _num || tokType === _string || tokType === _documentationString) return parseExprAtom();
   return parseIdent(true);
 }
 
