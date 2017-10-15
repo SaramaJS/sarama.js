@@ -401,6 +401,10 @@ function parseStatement() {
       next();
       return parseStatement();
 
+    case tt.documentationString:
+      node.leadingComments = parseDocumentationString(token);
+      next();
+      return finishNode(node, "EmptyStatement");
     default:
       var expr = parseExpression();
       if (isDummy(expr)) {
@@ -416,22 +420,19 @@ function parseStatement() {
   }
 }
 
-function parseFunctionSuite() {
+function parseFunctionSuite(node) {
   var stmt;
-  var body = [];
   if (eat(tt.newline)) {
     eat(tt.indent);
     while (!eat(tt.dedent) && token.type !== tt.eof) {
       stmt = parseStatement();
-      if (stmt) body.push(stmt);
+      if (stmt) node.body.body.push(stmt);
     }
   } else {
     stmt = parseStatement();
-    if (stmt) body.push(stmt);
+    if (stmt) node.body.body.push(stmt);
     next();
   }
-
-  return body;
 }
 
 function parseSuite() {
@@ -715,14 +716,6 @@ function parseExprAtom() {
     case tt.braceL:
       return parseDict(tt.braceR);
 
-    case tt.documentationString:
-      var statement = startNode();
-      var commentBlock = startNode();
-      commentBlock.value = token.value;
-      finishNode(commentBlock, "Block");
-      statement.leadingComments = [commentBlock];
-      next();
-      return finishNode(statement, "EmptyStatement");
     default:
       return dummyIdent();
   }
@@ -809,6 +802,7 @@ function parseClass(ctorNode) {
   // Parse class signature
   container.id = parseIdent();
   ctorNode.body = [];
+  ctorNode.innerComments = [];
   var classParams = [];
   if (eat(tt.parenL)) {
     var first = true;
@@ -925,7 +919,7 @@ function parseFunction(node) {
 
   var bodyNode = startNode();
   node.body = nc.createNodeSpan(bodyNode, bodyNode, "BlockStatement", { body: [] });
-
+  node.innerComments = [];
   // Add runtime parameter processing
   var refNode = argsId || kwargsId;
   if (refNode) {
@@ -940,7 +934,7 @@ function parseFunction(node) {
     var argsIf = nc.createNodeSpan(refNode, refNode, "IfStatement", {
       test: nc.createNodeSpan(refNode, refNode, "Identifier", { name: '__params' + suffix }),
       consequent: nc.createNodeSpan(refNode, refNode, "BlockStatement", { body: [] })
-    })
+    });
     if (argsId) {
       argsIf.consequent.body.push(nc.createNodeArgsWhileConsequent(argsId, suffix));
       argsIf.alternate = nc.createNodeArgsAlternate(argsId);
@@ -954,7 +948,7 @@ function parseFunction(node) {
     }
     node.body.body.push(argsIf);
   }
-  node.body.body.push.apply(node.body.body, parseFunctionSuite());
+  parseFunctionSuite(node);
 
   // If class method, replace with prototype function literals
   var retNode;
@@ -1039,4 +1033,10 @@ function parseTuple(noIn, expr) {
   node.callee = nc.createNodeSpan(node, node, "MemberExpression", { object: runtimeMember, property: listId, computed: false });
 
   return node;
+}
+
+function parseDocumentationString(token) {
+  var node = startNode();
+  node.value = token.value;
+  return finishNode(node, "Block");
 }

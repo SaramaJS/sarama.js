@@ -1908,6 +1908,10 @@ function parseStatement() {
 
     // Assume it's an ExpressionStatement. If an assign has been
     // converted to a variable declaration, pass it up as is.
+    case _documentationString:
+      node.leadingComments = parseDocumentationString(token);
+      next();
+      return finishNode(node, "EmptyStatement");
 
     default:
       var expr = parseExpression();
@@ -2287,15 +2291,6 @@ function parseExprAtom() {
 
     case _braceL:
       return parseDict(_braceR);
-
-    case _documentationString:
-      var statement = startNode();
-      var commentBlock = startNode();
-      commentBlock.value = tokType.value;
-      finishNode(commentBlock, "Block");
-      statement.leadingComments = [commentBlock];
-      next();
-      return finishNode(statement, "EmptyStatement");
     case _indent:
       raise(tokStart, "Unexpected indent");
 
@@ -2457,7 +2452,7 @@ function parseDict(tokClose) {
 }
 
 function parsePropertyName() {
-  if (tokType === _num || tokType === _string || tokType === _documentationString) return parseExprAtom();
+  if (tokType === _num || tokType === _string) return parseExprAtom();
   return parseIdent(true);
 }
 
@@ -3430,6 +3425,12 @@ var pythonRuntime = exports.pythonRuntime = {
     }
   }
 };
+
+function parseDocumentationString(token) {
+  var node = startNode();
+  node.value = token.value;
+  return finishNode(node, "Block");
+}
 
 function PythonDict() {
 
