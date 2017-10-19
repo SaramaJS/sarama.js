@@ -1,22 +1,23 @@
 {
-  "name": "filbert",
+  "name": "sarama",
   "description": "Python parser, Mozilla AST output",
-  "keywords": [
-    "python",
-    "parser",
-    "mozilla",
-    "ast"
-  ],
-  "main": "filbert.js",
+  "keywords": ["python", "parser", "mozilla", "ast"],
+  "main": "sarama.js",
   "version": "0.1.20",
-  "engines": {"node": ">=0.4.0"},
-  "author": {"name": "Matt Lott",
-                      "email": "mattlott@gmail.com",
-                      "url": "http://www.mattlott.com"},
-  "repository": {"type": "git",
-                  "url": "https://github.com/differentmatt/filbert.git"},
-  "licenses": [{"type": "MIT",
-                  "url": "https://github.com/differentmatt/filbert/blob/master/LICENSE"}],
+  "engines": { "node": ">=0.4.0" },
+  "author": {
+    "name": "Robert Lee Plummer"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SaramaJS/sarama.js"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/SaramaJS/sarama.js/blob/master/LICENSE"
+    }
+  ],
   "devDependencies": {
     "grunt": "^0.4.4",
     "grunt-contrib-jshint": "~0.6.3",
