@@ -1,16 +1,16 @@
-// Filbert is a Python parser written in JavaScript.
+// sarama.js is a Python Mozilla ast parser written in JavaScript.
 //
-// Filbert was written by Matt Lott and released under an MIT
+// sarama.js was written by many contributors and released under an MIT
 // license. It was adatped from [Acorn](https://github.com/marijnh/acorn.git)
-// by Marijn Haverbeke.
+// by Marijn Haverbeke & Matt Lott.
 //
 // Git repository for Filbert are available at
 //
-//     https://github.com/differentmatt/filbert.git
+//     https://github.com/SaramaJS/sarama.js.git
 //
 // Please use the [github bug tracker][ghbt] to report issues.
 //
-// [ghbt]: https://github.com/differentmatt/filbert/issues
+// [ghbt]: https://github.com/SaramaJS/sarama.js/issues
 "use strict";
 
 exports.version = "0.5.1";
