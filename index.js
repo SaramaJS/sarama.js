@@ -24,7 +24,7 @@ exports.version = "0.5.1";
 
 var options, input, inputLen, sourceFile, nc;
 
-exports.parse = function(inpt, opts) {
+module.exports.parse = function parse(inpt, opts) {
   input = String(inpt); inputLen = input.length;
   setOptions(opts);
   initTokenState();
@@ -3430,6 +3430,19 @@ function parseDocumentationString(token) {
   var node = startNode();
   node.value = token.value;
   return finishNode(node, "Block");
+}
+
+function parseImport(node) {
+  var variableDeclaration = startNode();
+  var variableDeclarator = startNode();
+  var callExpression = startNode();
+  var identifier = startNode();
+  var literal = startNode();
+
+  //variableDeclaration.
+  finishNode(variableDeclarator, "VariableDeclarator");
+  finishNode(variableDeclaration, "VariableDeclaration");
+  return variableDeclaration;
 }
 
 function PythonDict() {

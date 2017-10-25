@@ -1,6 +1,6 @@
-// Filbert: Loose parser
+// sarama. Loose parser
 //
-// This module provides an alternative parser (`parse_dammit`) that
+// This module provides an alternative parser (`parse`) that
 // exposes that same interface as `parse`, but will try to parse
 // anything as Python, repairing syntax errors the best it can.
 // There are circumstances in which it will raise an error and give
@@ -15,42 +15,42 @@
 //
 // [api]: https://developer.mozilla.org/en-US/docs/SpiderMonkey/Parser_API
 //
-// The expected use for this is to *first* try `filbert.parse`, and only
-// if that fails switch to `parse_dammit`. The loose parser might
+// The expected use for this is to *first* try `sarama.parse`, and only
+// if that fails switch to `parse`. The loose parser might
 // parse badly indented code incorrectly, so **don't** use it as
 // your default parser.
 //
-// Quite a lot of filbert.js is duplicated here. The alternative was to
+// Quite a lot of sarama.js is duplicated here. The alternative was to
 // add a *lot* of extra cruft to that file, making it less readable
 // and slower. Copying and editing the code allowed invasive changes and
 // simplifications without creating a complicated tangle.
 "use strict";
-const filbert = require('./filbert');
+const sarama = require('./');
 
 
-var tt = filbert.tokTypes;
-var scope = filbert.scope;
-var indentHist = filbert.indentHist;
+var tt = sarama.tokTypes;
+var scope = sarama.scope;
+var indentHist = sarama.indentHist;
 
 var options, input, inputLen, fetchToken, nc;
 
-module.exports.parse_dammit = function(inpt, opts) {
+module.exports.parse = function(inpt, opts) {
   input = String(inpt); inputLen = input.length;
   setOptions(opts);
   if (!options.tabSize) options.tabSize = 4;
-  fetchToken = filbert.tokenize(inpt, options);
+  fetchToken = sarama.tokenize(inpt, options);
   ahead.length = 0;
   newAstIdCount = 0;
   scope.init();
-  nc = filbert.getNodeCreator(startNode, startNodeFrom, finishNode, unpackTuple);
+  nc = sarama.getNodeCreator(startNode, startNodeFrom, finishNode, unpackTuple);
   next();
   return parseTopLevel();
 };
 
 function setOptions(opts) {
   options = opts || {};
-  for (var opt in filbert.defaultOptions) if (!Object.prototype.hasOwnProperty.call(options, opt))
-    options[opt] = filbert.defaultOptions[opt];
+  for (var opt in sarama.defaultOptions) if (!Object.prototype.hasOwnProperty.call(options, opt))
+    options[opt] = sarama.defaultOptions[opt];
   sourceFile = options.sourceFile || null;
 }
 
@@ -106,8 +106,8 @@ function readToken() {
       if (replace === true) replace = {start: pos, end: pos, type: tt.name, value: "✖"};
       if (replace) {
         if (options.locations) {
-          replace.startLoc = filbert.getLineInfo(input, replace.start);
-          replace.endLoc = filbert.getLineInfo(input, replace.end);
+          replace.startLoc = sarama.getLineInfo(input, replace.start);
+          replace.endLoc = sarama.getLineInfo(input, replace.end);
         }
         return replace;
       }
@@ -168,7 +168,7 @@ function skipLine() {
 function Node(start) {
   this.type = null;
 }
-Node.prototype = filbert.Node.prototype;
+Node.prototype = sarama.Node.prototype;
 
 function SourceLocation(start) {
   this.start = start || token.startLoc || {line: 1, column: 0};
@@ -270,7 +270,7 @@ function unpackTuple(tupleArgs, right) {
 
   // var tmp = right
 
-  var tmpId = nc.createNodeSpan(right, right, "Identifier", { name: "__filbertTmp" + newAstIdCount++ });
+  var tmpId = nc.createNodeSpan(right, right, "Identifier", { name: "__sarama.mp" + newAstIdCount++ });
   var tmpDecl = nc.createVarDeclFromId(right, tmpId, right);
   varStmts.push(tmpDecl);
 
@@ -364,7 +364,7 @@ function parseStatement() {
     return finishNode(node, "IfStatement");
 
     case tt._import: // Skipping from and import statements for now
-      skipLine();
+      parseImport();
       next();
       return parseStatement();
 
@@ -599,7 +599,7 @@ function parseSubscripts(base, noCalls) {
   var node = startNodeFrom(base);
   if (eat(tt.dot)) {
     var id = parseIdent(true);
-    if (filbert.pythonRuntime.imports[base.name] && filbert.pythonRuntime.imports[base.name][id.name]) {
+    if (sarama.pythonRuntime.imports[base.name] && sarama.pythonRuntime.imports[base.name][id.name]) {
       // Calling a Python import function
       var runtimeId = nc.createNodeSpan(base, base, "Identifier", { name: options.runtimeParamName });
       var importsId = nc.createNodeSpan(base, base, "Identifier", { name: "imports" });
@@ -636,7 +636,7 @@ function parseSubscripts(base, noCalls) {
     else {
       finishNode(node, "CallExpression");
     }
-    if (filbert.pythonRuntime.functions[base.name]) {
+    if (sarama.pythonRuntime.functions[base.name]) {
       // Calling a Python built-in function
       var runtimeId = nc.createNodeSpan(base, base, "Identifier", { name: options.runtimeParamName });
       var functionsId = nc.createNodeSpan(base, base, "Identifier", { name: "functions" });
@@ -1033,6 +1033,63 @@ function parseTuple(noIn, expr) {
   node.callee = nc.createNodeSpan(node, node, "MemberExpression", { object: runtimeMember, property: listId, computed: false });
 
   return node;
+}
+
+function parseImport() {
+  var variableDeclaration = startNode();
+  variableDeclaration.declarations = [];
+  var stmt;
+  var parts = [];
+  next();
+  while (!eat(tt.newline) && token.type !== tt.eof) {
+    stmt = parseImportStatement(parts);
+    if (stmt) variableDeclaration.body.push(stmt);
+  }
+
+  var identifier = startNode();
+  identifier.name = parts[parts.length - 1];
+
+  var variableDeclarator = startNode();
+  variableDeclarator.id = finishNode(identifier, "Identifier");
+
+  var baseMemberExpression = startNode();
+  var previousMemberExpression = baseMemberExpression;
+  for (var i = 1; i < parts.length; i++) {
+    var memberExpression = startNode();
+    memberExpression
+    previousMemberExpression.object = finishNode(memberExpression, "MemberExpression");
+    previousMemberExpression = memberExpression;
+  }
+
+  var callExpression = startNode();
+  var callIdentifier = startNode();
+  callIdentifier.name = "require";
+  callExpression.callee = finishNode(callIdentifier, "CallIdentifier");
+  var libLiteral = startNode();
+  libLiteral.value = parts[0];
+  libLiteral.rawValue = parts[0];
+  libLiteral.raw = parts[0];
+  callExpression.arguments = [finishNode(libLiteral, "Literal")];
+  previousMemberExpression.object = finishNode(callExpression, "CallExpression");
+  variableDeclarator.init = finishNode(baseMemberExpression, "MemberExpression");
+
+
+  variableDeclaration.declarations.push(finishNode(variableDeclarator, "VariableDeclarator"));
+  return finishNode(variableDeclaration, "VariableDeclaration");
+}
+
+function parseImportStatement(parts) {
+  switch (token.type) {
+    case tt.name:
+      parts.push(token.value);
+      next();
+      break;
+    case tt.dot:
+      next();
+      break;
+    default:
+      throw new Error('unhandled type ' + token.type);
+  }
 }
 
 function parseDocumentationString(token) {
