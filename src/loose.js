@@ -165,10 +165,7 @@ function skipLine() {
   fetchToken.jumpTo(lineEnd(token.start), false);
 }
 
-function Node(start) {
-  this.type = null;
-}
-Node.prototype = sarama.Node.prototype;
+
 
 function SourceLocation(start) {
   this.start = start || token.startLoc || {line: 1, column: 0};

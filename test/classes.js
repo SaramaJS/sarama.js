@@ -11,8 +11,7 @@ describe('Classes', () => {
     def f(self):
         return 'hello world'`
     ).should.deepEqual(acorn.parse(`
-    /** A simple example class
-      */
+    /** A simple example class */
     class MyClass {
       static get i() {
         return 12345;
