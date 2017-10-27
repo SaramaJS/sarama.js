@@ -1,9 +1,12 @@
 const acorn = require('acorn');
 require('should');
 const sarama = require('../loose');
-
+const sanitizer = require('../util/sanitizer');
 describe('Objects', () => {
   it('this', () => {
-    sarama.parse('this\n').should.deepEqual(acorn.parse('this;\n'));
+    sanitizer(sarama.parse('this\n', { locations: false })).should.deepEqual(sanitizer(acorn.parse('this;\n', { locations: false })));
+  });
+  it('null', () => {
+    sanitizer(sarama.parse('null\n', { locations: false })).should.deepEqual(sanitizer(acorn.parse('null;\n', { locations: false })));
   });
 });

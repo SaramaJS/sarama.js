@@ -1,16 +1,17 @@
 const acorn = require('acorn');
 require('should');
 const sarama = require('../loose');
+const sanitizer = require('../util/sanitizer');
 
 describe('Classes', () => {
   it('Simple', () => {
-    sarama.parse(`class MyClass:
+    sanitizer(sarama.parse(`class MyClass:
     """A simple example class"""
     i = 12345
 
     def f(self):
         return 'hello world'`
-    ).should.deepEqual(acorn.parse(`
+    )).should.deepEqual(sanitizer(acorn.parse(`
     /** A simple example class
       */
     class MyClass {
@@ -22,6 +23,6 @@ describe('Classes', () => {
         return 'hello world';
       }
     }
-    `));
+    `)));
   });
 });

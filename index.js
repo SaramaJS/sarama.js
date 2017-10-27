@@ -79,7 +79,8 @@ var defaultOptions = exports.defaultOptions = {
   // `locations` is on or off.
   directSourceFile: null,
   // Python runtime library object name
-  runtimeParamName: "__pythonRuntime"
+  runtimeParamName: "__pythonRuntime",
+  sourceType: 'script'
 };
 
 function setOptions(opts) {
@@ -343,6 +344,7 @@ var _lambda = {keyword: "lambda"}, _nonlocal = {keyword: "nonlocal"};
 var _pass = { keyword: "pass" }, _raise = {keyword: "raise"};
 var _return = { keyword: "return", beforeExpr: true }, _try = { keyword: "try" };
 var _while = {keyword: "while"}, _with = {keyword: "with"}, _yield = {keyword: "yield"};
+var _self = {keyword: "self"}, _this = {keyword: "this"};
 
 // The keywords that denote values.
 
@@ -371,7 +373,8 @@ var keywordTypes = {
   "from": _from, "global": _global, "if": _if, "import": _import, "in": _in, "is": _is,
   "lambda": _lambda, "nonlocal": _nonlocal, "not": _not, "or": _or,
   "pass": _pass, "raise": _raise, "return": _return, "try": _try, "while": _while,
-  "with": _with, "yield": _yield
+  "with": _with, "yield": _yield,
+  "self": _self, "this": _this
 };
 
 // Punctuation token types. Again, the `type` property is purely for debugging.
@@ -477,7 +480,7 @@ var isStrictBadIdWord = makePredicate("eval arguments");
 // Keywords
 // TODO: dict isn't a keyword, it's a builtin
 
-var isKeyword = makePredicate("dict False None True and as assert break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield");
+var isKeyword = makePredicate("dict False None True and as assert break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield this self");
 
 // ## Character categories
 
@@ -1772,6 +1775,9 @@ function parseTopLevel(program) {
   bracketNesting = 0;
   readToken();
   var node = program || startNode();
+  if (options.sourceType) {
+    node.sourceType = options.sourceType;
+  }
   if (!program) node.body = [];
   while (tokType !== _eof) {
     var stmt = parseStatement();

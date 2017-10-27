@@ -314,6 +314,9 @@ function unpackTuple(tupleArgs, right) {
 function parseTopLevel() {
   var node = startNode();
   node.body = [];
+  if (options.sourceType) {
+    node.sourceType = options.sourceType;
+  }
   while (token.type !== tt.eof) {
     var stmt = parseStatement();
     if (stmt) node.body.push(stmt);
@@ -390,7 +393,11 @@ function parseStatement() {
       expect(tt.colon);
       node.body = parseSuite();
       return finishNode(node, "WhileStatement");
-
+    case tt._self:
+    case tt._this:
+      node.expression = parseThis();
+      next();
+      return finishNode(node, "ExpressionStatement");
     case tt.semi:
       next();
       return finishNode(node, "EmptyStatement");
@@ -666,6 +673,11 @@ function parseSlice(node, base, start, noCalls) {
   var memberExpr = nc.createNodeSpan(base, base, "MemberExpression", { object: base, property: sliceId, computed: false });
   node.callee = memberExpr;
   return parseSubscripts(finishNode(node, "CallExpression"), noCalls);
+}
+
+function parseThis() {
+  var thisExpressionNode = startNode();
+  return finishNode(thisExpressionNode, "ThisExpression");
 }
 
 function parseExprAtom() {
