@@ -7,6 +7,6 @@ describe('Objects', () => {
     sanitizer(sarama.parse('this\n', { locations: false })).should.deepEqual(sanitizer(acorn.parse('this;\n', { locations: false })));
   });
   it('null', () => {
-    sanitizer(sarama.parse('null\n', { locations: false })).should.deepEqual(sanitizer(acorn.parse('null;\n', { locations: false })));
+    sanitizer(sarama.parse('None\n', { locations: false })).should.deepEqual(sanitizer(acorn.parse('null;\n', { locations: false })));
   });
 });

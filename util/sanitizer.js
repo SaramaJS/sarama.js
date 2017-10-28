@@ -3,6 +3,9 @@ module.exports = function sanitizer(ast, depth) {
   for (const p in ast) {
     if (!ast.hasOwnProperty(p)) continue;
     const value = ast[p];
+    if (p === 'raw') {
+      delete ast[p];
+    }
     if ((p === 'start' || p === 'end') && (!isNaN(value))) {
       delete ast[p];
       continue;
