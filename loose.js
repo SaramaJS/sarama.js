@@ -548,7 +548,7 @@ function parseExprOp(left, minPrec, noIn) {
     right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
     exprNode = nc.createNodeMemberCall(node, "Math", "pow", [left, right]);
     return parseExprOp(exprNode, minPrec, noIn);
-  } else if (prec != null && (!noIn || op !== tt._in)) {
+  } else if (prec !== null && (!noIn || op !== tt._in)) {
     if (prec > minPrec) {
       next();
       node = startNodeFrom(left);
@@ -564,22 +564,17 @@ function parseExprOp(left, minPrec, noIn) {
           var notLit = nc.createNodeSpan(node, node, "Literal", { value: op === tt._not });
           exprNode = nc.createNodeRuntimeCall(node, 'ops', 'in', [left, right, notLit]);
         } else exprNode = dummyIdent();
-      } else if (op === tt.plusMin && val === '+' || op === tt.multiplyModulo && val === '*') {
-        node.arguments = [left];
-        node.arguments.push(parseExprOp(parseMaybeUnary(noIn), prec, noIn));
-        finishNode(node, "CallExpression");
-        node.callee = nc.createNodeOpsCallee(node, op === tt.plusMin ? "add" : "multiply");
-        exprNode = node;
       } else {
         if (op === tt._is) {
           if (eat(tt._not)) node.operator = "!==";
           else node.operator = "===";
-        } else node.operator = op.rep != null ? op.rep : val;
+        } else node.operator = op.rep !== null ? op.rep : val;
 
         // Accept '===' as '=='
         if (input[token.start - 1] === '=' && input[token.start - 2] === '=') next();
 
         node.left = left;
+        node.operator = val;
         node.right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
         exprNode = finishNode(node, (op === tt._or || op === tt._and) ? "LogicalExpression" : "BinaryExpression");
       }
