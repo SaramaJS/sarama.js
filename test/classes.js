@@ -7,13 +7,6 @@ injectAcornStaticClassPropertyInitializer(acorn);
 const sarama = require('../loose');
 const sanitizer = require('../util/sanitizer');
 
-console.log(JSON.stringify(sarama.parse(`class MyClass:
-    """A simple example class"""
-    i = 12345
-
-    def f(self):
-        return 'hello world'`
-)));
 describe('Classes', () => {
   it('Simple', () => {
     sanitizer(sarama.parse(`class MyClass:
@@ -31,9 +24,8 @@ describe('Classes', () => {
         return 'hello world';
       }
     }
-    MyClass.i = 12345;
     `, {
-      staticClassPropertyInitializer: true
+      plugins: { staticClassPropertyInitializer: true }
     })));
   });
 });

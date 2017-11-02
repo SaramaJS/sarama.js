@@ -432,8 +432,14 @@ function parseClassBodyStatement(container, ctorNode) {
 
   switch (starttype) {
     case tt.name:
-      node.value = parseStatement();
+      var name = token.value;
+      next();
+      next();
+      node.computed = false;
+      node.key = { type: 'Identifier', name: name };
+      node.static = true;
       node.kind = 'init';
+      node.value = { type: 'Literal', value: token.value };
       ctorNode.body.push(finishNode(node, 'ClassProperty'));
       break;
     case tt.def:
@@ -1005,11 +1011,11 @@ function parseFunction(node) {
   }
   if (scope.isParentClass()) {
     finishNode(node);
-    var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body, params: params });
+    var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body, params: params, id: null, generator: false, expression: false });
     if (node.id.name === '__init__') {
       node.id.name = 'constructor';
     }
-    retNode = nc.createNodeSpan(node, node, "MethodDefinition", { value: functionExpr, key: node.id, kind: "method", "static": false });
+    retNode = nc.createNodeSpan(node, node, "MethodDefinition", { value: functionExpr, key: node.id, kind: "method", "static": false, computed: false });
   } else {
     node.params = params;
     retNode = finishNode(node, "FunctionDeclaration");
