@@ -408,10 +408,10 @@ function parseStatement() {
       next();
       return parseStatement();
 
-    case tt.documentationString:
-      node.leadingComments = parseDocumentationString(token);
-      next();
-      return finishNode(node, "EmptyStatement");
+    //case tt.documentationString:
+      // node.leadingComments = parseDocumentationString(token);
+      // next();
+      // return finishNode(node, "EmptyStatement");
     default:
       var expr = parseExpression();
       if (isDummy(expr)) {
@@ -424,6 +424,24 @@ function parseStatement() {
         node.expression = expr;
         return finishNode(node, "ExpressionStatement");
       }
+  }
+}
+
+function parseClassBodyStatement(container, ctorNode) {
+  var starttype = token.type, node = startNode();
+
+  switch (starttype) {
+    case tt.name:
+      node.value = parseStatement();
+      node.kind = 'init';
+      ctorNode.body.push(finishNode(node, 'ClassProperty'));
+      break;
+    case tt.def:
+      return parseFunctionSuite(container);
+      break;
+    default:
+      console.warn('unhandled ' + starttype.type);
+      next();
   }
 }
 
@@ -459,6 +477,25 @@ function parseSuite() {
   }
 
   return finishNode(node, "BlockStatement");
+}
+
+function parseClassBodySuite(container, ctorNode) {
+  var node = startNode();
+  var stmt;
+  node.body = [];
+  if (eat(tt.newline)) {
+    eat(tt.indent);
+    while (!eat(tt.dedent) && token.type !== tt.eof) {
+      stmt = parseClassBodyStatement(container, ctorNode);
+      if (stmt) node.body.push(stmt);
+    }
+  } else {
+    stmt = parseClassBodyStatement(container, ctorNode);
+    if (stmt) node.body.push(stmt);
+    next();
+  }
+
+  return finishNode(node, "ClassBody");
 }
 
 function parseFor(node) {
@@ -805,11 +842,13 @@ function parseClass(ctorNode) {
   // Container for class constructor and prototype functions
   var container = startNodeFrom(ctorNode);
   container.body = ctorNode;
-
+  //TODO: handle superClass
+  container.superClass = null;
   // Parse class signature
   container.id = parseIdent();
   ctorNode.body = [];
   ctorNode.innerComments = [];
+
   var classParams = [];
   if (eat(tt.parenL)) {
     var first = true;
@@ -827,7 +866,7 @@ function parseClass(ctorNode) {
   var classBodyRefNode = finishNode(startNode());
 
   // Parse class body
-  var classBlock = parseSuite();
+  var classBlock = parseClassBodySuite(container, ctorNode);
 
   // Generate additional AST to implement class
   var classStmt = nc.createClass(container, ctorNode, classParams, classBodyRefNode, classBlock);

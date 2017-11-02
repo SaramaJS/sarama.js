@@ -416,7 +416,7 @@ var _exponentiation = { prec: 12, beforeExpr: true };
 
 exports.tokTypes = {bracketL: _bracketL, bracketR: _bracketR, braceL: _braceL, braceR: _braceR,
   parenL: _parenL, parenR: _parenR, comma: _comma, semi: _semi, colon: _colon,
-  dot: _dot, question: _question, slash: _slash, eq: _eq, name: _name, eof: _eof,
+  def: _def, dot: _dot, question: _question, slash: _slash, eq: _eq, name: _name, eof: _eof,
   num: _num, regexp: _regexp, string: _string,
   documentationString: _documentationString,
   newline: _newline, indent: _indent, dedent: _dedent,

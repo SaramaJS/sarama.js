@@ -6,6 +6,12 @@ module.exports = function sanitizer(ast, depth) {
     if (p === 'raw') {
       delete ast[p];
     }
+    if (p === 'leadingComments') {
+      delete ast[p];
+    }
+    if (p === 'innerComments') {
+      delete ast[p];
+    }
     if ((p === 'start' || p === 'end') && (!isNaN(value))) {
       delete ast[p];
       continue;
