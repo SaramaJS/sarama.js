@@ -367,9 +367,10 @@ function parseStatement() {
     return finishNode(node, "IfStatement");
 
     case tt._import: // Skipping from and import statements for now
-      parseImport();
+      node.kind = "const";
+      node.declarations = parseImport();
       next();
-      return parseStatement();
+      return finishNode(node, "VariableDeclaration");
 
     case tt.newline:
       // TODO: parseStatement() should probably eat it's own newline
@@ -1088,53 +1089,38 @@ function parseTuple(noIn, expr) {
 }
 
 function parseImport() {
-  var variableDeclaration = startNode();
-  variableDeclaration.declarations = [];
-  var stmt;
-  var parts = [];
   next();
-  while (!eat(tt.newline) && token.type !== tt.eof) {
-    stmt = parseImportStatement(parts);
-    if (stmt) variableDeclaration.body.push(stmt);
-  }
-
-  var identifier = startNode();
-  identifier.name = parts[parts.length - 1];
-
-  var variableDeclarator = startNode();
-  variableDeclarator.id = finishNode(identifier, "Identifier");
-
-  var baseMemberExpression = startNode();
-  var previousMemberExpression = baseMemberExpression;
-  for (var i = 1; i < parts.length; i++) {
-    var memberExpression = startNode();
-    memberExpression
-    previousMemberExpression.object = finishNode(memberExpression, "MemberExpression");
-    previousMemberExpression = memberExpression;
-  }
-
-  var callExpression = startNode();
-  var callIdentifier = startNode();
-  callIdentifier.name = "require";
-  callExpression.callee = finishNode(callIdentifier, "CallIdentifier");
-  var libLiteral = startNode();
-  libLiteral.value = parts[0];
-  libLiteral.rawValue = parts[0];
-  libLiteral.raw = parts[0];
-  callExpression.arguments = [finishNode(libLiteral, "Literal")];
-  previousMemberExpression.object = finishNode(callExpression, "CallExpression");
-  variableDeclarator.init = finishNode(baseMemberExpression, "MemberExpression");
-
-
-  variableDeclaration.declarations.push(finishNode(variableDeclarator, "VariableDeclarator"));
-  return finishNode(variableDeclaration, "VariableDeclaration");
-}
-
-function parseImportStatement(parts) {
+  var declarations = [];
   switch (token.type) {
     case tt.name:
-      parts.push(token.value);
+      var nextToken = lookAhead(1);
+      if (nextToken.type === tt._as && nextToken.value === 'as') {
+        var libString = token.value;
+        next();
+        next();
+        var variableName = token.value;
+        declarations.push({
+          type: "VariableDeclarator",
+          id: {
+            type: "Identifier",
+            name: variableName
+          },
+          init: {
+            type: "CallExpression",
+            callee: {
+              type: "Identifier",
+              name: "require"
+            },
+            arguments: [
+              {
+                type: "Literal", value: libString
+              }
+            ]
+          }
+        });
+      }
       next();
+      return declarations;
       break;
     case tt.dot:
       next();
