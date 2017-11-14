@@ -53,8 +53,8 @@
         }
 
         function changeParser() {
-            if (parserSelect.value === 'loose') parseFn = filbert_loose.parse_dammit;
-            else parseFn = filbert.parse;
+            if (parserSelect.value === 'loose') parseFn = loose;
+            else parseFn = sarama.parse;
             compile();
         }
         

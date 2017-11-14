@@ -89,7 +89,7 @@ that end up in the `type` properties of tokens.
 This file implements an error-tolerant parser. It exposes a single
 function.
 
-**parse_dammit**`(input, options)` takes the same arguments and
+**parse_loose**`(input, options)` takes the same arguments and
 returns the same syntax tree as the `parse` function in `sarama.js`,
 but never raises an error, and will do its best to parse syntactically
 invalid code in as meaningful a way as it can. It'll insert identifier

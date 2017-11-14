@@ -24,7 +24,7 @@ exports.version = "0.5.1";
 
 var options, input, inputLen, sourceFile, nc;
 
-exports.parse = function(inpt, opts) {
+module.exports.parse = function parse(inpt, opts) {
   input = String(inpt); inputLen = input.length;
   setOptions(opts);
   initTokenState();
@@ -79,7 +79,8 @@ var defaultOptions = exports.defaultOptions = {
   // `locations` is on or off.
   directSourceFile: null,
   // Python runtime library object name
-  runtimeParamName: "__pythonRuntime"
+  runtimeParamName: "__pythonRuntime",
+  sourceType: 'script'
 };
 
 function setOptions(opts) {
@@ -343,6 +344,7 @@ var _lambda = {keyword: "lambda"}, _nonlocal = {keyword: "nonlocal"};
 var _pass = { keyword: "pass" }, _raise = {keyword: "raise"};
 var _return = { keyword: "return", beforeExpr: true }, _try = { keyword: "try" };
 var _while = {keyword: "while"}, _with = {keyword: "with"}, _yield = {keyword: "yield"};
+var _self = {keyword: "self"}, _this = {keyword: "this"};
 
 // The keywords that denote values.
 
@@ -371,7 +373,8 @@ var keywordTypes = {
   "from": _from, "global": _global, "if": _if, "import": _import, "in": _in, "is": _is,
   "lambda": _lambda, "nonlocal": _nonlocal, "not": _not, "or": _or,
   "pass": _pass, "raise": _raise, "return": _return, "try": _try, "while": _while,
-  "with": _with, "yield": _yield
+  "with": _with, "yield": _yield,
+  "self": _self, "this": _this
 };
 
 // Punctuation token types. Again, the `type` property is purely for debugging.
@@ -413,7 +416,7 @@ var _exponentiation = { prec: 12, beforeExpr: true };
 
 exports.tokTypes = {bracketL: _bracketL, bracketR: _bracketR, braceL: _braceL, braceR: _braceR,
   parenL: _parenL, parenR: _parenR, comma: _comma, semi: _semi, colon: _colon,
-  dot: _dot, question: _question, slash: _slash, eq: _eq, name: _name, eof: _eof,
+  def: _def, dot: _dot, question: _question, slash: _slash, eq: _eq, name: _name, eof: _eof,
   num: _num, regexp: _regexp, string: _string,
   documentationString: _documentationString,
   newline: _newline, indent: _indent, dedent: _dedent,
@@ -436,14 +439,14 @@ function makePredicate(words) {
   var f = "", cats = [];
   out: for (var i = 0; i < words.length; ++i) {
     for (var j = 0; j < cats.length; ++j)
-      if (cats[j][0].length == words[i].length) {
+      if (cats[j][0].length === words[i].length) {
         cats[j].push(words[i]);
         continue out;
       }
     cats.push([words[i]]);
   }
   function compareTo(arr) {
-    if (arr.length == 1) return f += "return str === " + JSON.stringify(arr[0]) + ";";
+    if (arr.length === 1) return f += "return str === " + JSON.stringify(arr[0]) + ";";
     f += "switch(str){";
     for (var i = 0; i < arr.length; ++i) f += "case " + JSON.stringify(arr[i]) + ":";
     f += "return true}return false;";
@@ -477,7 +480,7 @@ var isStrictBadIdWord = makePredicate("eval arguments");
 // Keywords
 // TODO: dict isn't a keyword, it's a builtin
 
-var isKeyword = makePredicate("dict False None True and as assert break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield");
+var isKeyword = makePredicate("dict False None True and as assert break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield this self");
 
 // ## Character categories
 
@@ -1772,6 +1775,9 @@ function parseTopLevel(program) {
   bracketNesting = 0;
   readToken();
   var node = program || startNode();
+  if (options.sourceType) {
+    node.sourceType = options.sourceType;
+  }
   if (!program) node.body = [];
   while (tokType !== _eof) {
     var stmt = parseStatement();
@@ -1788,7 +1794,7 @@ function parseTopLevel(program) {
 // does not help.
 
 function parseStatement() {
-  if (tokType === _slash || tokType === _assign && tokVal == "/=")
+  if (tokType === _slash || tokType === _assign && tokVal === "/=")
     readToken(true);
 
   var starttype = tokType, node = startNode();
@@ -3430,6 +3436,19 @@ function parseDocumentationString(token) {
   var node = startNode();
   node.value = token.value;
   return finishNode(node, "Block");
+}
+
+function parseImport(node) {
+  var variableDeclaration = startNode();
+  var variableDeclarator = startNode();
+  var callExpression = startNode();
+  var identifier = startNode();
+  var literal = startNode();
+
+  //variableDeclaration.
+  finishNode(variableDeclarator, "VariableDeclarator");
+  finishNode(variableDeclaration, "VariableDeclaration");
+  return variableDeclaration;
 }
 
 function PythonDict() {

@@ -1,6 +1,6 @@
-// Filbert: Loose parser
+// sarama. Loose parser
 //
-// This module provides an alternative parser (`parse_dammit`) that
+// This module provides an alternative parser (`parse`) that
 // exposes that same interface as `parse`, but will try to parse
 // anything as Python, repairing syntax errors the best it can.
 // There are circumstances in which it will raise an error and give
@@ -15,42 +15,42 @@
 //
 // [api]: https://developer.mozilla.org/en-US/docs/SpiderMonkey/Parser_API
 //
-// The expected use for this is to *first* try `filbert.parse`, and only
-// if that fails switch to `parse_dammit`. The loose parser might
+// The expected use for this is to *first* try `sarama.parse`, and only
+// if that fails switch to `parse`. The loose parser might
 // parse badly indented code incorrectly, so **don't** use it as
 // your default parser.
 //
-// Quite a lot of filbert.js is duplicated here. The alternative was to
+// Quite a lot of sarama.js is duplicated here. The alternative was to
 // add a *lot* of extra cruft to that file, making it less readable
 // and slower. Copying and editing the code allowed invasive changes and
 // simplifications without creating a complicated tangle.
 "use strict";
-const filbert = require('./filbert');
+const sarama = require('./');
 
 
-var tt = filbert.tokTypes;
-var scope = filbert.scope;
-var indentHist = filbert.indentHist;
+var tt = sarama.tokTypes;
+var scope = sarama.scope;
+var indentHist = sarama.indentHist;
 
 var options, input, inputLen, fetchToken, nc;
 
-module.exports.parse_dammit = function(inpt, opts) {
+module.exports.parse = function(inpt, opts) {
   input = String(inpt); inputLen = input.length;
   setOptions(opts);
   if (!options.tabSize) options.tabSize = 4;
-  fetchToken = filbert.tokenize(inpt, options);
+  fetchToken = sarama.tokenize(inpt, options);
   ahead.length = 0;
   newAstIdCount = 0;
   scope.init();
-  nc = filbert.getNodeCreator(startNode, startNodeFrom, finishNode, unpackTuple);
+  nc = sarama.getNodeCreator(startNode, startNodeFrom, finishNode, unpackTuple);
   next();
   return parseTopLevel();
 };
 
 function setOptions(opts) {
   options = opts || {};
-  for (var opt in filbert.defaultOptions) if (!Object.prototype.hasOwnProperty.call(options, opt))
-    options[opt] = filbert.defaultOptions[opt];
+  for (var opt in sarama.defaultOptions) if (!Object.prototype.hasOwnProperty.call(options, opt))
+    options[opt] = sarama.defaultOptions[opt];
   sourceFile = options.sourceFile || null;
 }
 
@@ -106,8 +106,8 @@ function readToken() {
       if (replace === true) replace = {start: pos, end: pos, type: tt.name, value: "✖"};
       if (replace) {
         if (options.locations) {
-          replace.startLoc = filbert.getLineInfo(input, replace.start);
-          replace.endLoc = filbert.getLineInfo(input, replace.end);
+          replace.startLoc = sarama.getLineInfo(input, replace.start);
+          replace.endLoc = sarama.getLineInfo(input, replace.end);
         }
         return replace;
       }
@@ -168,7 +168,7 @@ function skipLine() {
 function Node(start) {
   this.type = null;
 }
-Node.prototype = filbert.Node.prototype;
+Node.prototype = sarama.Node.prototype;
 
 function SourceLocation(start) {
   this.start = start || token.startLoc || {line: 1, column: 0};
@@ -270,7 +270,7 @@ function unpackTuple(tupleArgs, right) {
 
   // var tmp = right
 
-  var tmpId = nc.createNodeSpan(right, right, "Identifier", { name: "__filbertTmp" + newAstIdCount++ });
+  var tmpId = nc.createNodeSpan(right, right, "Identifier", { name: "__sarama.mp" + newAstIdCount++ });
   var tmpDecl = nc.createVarDeclFromId(right, tmpId, right);
   varStmts.push(tmpDecl);
 
@@ -314,6 +314,9 @@ function unpackTuple(tupleArgs, right) {
 function parseTopLevel() {
   var node = startNode();
   node.body = [];
+  if (options.sourceType) {
+    node.sourceType = options.sourceType;
+  }
   while (token.type !== tt.eof) {
     var stmt = parseStatement();
     if (stmt) node.body.push(stmt);
@@ -364,9 +367,10 @@ function parseStatement() {
     return finishNode(node, "IfStatement");
 
     case tt._import: // Skipping from and import statements for now
-      skipLine();
+      node.kind = "const";
+      node.declarations = parseImport();
       next();
-      return parseStatement();
+      return finishNode(node, "VariableDeclaration");
 
     case tt.newline:
       // TODO: parseStatement() should probably eat it's own newline
@@ -390,7 +394,11 @@ function parseStatement() {
       expect(tt.colon);
       node.body = parseSuite();
       return finishNode(node, "WhileStatement");
-
+    case tt._self:
+    case tt._this:
+      node.expression = parseThis();
+      next();
+      return finishNode(node, "ExpressionStatement");
     case tt.semi:
       next();
       return finishNode(node, "EmptyStatement");
@@ -401,10 +409,10 @@ function parseStatement() {
       next();
       return parseStatement();
 
-    case tt.documentationString:
-      node.leadingComments = parseDocumentationString(token);
-      next();
-      return finishNode(node, "EmptyStatement");
+    //case tt.documentationString:
+      // node.leadingComments = parseDocumentationString(token);
+      // next();
+      // return finishNode(node, "EmptyStatement");
     default:
       var expr = parseExpression();
       if (isDummy(expr)) {
@@ -417,6 +425,30 @@ function parseStatement() {
         node.expression = expr;
         return finishNode(node, "ExpressionStatement");
       }
+  }
+}
+
+function parseClassBodyStatement(container, ctorNode) {
+  var starttype = token.type, node = startNode();
+
+  switch (starttype) {
+    case tt.name:
+      var name = token.value;
+      next();
+      next();
+      node.computed = false;
+      node.key = { type: 'Identifier', name: name };
+      node.static = true;
+      node.kind = 'init';
+      node.value = { type: 'Literal', value: token.value };
+      ctorNode.body.push(finishNode(node, 'ClassProperty'));
+      break;
+    case tt.def:
+      return parseFunctionSuite(container);
+      break;
+    default:
+      console.warn('unhandled ' + starttype.type);
+      next();
   }
 }
 
@@ -452,6 +484,25 @@ function parseSuite() {
   }
 
   return finishNode(node, "BlockStatement");
+}
+
+function parseClassBodySuite(container, ctorNode) {
+  var node = startNode();
+  var stmt;
+  node.body = [];
+  if (eat(tt.newline)) {
+    eat(tt.indent);
+    while (!eat(tt.dedent) && token.type !== tt.eof) {
+      stmt = parseClassBodyStatement(container, ctorNode);
+      if (stmt) node.body.push(stmt);
+    }
+  } else {
+    stmt = parseClassBodyStatement(container, ctorNode);
+    if (stmt) node.body.push(stmt);
+    next();
+  }
+
+  return finishNode(node, "ClassBody");
 }
 
 function parseFor(node) {
@@ -541,7 +592,7 @@ function parseExprOp(left, minPrec, noIn) {
     right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
     exprNode = nc.createNodeMemberCall(node, "Math", "pow", [left, right]);
     return parseExprOp(exprNode, minPrec, noIn);
-  } else if (prec != null && (!noIn || op !== tt._in)) {
+  } else if (prec !== null && (!noIn || op !== tt._in)) {
     if (prec > minPrec) {
       next();
       node = startNodeFrom(left);
@@ -557,22 +608,17 @@ function parseExprOp(left, minPrec, noIn) {
           var notLit = nc.createNodeSpan(node, node, "Literal", { value: op === tt._not });
           exprNode = nc.createNodeRuntimeCall(node, 'ops', 'in', [left, right, notLit]);
         } else exprNode = dummyIdent();
-      } else if (op === tt.plusMin && val === '+' || op === tt.multiplyModulo && val === '*') {
-        node.arguments = [left];
-        node.arguments.push(parseExprOp(parseMaybeUnary(noIn), prec, noIn));
-        finishNode(node, "CallExpression");
-        node.callee = nc.createNodeOpsCallee(node, op === tt.plusMin ? "add" : "multiply");
-        exprNode = node;
       } else {
         if (op === tt._is) {
           if (eat(tt._not)) node.operator = "!==";
           else node.operator = "===";
-        } else node.operator = op.rep != null ? op.rep : val;
+        } else node.operator = op.rep !== null ? op.rep : val;
 
         // Accept '===' as '=='
         if (input[token.start - 1] === '=' && input[token.start - 2] === '=') next();
 
         node.left = left;
+        node.operator = val;
         node.right = parseExprOp(parseMaybeUnary(noIn), prec, noIn);
         exprNode = finishNode(node, (op === tt._or || op === tt._and) ? "LogicalExpression" : "BinaryExpression");
       }
@@ -599,7 +645,7 @@ function parseSubscripts(base, noCalls) {
   var node = startNodeFrom(base);
   if (eat(tt.dot)) {
     var id = parseIdent(true);
-    if (filbert.pythonRuntime.imports[base.name] && filbert.pythonRuntime.imports[base.name][id.name]) {
+    if (sarama.pythonRuntime.imports[base.name] && sarama.pythonRuntime.imports[base.name][id.name]) {
       // Calling a Python import function
       var runtimeId = nc.createNodeSpan(base, base, "Identifier", { name: options.runtimeParamName });
       var importsId = nc.createNodeSpan(base, base, "Identifier", { name: "imports" });
@@ -636,7 +682,7 @@ function parseSubscripts(base, noCalls) {
     else {
       finishNode(node, "CallExpression");
     }
-    if (filbert.pythonRuntime.functions[base.name]) {
+    if (sarama.pythonRuntime.functions[base.name]) {
       // Calling a Python built-in function
       var runtimeId = nc.createNodeSpan(base, base, "Identifier", { name: options.runtimeParamName });
       var functionsId = nc.createNodeSpan(base, base, "Identifier", { name: "functions" });
@@ -666,6 +712,11 @@ function parseSlice(node, base, start, noCalls) {
   var memberExpr = nc.createNodeSpan(base, base, "MemberExpression", { object: base, property: sliceId, computed: false });
   node.callee = memberExpr;
   return parseSubscripts(finishNode(node, "CallExpression"), noCalls);
+}
+
+function parseThis() {
+  var thisExpressionNode = startNode();
+  return finishNode(thisExpressionNode, "ThisExpression");
 }
 
 function parseExprAtom() {
@@ -798,11 +849,13 @@ function parseClass(ctorNode) {
   // Container for class constructor and prototype functions
   var container = startNodeFrom(ctorNode);
   container.body = ctorNode;
-
+  //TODO: handle superClass
+  container.superClass = null;
   // Parse class signature
   container.id = parseIdent();
   ctorNode.body = [];
   ctorNode.innerComments = [];
+
   var classParams = [];
   if (eat(tt.parenL)) {
     var first = true;
@@ -820,7 +873,7 @@ function parseClass(ctorNode) {
   var classBodyRefNode = finishNode(startNode());
 
   // Parse class body
-  var classBlock = parseSuite();
+  var classBlock = parseClassBodySuite(container, ctorNode);
 
   // Generate additional AST to implement class
   var classStmt = nc.createClass(container, ctorNode, classParams, classBodyRefNode, classBlock);
@@ -959,11 +1012,11 @@ function parseFunction(node) {
   }
   if (scope.isParentClass()) {
     finishNode(node);
-    var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body, params: params });
+    var functionExpr = nc.createNodeSpan(node, node, "FunctionExpression", { body: node.body, params: params, id: null, generator: false, expression: false });
     if (node.id.name === '__init__') {
       node.id.name = 'constructor';
     }
-    retNode = nc.createNodeSpan(node, node, "MethodDefinition", { value: functionExpr, key: node.id, kind: "method", "static": false });
+    retNode = nc.createNodeSpan(node, node, "MethodDefinition", { value: functionExpr, key: node.id, kind: "method", "static": false, computed: false });
   } else {
     node.params = params;
     retNode = finishNode(node, "FunctionDeclaration");
@@ -1033,6 +1086,48 @@ function parseTuple(noIn, expr) {
   node.callee = nc.createNodeSpan(node, node, "MemberExpression", { object: runtimeMember, property: listId, computed: false });
 
   return node;
+}
+
+function parseImport() {
+  next();
+  var declarations = [];
+  switch (token.type) {
+    case tt.name:
+      var nextToken = lookAhead(1);
+      if (nextToken.type === tt._as && nextToken.value === 'as') {
+        var libString = token.value;
+        next();
+        next();
+        var variableName = token.value;
+        declarations.push({
+          type: "VariableDeclarator",
+          id: {
+            type: "Identifier",
+            name: variableName
+          },
+          init: {
+            type: "CallExpression",
+            callee: {
+              type: "Identifier",
+              name: "require"
+            },
+            arguments: [
+              {
+                type: "Literal", value: libString
+              }
+            ]
+          }
+        });
+      }
+      next();
+      return declarations;
+      break;
+    case tt.dot:
+      next();
+      break;
+    default:
+      throw new Error('unhandled type ' + token.type);
+  }
 }
 
 function parseDocumentationString(token) {
