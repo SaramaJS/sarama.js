@@ -9,7 +9,7 @@ This parser is a work in progress, adapted from the JavaScript parser [Acorn][ac
 
 [acorn]: https://github.com/marijnh/acorn
 
-Check out the [demo page](https://rawgit.com/SaramaJS/sarama.js/master/test/interactive.html) to see what sarama.js can do.
+Check out the [demo page](https://raw.githack.com/SaramaJS/sarama.js/master/test-old/interactive.html) to see what sarama.js can do.
 
 ## Want to contribute?
 
